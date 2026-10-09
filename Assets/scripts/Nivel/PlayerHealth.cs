@@ -69,6 +69,12 @@ public class PlayerHealth : MonoBehaviour, IHittable
 
     public void Stagger(float duration) { }
 
+    public void SetMaxHealth(float value, bool fill)
+    {
+        maxHealth = Mathf.Max(1f, value);
+        Health = fill ? maxHealth : Mathf.Min(Health, maxHealth);
+    }
+
     public void Heal(float amount)
     {
         if (IsDead) return;

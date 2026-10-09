@@ -70,7 +70,7 @@ public class AbbyAttack : MonoBehaviour
                     int i = Mathf.Clamp(combo, 0, damage.Length - 1);
                     hitbox.Begin(new HitInfo
                     {
-                        damage = damage[i], knockback = knockback[i], hitStop = i == damage.Length - 1 ? 0.07f : 0.035f,
+                        damage = damage[i] * RunState.DamageMultiplier, knockback = knockback[i], hitStop = i == damage.Length - 1 ? 0.07f : 0.035f,
                         sourcePosition = transform.position, attacker = self,
                     }, Facing);
                     bool last = i == damage.Length - 1;

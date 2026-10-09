@@ -500,6 +500,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         CameraShake.Shake(IsBoss ? 0.6f : 0.1f, IsBoss ? 1.2f : 0.15f);
         if (IsBoss) HitStop.Do(0.25f, 0.05f);
         AnyDied?.Invoke(this);
+        ShardPickup.Drop(transform.position, kind == Kind.Jefe ? 40 : kind == Kind.Bruto ? 8 : 3);
     }
 
     // ------------------------------------------------------------------ apoyo

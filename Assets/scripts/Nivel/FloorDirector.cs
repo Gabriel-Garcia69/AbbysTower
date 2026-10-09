@@ -52,7 +52,8 @@ public class FloorDirector : MonoBehaviour
         {
             player = p.transform;
             health = p.GetComponent<PlayerHealth>();
-            if (health == null) { health = p.AddComponent<PlayerHealth>(); health.maxHealth = playerMaxHealth; }
+            if (health == null) health = p.AddComponent<PlayerHealth>();
+            health.SetMaxHealth(playerMaxHealth + RunState.MaxHealthBonus, true);   // mejoras compradas al mercader
             if (p.GetComponent<AbbyAttack>() == null) p.AddComponent<AbbyAttack>();
             health.Died += OnPlayerDied;
             health.Damaged += _ => hurtVignette = 1f;
@@ -68,6 +69,7 @@ public class FloorDirector : MonoBehaviour
         }
         TowerEnemy.AnyDied += OnEnemyDied;
         TowerEnemy.BossEnraged += OnBossEnraged;
+        RunState.Changed += OnRunChanged;
 
         runStart = Time.time;
         Banner(floorTitle, floorSubtitle, new Color(0.75f, 0.85f, 1f), 4f);
@@ -77,6 +79,7 @@ public class FloorDirector : MonoBehaviour
     {
         TowerEnemy.AnyDied -= OnEnemyDied;
         TowerEnemy.BossEnraged -= OnBossEnraged;
+        RunState.Changed -= OnRunChanged;
         if (Instance == this) Instance = null;
         Time.timeScale = 1f;
     }
@@ -104,12 +107,19 @@ public class FloorDirector : MonoBehaviour
 
     void OnEnemyDied(TowerEnemy e) => kills++;
 
+    float fragPulse;
+    void OnRunChanged() => fragPulse = 1f;
+
     void OnBossEnraged(TowerEnemy e) => Banner("¡EL GUARDIÁN SE ENFURECE!", "", new Color(1f, 0.3f, 0.2f), 2f);
 
     void OnPlayerDied()
     {
         dead = true; endTimer = 0f;
+        lostFragments = RunState.Fragments - RunState.Fragments / 2;
+        RunState.OnDeath();
     }
+
+    int lostFragments;
 
     /// <summary>Lo llama FloorExit al pisar la salida del jefe (sin siguiente escena asignada).</summary>
     public void CompleteFloor()
@@ -148,6 +158,7 @@ public class FloorDirector : MonoBehaviour
         bannerTime += dt;
         if (hintTimer > 0f) hintTimer -= dt;
         hurtVignette = Mathf.MoveTowards(hurtVignette, 0f, dt * 2.5f);
+        fragPulse = Mathf.MoveTowards(fragPulse, 0f, dt * 3f);
         if (health != null) shownHealth = Mathf.MoveTowards(shownHealth, health.Normalized, dt * 0.8f);
         for (int i = popups.Count - 1; i >= 0; i--)
         {
@@ -237,6 +248,13 @@ public class FloorDirector : MonoBehaviour
             Box(new Rect(bar.x, bar.y, bar.width * health.Normalized, bar.height), hc);
             var num = new GUIStyle(label) { fontSize = Mathf.RoundToInt(u * 1.8f), alignment = TextAnchor.MiddleCenter };
             Text(bar, $"{Mathf.CeilToInt(health.Health)} / {Mathf.RoundToInt(health.maxHealth)}", num, Color.white);
+
+            // fragmentos (moneda) y mejoras
+            var frag = new GUIStyle(label) { fontSize = Mathf.RoundToInt(u * 2.4f) };
+            float pulse = Mathf.Clamp01(fragPulse);
+            string ups = (RunState.DamageLevel > 0 ? $"   Filo +{RunState.DamageLevel * 25}%" : "") + (RunState.HeartLevel > 0 ? $"   Corazón +{RunState.HeartLevel * 25}" : "");
+            Text(new Rect(bar.x, bar.yMax + u * 0.8f, u * 60f, u * 3.5f), $"◆ {RunState.Fragments}" + ups, frag,
+                 Color.Lerp(new Color(0.55f, 0.95f, 1f), Color.white, pulse));
         }
 
         // enemigos restantes
@@ -274,7 +292,7 @@ public class FloorDirector : MonoBehaviour
         if (hintTimer > 0f && !dead && !completed)
         {
             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2f), alignment = TextAnchor.LowerCenter };
-            Text(new Rect(0, sh - u * 6f, sw, u * 4f), "WASD mover  ·  Espacio saltar  ·  Clic / J atacar (3 golpes)  ·  Mouse cámara",
+            Text(new Rect(0, sh - u * 6f, sw, u * 4f), "WASD mover  ·  Espacio saltar  ·  Clic / J atacar (3 golpes)  ·  E comerciar  ·  Mouse cámara",
                  st, new Color(1f, 1f, 1f, 0.75f * Mathf.Clamp01(hintTimer)));
         }
 
@@ -286,7 +304,7 @@ public class FloorDirector : MonoBehaviour
             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             Text(new Rect(0, sh * 0.38f, sw, u * 12f), "CAÍSTE", st, new Color(1f, 0.35f, 0.35f, Mathf.Clamp01(endTimer / 0.8f)));
             var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Italic };
-            Text(new Rect(0, sh * 0.38f + u * 11f, sw, u * 4f), "La torre te devuelve a la entrada del piso...", s2, new Color(1f, 1f, 1f, Mathf.Clamp01((endTimer - 0.6f) / 0.8f)));
+            Text(new Rect(0, sh * 0.38f + u * 11f, sw, u * 4f), "La torre te devuelve a la entrada del piso..." + (lostFragments > 0 ? $"   (perdiste {lostFragments} ◆)" : ""), s2, new Color(1f, 1f, 1f, Mathf.Clamp01((endTimer - 0.6f) / 0.8f)));
         }
 
         if (completed)
@@ -295,7 +313,7 @@ public class FloorDirector : MonoBehaviour
             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             Text(new Rect(0, sh * 0.28f, sw, u * 12f), $"¡{floorTitle} COMPLETADO!", st, new Color(1f, 0.88f, 0.5f, a));
             var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 3f), fontStyle = FontStyle.Normal };
-            Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}", s2, new Color(1f, 1f, 1f, a));
+            Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}        Fragmentos  {RunState.Fragments} ◆", s2, new Color(1f, 1f, 1f, a));
             if (endTimer > 1.5f)
             {
                 var s3 = new GUIStyle(s2) { fontSize = Mathf.RoundToInt(u * 2.4f), fontStyle = FontStyle.Italic };

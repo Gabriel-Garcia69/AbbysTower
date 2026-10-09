@@ -732,6 +732,7 @@ public class FloorLayout : MonoBehaviour
     {
         var s = NewChild(parent, "Mercader");
         s.localPosition = pos;
+        s.gameObject.AddComponent<MerchantShop>();
         var wood = LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f));
         Prim(s, PrimitiveType.Cube, "Mostrador", new Vector3(0f, 0.55f, 0f), new Vector3(4.2f, 1.1f, 0.9f), wood, true);
         Prim(s, PrimitiveType.Cube, "Tablero", new Vector3(0f, 1.13f, 0f), new Vector3(4.4f, 0.06f, 1.05f), LitMaterial("MaderaClara", new Color(0.6f, 0.43f, 0.26f)), false);

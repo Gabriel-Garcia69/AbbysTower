@@ -32,7 +32,7 @@ public class MerchantShop : MonoBehaviour
 
     void Update()
     {
-        if (player == null) return;
+        if (player == null || PauseMenu.IsPaused) return;
         if (health == null) health = player.GetComponent<PlayerHealth>();
         Vector3 d = player.position - transform.position; d.y = 0f;
         near = d.magnitude < radius && (health == null || !health.IsDead);
@@ -56,11 +56,14 @@ public class MerchantShop : MonoBehaviour
         }
     }
 
-    void OnDisable() { if (open) SetOpen(false); }
+    void OnDisable() { if (open) SetOpen(false); PauseMenu.Blocked = false; }
+
+    void LateUpdate() { if (!open) PauseMenu.Blocked = false; }
 
     void SetOpen(bool value)
     {
         open = value;
+        if (value) PauseMenu.Blocked = true;
         if (value)
         {
             // congela a Abby y la cámara mientras compra

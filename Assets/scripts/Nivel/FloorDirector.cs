@@ -60,6 +60,8 @@ public class FloorDirector : MonoBehaviour
             shownHealth = health.Normalized;
         }
 
+        if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
+
         rooms = FindObjectsByType<RoomEncounter>(FindObjectsSortMode.None);
         foreach (var r in rooms)
         {

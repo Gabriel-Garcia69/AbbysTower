@@ -100469,6 +100469,7 @@ GameObject:
   - component: {fileID: 1541906532}
   - component: {fileID: 1541906531}
   - component: {fileID: 1541906533}
+  - component: {fileID: 1541906534}
   m_Layer: 0
   m_Name: CameraRig
   m_TagString: Untagged
@@ -100552,6 +100553,19 @@ MonoBehaviour:
   minPitch: -5
   maxPitch: 40
   lockCursor: 1
+--- !u!114 &1541906534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1541906530}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de897ee570c248f43ad89834f17a41b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PauseMenu
+  exteriorScene: Exterior
 --- !u!1 &1542027399
 GameObject:
   m_ObjectHideFlags: 0

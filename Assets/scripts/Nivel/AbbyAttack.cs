@@ -51,7 +51,7 @@ public class AbbyAttack : MonoBehaviour
         float dt = Time.deltaTime;
         if (motor != null && motor.WorldMoveDirection.sqrMagnitude > 0.01f) Facing = motor.WorldMoveDirection;
 
-        if (Pressed())
+        if (!PauseMenu.IsPaused && Pressed())
         {
             if (phase == Phase.None) Begin();
             else queued = true;

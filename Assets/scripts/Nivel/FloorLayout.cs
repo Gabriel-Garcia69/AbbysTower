@@ -64,8 +64,8 @@ public class FloorLayout : MonoBehaviour
     public float torchIntensity = 16f;
     [Tooltip("Luz colgante en el centro de cada sala (da la sombra principal de los personajes).")]
     public float centerLightIntensity = 14f;
-    [Tooltip("Cuántas antorchas por sala proyectan sombra (cuestan rendimiento).")]
-    public int shadowTorchesPerRoom = 1;
+    [Tooltip("Cuántas antorchas por sala proyectan sombra (6 = todas; si alguna no tiene, sus sombras no aparecen).")]
+    public int shadowTorchesPerRoom = 6;
 
     [Header("Enemigos (vacío = las salas no se cierran todavía)")]
     public GameObject enemyPrefab;

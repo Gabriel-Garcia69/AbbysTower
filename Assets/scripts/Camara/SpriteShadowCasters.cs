@@ -11,7 +11,8 @@ using UnityEngine.Rendering.Universal;
 /// Solución: copias invisibles del sprite que SOLO proyectan sombra, una por cada luz importante cercana
 /// (el sol + los faroles/antorchas más fuertes sobre el personaje), cada una girada de frente a su luz.
 /// Con Rendering Layers de URP cada copia proyecta sombra solo para SU luz (sin sombras dobles).
-/// Las luces elegidas reciben sombras aunque no las tuvieran; al alejarse se restauran como estaban.
+/// Solo usa luces que ya proyectan sombra (nunca prende ni apaga la sombra de una luz, para que las sombras
+/// del escenario no cambien según dónde esté el personaje).
 ///
 /// Va en el objeto con el SpriteRenderer (Visual). Necesita "Rendering Layers" activo en el URP Asset.
 /// </summary>
@@ -131,6 +132,9 @@ public class SpriteShadowCasters : MonoBehaviour
             }
             else
             {
+                // solo luces que ya dan sombra: si se le prendiera la sombra a una luz al acercarse Abby,
+                // las sombras del escenario aparecerían y desaparecerían según donde esté ella
+                if (OriginalShadows(l) == LightShadows.None) continue;
                 float d = Vector3.Distance(l.transform.position, pos);
                 if (d > l.range) continue;
                 float fall = 1f - d / l.range;
@@ -168,7 +172,6 @@ public class SpriteShadowCasters : MonoBehaviour
         uint baseMask = st.customLayers ? st.shadowLayers : (uint)data.renderingLayers;
         data.customShadowLayers = true;
         data.shadowRenderingLayers = baseMask | bit;
-        if (l.shadows == LightShadows.None) l.shadows = LightShadows.Soft;   // la luz cercana sí debe dar sombra
     }
 
     void Release(Light l, uint bit)

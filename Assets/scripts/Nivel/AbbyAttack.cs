@@ -42,14 +42,41 @@ public class AbbyAttack : MonoBehaviour
         motor = GetComponent<PlayerMotor>();
         cc = GetComponent<CharacterController>();
         self = GetComponent<IHittable>();
+        dash = GetComponent<AbbyDash>();
     }
+
+    void Start()
+    {
+        if (dash == null) dash = GetComponent<AbbyDash>();
+        var health = GetComponent<PlayerHealth>();
+        if (health != null) health.PerfectDodge += OnPerfectDodge;
+    }
+
+    void OnDestroy()
+    {
+        var health = GetComponent<PlayerHealth>();
+        if (health != null) health.PerfectDodge -= OnPerfectDodge;
+    }
+
+    /// <summary>Esquiva perfecta: cámara lenta un instante y el siguiente golpe es crítico.</summary>
+    void OnPerfectDodge()
+    {
+        critUntil = Time.time + 1.6f;
+        HitStop.Do(0.35f, 0.25f);
+        CombatFx.Burst(transform.position + Vector3.up * 0.8f, new Color(1f, 0.5f, 0.95f), 25, 4f, 0.15f, 0.5f, 0f);
+        FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "¡ESQUIVA PERFECTA!", new Color(1f, 0.6f, 1f), 1.2f);
+    }
+
+    AbbyDash dash;
+    float critUntil;
 
     void OnDisable() { hitbox.End(); phase = Phase.None; }
 
     void Update()
     {
         float dt = Time.deltaTime;
-        if (motor != null && motor.WorldMoveDirection.sqrMagnitude > 0.01f) Facing = motor.WorldMoveDirection;
+        if (dash != null && dash.IsDashing) Facing = dash.Direction;
+        else if (motor != null && motor.WorldMoveDirection.sqrMagnitude > 0.01f) Facing = motor.WorldMoveDirection;
 
         if (!PauseMenu.IsPaused && Pressed())
         {
@@ -68,14 +95,24 @@ public class AbbyAttack : MonoBehaviour
                 {
                     phase = Phase.Active; timer = 0f;
                     int i = Mathf.Clamp(combo, 0, damage.Length - 1);
+                    bool last = i == damage.Length - 1;
+                    // tajo de impulso: atacar durante el dash o justo al terminarlo
+                    bool dashStrike = dash != null && (dash.IsDashing || Time.time - dash.LastDashEnd < 0.2f);
+                    if (dashStrike) Facing = dash.Direction;
+                    // crítico: después de una esquiva perfecta
+                    bool crit = Time.time < critUntil;
+                    float mult = RunState.DamageMultiplier * (dashStrike ? 1.6f : 1f) * (crit ? 2f : 1f);
+                    if (crit) critUntil = 0f;
                     hitbox.Begin(new HitInfo
                     {
-                        damage = damage[i] * RunState.DamageMultiplier, knockback = knockback[i], hitStop = i == damage.Length - 1 ? 0.07f : 0.035f,
+                        damage = damage[i] * mult, knockback = dashStrike ? 12f : knockback[i],
+                        hitStop = last || dashStrike || crit ? 0.07f : 0.035f,
                         sourcePosition = transform.position, attacker = self,
                     }, Facing);
-                    bool last = i == damage.Length - 1;
-                    CombatFx.Slash(transform.position + Vector3.up * 0.75f + Facing * 0.55f, Facing, last ? 1.9f : 1.5f,
-                                   last ? new Color(1f, 0.85f, 0.5f) : slashColor, combo % 2 == 1);
+                    Color col = crit ? new Color(1f, 0.4f, 0.9f) : dashStrike ? new Color(0.5f, 1f, 1f) : last ? new Color(1f, 0.85f, 0.5f) : slashColor;
+                    CombatFx.Slash(transform.position + Vector3.up * 0.75f + Facing * 0.55f, Facing, last || dashStrike || crit ? 2f : 1.5f, col, combo % 2 == 1);
+                    if (dashStrike) FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "¡Tajo de impulso!", new Color(0.6f, 1f, 1f));
+                    if (crit) FloorDirector.Popup(transform.position + Vector3.up * 2.5f, "¡CRÍTICO!", new Color(1f, 0.5f, 0.95f));
                 }
                 break;
             case Phase.Active:

@@ -144,7 +144,7 @@ public class ExteriorBuilder : MonoBehaviour
     public Vector3 PlayerSpawn => transform.TransformPoint(new Vector3(0f, 0f, -22f));
 
 #if UNITY_EDITOR
-    Material mGrass, mStone, mStoneDark, mBrick, mBark, mMetal, mTuft, mRock, mCliff;
+    Material mGrass, mStone, mStoneDark, mBrick, mBark, mMetal, mTuft, mRock, mCliff, mThatch, mPlank, mDoor;
     Material[] mLeaves;
     Material mLampGlow, mWindowLit, mWindowDark, mRune, mPortal, mBeacon, mFountainWater, mLakeWater, mWaterfall, mSpray, mFirefly, mCloud;
 
@@ -164,6 +164,7 @@ public class ExteriorBuilder : MonoBehaviour
         BuildTower();
         BuildLakeAndWaterfall();
         BuildAbyss();
+        BuildHuts();
         BuildTrees();
         BuildRocks();
         BuildGrass();
@@ -641,7 +642,7 @@ public class ExteriorBuilder : MonoBehaviour
             foreach (Transform o in root)
                 if (o.name.StartsWith("Isla_") && Vector2.Distance(p2, new Vector2(o.localPosition.x, o.localPosition.z)) < size * 2.6f + 30f) crowded = true;
             if (crowded) continue;
-            FloatingIsland(root, i, new Vector3(p2.x, near ? R(-22f, 12f) : R(-45f, 35f), p2.y), size);
+            FloatingIsland(root, i, new Vector3(p2.x, near ? R(-22f, 12f) : R(-45f, 35f), p2.y), size, near && size >= 9f);
             i++;
         }
     }
@@ -651,7 +652,7 @@ public class ExteriorBuilder : MonoBehaviour
     /// La tapa y la roca comparten exactamente el mismo contorno a y = 0, y los árboles se apoyan en la altura real
     /// de la tapa: nada queda enterrado ni flotando.
     /// </summary>
-    void FloatingIsland(Transform root, int index, Vector3 pos, float size)
+    void FloatingIsland(Transform root, int index, Vector3 pos, float size, bool withHut = false)
     {
         var isl = Group("Isla_" + index, root);
         isl.localPosition = pos;
@@ -742,14 +743,16 @@ public class ExteriorBuilder : MonoBehaviour
             var tp = new Vector2(Mathf.Cos(ang) * r, Mathf.Sin(ang) * r);
             bool tooClose = false;
             foreach (var o in placedTrees) if (Vector2.Distance(o, tp) < 2.8f) tooClose = true;
+            if (withHut && tp.magnitude < 3.6f) tooClose = true;   // espacio para la casita
             if (tooClose) continue;
             placedTrees.Add(tp);
             Tree(isl, tp.x, tp.y, TopHeight(ang, r) + 0.1f, R(1.3f, 2.3f), false);
             k++;
         }
 
+        if (withHut) Hut(isl, new Vector3(0f, dome - 0.05f, 0f), R(0f, 360f), 0.85f);
         // cristales que brillan en algunas islas y rocas sueltas flotando debajo
-        if (R(0f, 1f) < 0.5f)
+        if (!withHut && R(0f, 1f) < 0.5f)
             for (int c = 0; c < 3; c++)
             {
                 float ang = R(0f, Mathf.PI * 2f), r = R(0.2f, 0.5f) * size;
@@ -783,9 +786,149 @@ public class ExteriorBuilder : MonoBehaviour
 
     // ---------------- vegetación, rocas, pasto
 
+    // ---------------- caserío: casitas junto al camino sur y alrededor de la plaza
+
+    readonly List<Vector2> huts = new List<Vector2>();
+
+    void BuildHuts()
+    {
+        huts.Clear();
+        var root = Group("Caserio");
+        // (x, z): a los lados del camino sur y en las orillas de la plaza; la puerta mira hacia el camino
+        Vector2[] spots =
+        {
+            new Vector2(-9f, -19f), new Vector2(9.5f, -24f), new Vector2(-9.5f, -31f), new Vector2(10f, -35f),
+            new Vector2(-21f, -6f), new Vector2(-24f, 6f), new Vector2(20f, -12f), new Vector2(-18f, 22f), new Vector2(17f, 24f),
+        };
+        foreach (var s in spots)
+        {
+            if (!Free(s, 2.5f)) continue;
+            Vector2 toPath = s.y < -plazaRadius ? new Vector2(-Mathf.Sign(s.x), 0f) : -s.normalized;   // al camino o a la fuente
+            float yaw = Mathf.Atan2(toPath.x, toPath.y) * Mathf.Rad2Deg + R(-12f, 12f);
+            Hut(root, new Vector3(s.x, GroundHeight(s.x, s.y), s.y), yaw, R(0.95f, 1.2f));
+            huts.Add(s);
+        }
+    }
+
+    /// <summary>Casita de madera sobre base de piedra, techo de dos aguas, chimenea con humo, ventanas encendidas y farol en la puerta.</summary>
+    void Hut(Transform parent, Vector3 pos, float yaw, float scale)
+    {
+        var h = Group("Casita", parent);
+        h.localPosition = pos;
+        h.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        h.localScale = Vector3.one * scale;
+        float w = 3.2f, d = 2.8f, wallH = 2.1f;
+
+        var b = Primitive(h, PrimitiveType.Cube, "Base", new Vector3(0f, 0.15f, 0f), new Vector3(w + 0.4f, 0.5f, d + 0.4f), mStone);
+        b.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        var walls = Primitive(h, PrimitiveType.Cube, "Paredes", new Vector3(0f, 0.4f + wallH / 2f, 0f), new Vector3(w, wallH, d), mPlank);
+        Object.DestroyImmediate(walls.GetComponent<Collider>());
+        // vigas en las esquinas
+        foreach (var c in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
+            Object.DestroyImmediate(Primitive(h, PrimitiveType.Cube, "Viga", new Vector3(c.x * w / 2f, 0.4f + wallH / 2f, c.y * d / 2f), new Vector3(0.22f, wallH, 0.22f), mBark).GetComponent<Collider>());
+
+        // techo de dos aguas (con alero)
+        var roof = MeshObject(h, "Techo", Roof(w + 0.8f, d + 0.9f, 1.5f), mThatch, true, true);
+        roof.transform.localPosition = new Vector3(0f, 0.4f + wallH, 0f);
+        var gableMat = mPlank;
+        MeshObject(h, "Hastial", Gable(w, 1.4f, d / 2f + 0.01f), gableMat, true, true).transform.localPosition = new Vector3(0f, 0.4f + wallH, 0f);
+
+        // puerta (frente = +Z), ventanas, farol
+        Object.DestroyImmediate(Primitive(h, PrimitiveType.Cube, "Puerta", new Vector3(0f, 0.4f + 0.75f, d / 2f + 0.03f), new Vector3(0.85f, 1.5f, 0.08f), mDoor).GetComponent<Collider>());
+        foreach (var wp in new[] { new Vector3(-1f, 1.55f, d / 2f + 0.03f), new Vector3(1f, 1.55f, d / 2f + 0.03f) })
+        {
+            var win = MeshObject(h, "Ventana", Quad(0.55f, 0.55f, 10f, true), R(0f, 1f) < 0.8f ? mWindowLit : mWindowDark, false, false);
+            win.transform.localPosition = wp + Vector3.forward * 0.01f;
+            win.transform.localRotation = Quaternion.LookRotation(Vector3.back);
+        }
+        var side = MeshObject(h, "VentanaLado", Quad(0.55f, 0.55f, 10f, true), mWindowLit, false, false);
+        side.transform.localPosition = new Vector3(w / 2f + 0.03f, 1.55f, 0f);
+        side.transform.localRotation = Quaternion.LookRotation(Vector3.left);
+        var lantern = Primitive(h, PrimitiveType.Cube, "Farol", new Vector3(0.75f, 2f, d / 2f + 0.25f), new Vector3(0.2f, 0.28f, 0.2f), mLampGlow);
+        Object.DestroyImmediate(lantern.GetComponent<Collider>());
+        lantern.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var l = AddLight(h, "LuzPuerta", new Vector3(0.75f, 2f, d / 2f + 0.7f), new Color(1f, 0.7f, 0.4f), 6f, 5f, LightShadows.None);
+        l.gameObject.AddComponent<LightFlicker>().amount = 0.12f;
+
+        // chimenea con humo
+        var chim = Primitive(h, PrimitiveType.Cube, "Chimenea", new Vector3(w * 0.28f, 0.4f + wallH + 1.1f, -d * 0.2f), new Vector3(0.45f, 1.6f, 0.45f), mStone);
+        Object.DestroyImmediate(chim.GetComponent<Collider>());
+        Particles(h, "Humo", new Vector3(w * 0.28f, 0.4f + wallH + 2f, -d * 0.2f), mCloud, ps =>
+        {
+            var main = ps.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(3f, 5f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 0.8f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.6f, 1.2f);
+            main.startColor = new Color(0.75f, 0.7f, 0.75f, 0.28f);
+            main.maxParticles = 40;
+            main.prewarm = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var em = ps.emission; em.rateOverTime = 4f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 12f; sh.radius = 0.1f; sh.rotation = new Vector3(-90f, 0f, 0f);
+            var sz = ps.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.6f, 1, 2f));
+        });
+
+        // barril y leña junto a la casa
+        var barrel = Primitive(h, PrimitiveType.Cylinder, "Barril", new Vector3(-w / 2f - 0.5f, 0.45f, d / 2f - 0.3f), new Vector3(0.6f, 0.45f, 0.6f), mDoor);
+        barrel.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        for (int k = 0; k < 3; k++)
+        {
+            var log = Primitive(h, PrimitiveType.Cylinder, "Leña", new Vector3(-w / 2f - 0.45f, 0.15f + k * 0.22f, -0.5f + (k % 2) * 0.1f), new Vector3(0.22f, 0.6f, 0.22f), mBark);
+            log.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Object.DestroyImmediate(log.GetComponent<Collider>());
+        }
+
+        // collider sólido de la casa (paredes + base)
+        var col = h.gameObject.AddComponent<BoxCollider>();
+        col.center = new Vector3(0f, 1.5f, 0f);
+        col.size = new Vector3(w + 0.4f, 3f, d + 0.4f);
+    }
+
+    /// <summary>Techo de dos aguas: dos planos inclinados con la cumbrera a lo largo de X. Base en y = 0.</summary>
+    static Mesh Roof(float w, float d, float h)
+    {
+        float hx = w / 2f, hz = d / 2f;
+        var v = new List<Vector3>
+        {
+            // agua frontal (+Z)
+            new Vector3(-hx, 0f, hz), new Vector3(hx, 0f, hz), new Vector3(-hx, h, 0f), new Vector3(hx, h, 0f),
+            // agua trasera (-Z)
+            new Vector3(hx, 0f, -hz), new Vector3(-hx, 0f, -hz), new Vector3(hx, h, 0f), new Vector3(-hx, h, 0f),
+        };
+        float slope = Mathf.Sqrt(hz * hz + h * h);
+        var uv = new List<Vector2>
+        {
+            new Vector2(0, 0), new Vector2(w / 2f, 0), new Vector2(0, slope / 2f), new Vector2(w / 2f, slope / 2f),
+            new Vector2(0, 0), new Vector2(w / 2f, 0), new Vector2(0, slope / 2f), new Vector2(w / 2f, slope / 2f),
+        };
+        var t = new List<int> { 0, 3, 2, 0, 1, 3, 4, 7, 6, 4, 5, 7 };
+        var m = new Mesh { name = "Roof" };
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
+        m.RecalculateNormals(); m.RecalculateBounds();
+        return m;
+    }
+
+    /// <summary>Los dos triángulos que cierran los lados del techo (hastiales), en x = ±w/2.</summary>
+    static Mesh Gable(float w, float h, float hz)
+    {
+        float hx = w / 2f;
+        var v = new List<Vector3>
+        {
+            new Vector3(hx, 0f, hz), new Vector3(hx, 0f, -hz), new Vector3(hx, h, 0f),
+            new Vector3(-hx, 0f, -hz), new Vector3(-hx, 0f, hz), new Vector3(-hx, h, 0f),
+        };
+        var uv = new List<Vector2> { new Vector2(0, 0), new Vector2(hz, 0), new Vector2(hz / 2f, h / 2f), new Vector2(0, 0), new Vector2(hz, 0), new Vector2(hz / 2f, h / 2f) };
+        var t = new List<int> { 0, 1, 2, 3, 4, 5 };
+        var m = new Mesh { name = "Gable" };
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
+        m.RecalculateNormals(); m.RecalculateBounds();
+        return m;
+    }
+
     bool Free(Vector2 p, float margin)
     {
         if (PlateauSdf(p) > -2f - margin) return false;
+        foreach (var h in huts) if (Vector2.Distance(p, h) < 4.2f + margin) return false;          // casitas
         if (p.magnitude < plazaRadius + 2f + margin) return false;
         if (Mathf.Abs(p.x) < 3.5f + margin && p.y > -35f && p.y < StairsEndZ + 1f) return false;     // caminos y escalinata
         if (Vector2.Distance(p, lakeCenter) < lakeRadius - 3f + margin) return false;
@@ -1236,6 +1379,9 @@ public class ExteriorBuilder : MonoBehaviour
         mBark = Lit("Bark", bark, Color.white, 0.05f);
         mRock = Lit("Rock", stone, new Color(0.7f, 0.7f, 0.75f), 0.1f);
         mMetal = Lit("Metal", null, new Color(0.16f, 0.15f, 0.2f), 0.55f, 0.7f);
+        mThatch = Lit("Thatch", bark, new Color(0.95f, 0.6f, 0.35f), 0.02f);
+        mPlank = Lit("Plank", bark, new Color(1.25f, 1.05f, 0.85f), 0.05f);
+        mDoor = Lit("Door", bark, new Color(0.55f, 0.4f, 0.32f), 0.05f);
         mLeaves = new[]
         {
             Lit("Leaves_A", leaves, Color.white, 0.05f),

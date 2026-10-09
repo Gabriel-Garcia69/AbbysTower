@@ -44,6 +44,7 @@ public class PlayerHealth : MonoBehaviour, IHittable
         }
 
         if (invuln > 0f) invuln -= dt;
+        if (dodge > 0f) dodge -= dt;
         if (hurtFlash > 0f) hurtFlash -= dt;
         Color c = Color.white;
         if (hurtFlash > 0f) c = new Color(1f, 0.35f, 0.35f);
@@ -51,9 +52,25 @@ public class PlayerHealth : MonoBehaviour, IHittable
         if (sprites != null) foreach (var s in sprites) if (s != null) s.color = c;
     }
 
+    /// <summary>Invulnerable por el dash: si algo la iba a golpear en ese momento, cuenta como esquiva perfecta.</summary>
+    public void SetDodge(float seconds) => dodge = Mathf.Max(dodge, seconds);
+    public bool Dodging => dodge > 0f;
+    public event Action PerfectDodge;
+    float dodge, lastPerfect = -10f;
+
     public bool ReceiveHit(HitInfo hit)
     {
-        if (IsDead || invuln > 0f || hit.attacker == (IHittable)this) return false;
+        if (IsDead || hit.attacker == (IHittable)this) return false;
+        if (dodge > 0f)
+        {
+            if (Time.unscaledTime - lastPerfect > 0.6f)
+            {
+                lastPerfect = Time.unscaledTime;
+                PerfectDodge?.Invoke();
+            }
+            return false;
+        }
+        if (invuln > 0f) return false;
         Health = Mathf.Max(0f, Health - hit.damage);
         Vector3 away = transform.position - hit.sourcePosition; away.y = 0f;
         knock = (away.sqrMagnitude > 0.001f ? away.normalized : -transform.forward) * hit.knockback;

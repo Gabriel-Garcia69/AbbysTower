@@ -286,6 +286,7 @@ public class FloorLayout : MonoBehaviour
         }
         string id = "Wall" + side + (index > 0 ? "_" + index : "");
         CreateFace(parent, id, pos, inward, len, h, wallMaterial, k, k, true);
+        AddCap(parent, pos + Vector3.up * h / 2f, inward, len);
         CreateCollider(parent, "Collider_" + id, colCenter, colSize);
     }
 
@@ -325,14 +326,18 @@ public class FloorLayout : MonoBehaviour
         if (alongZ)
         {
             CreateFace(root, "WallE", new Vector3(width / 2, h / 2, 0f), Vector3.left, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(width / 2, h, 0f), Vector3.left, len);
             CreateFace(root, "WallW", new Vector3(-width / 2, h / 2, 0f), Vector3.right, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(-width / 2, h, 0f), Vector3.right, len);
             CreateCollider(root, "Collider_WallE", new Vector3(width / 2 + t / 2, h / 2, 0f), new Vector3(t, h + 2f, len + 2 * t));
             CreateCollider(root, "Collider_WallW", new Vector3(-width / 2 - t / 2, h / 2, 0f), new Vector3(t, h + 2f, len + 2 * t));
         }
         else
         {
             CreateFace(root, "WallN", new Vector3(0f, h / 2, width / 2), Vector3.back, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(0f, h, width / 2), Vector3.back, len);
             CreateFace(root, "WallS", new Vector3(0f, h / 2, -width / 2), Vector3.forward, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(0f, h, -width / 2), Vector3.forward, len);
             CreateCollider(root, "Collider_WallN", new Vector3(0f, h / 2, width / 2 + t / 2), new Vector3(len + 2 * t, h + 2f, t));
             CreateCollider(root, "Collider_WallS", new Vector3(0f, h / 2, -width / 2 - t / 2), new Vector3(len + 2 * t, h + 2f, t));
         }
@@ -561,6 +566,29 @@ public class FloorLayout : MonoBehaviour
         return exit;
     }
 
+    /// <summary>Tapa de piedra encima del muro (grosor visto desde arriba). Se oculta junto con el muro (WallCap).</summary>
+    void AddCap(Transform parent, Vector3 topCenter, Vector3 inward, float len)
+    {
+        float t = colliderThickness * 0.8f;
+        bool alongX = Mathf.Abs(inward.z) > 0.5f;   // muros N/S corren a lo largo de X
+        Vector3 pos = topCenter - inward * (t / 2f) + Vector3.up * (alongX ? 0.012f : 0.01f);
+        float w = alongX ? len + t : t, d = alongX ? t : len + t;
+        var go = CreateFace(parent, "Tapa", pos, Vector3.up, w, d, CapMaterial(), 1f / tileMeters, 1f / tileMeters, false);
+        go.AddComponent<WallCap>().inward = inward;
+    }
+
+    Material CapMaterial() => SavedMaterial("TapaMuro", () =>
+    {
+        var m = new Material(LitShader);
+#if UNITY_EDITOR
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Exterior/Stone.png");
+        if (tex != null && m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
+#endif
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.42f, 0.4f, 0.48f));
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.05f);
+        return m;
+    });
+
     // ------------------------------------------------------------------ decoración
 
     System.Random drng;
@@ -598,11 +626,15 @@ public class FloorLayout : MonoBehaviour
                 Rug(deco, new Vector2(r.size.x * 0.55f, r.size.y * 0.5f), new Color(0.38f, 0.07f, 0.08f), new Color(0.75f, 0.58f, 0.25f));
                 Banners(deco, r, gaps, new Color(0.55f, 0.1f, 0.12f));
                 Rubble(deco, r, gaps, 7);
+                // la 2a sala de combate esconde un cofre tras un Velo de Fase (enseña el impulso)
+                int n = 0;
+                foreach (var other in rooms) { if (other.type == RoomType.Combate) n++; if (other == r) break; }
+                if (n == 2) SecretAlcove(deco, r, gaps);
                 break;
             }
             case RoomType.Descanso:
             {
-                MerchantStall(deco, new Vector3(0f, 0f, hz - 1.4f));
+                MerchantStall(deco, new Vector3(0f, 0f, hz - 2.4f));   // con espacio detrás para el mercader
                 Shrine(deco, new Vector3(0f, 0f, -0.8f));
                 Rug(deco, new Vector2(4f, r.size.y * 0.7f), new Color(0.15f, 0.3f, 0.22f), new Color(0.75f, 0.65f, 0.35f));
                 Crate(deco, new Vector3(hx - 1.4f, 0f, hz - 1.2f), 0.75f);
@@ -737,11 +769,11 @@ public class FloorLayout : MonoBehaviour
         Prim(s, PrimitiveType.Cube, "Mostrador", new Vector3(0f, 0.55f, 0f), new Vector3(4.2f, 1.1f, 0.9f), wood, true);
         Prim(s, PrimitiveType.Cube, "Tablero", new Vector3(0f, 1.13f, 0f), new Vector3(4.4f, 0.06f, 1.05f), LitMaterial("MaderaClara", new Color(0.6f, 0.43f, 0.26f)), false);
         foreach (float x in new[] { -2.05f, 2.05f })
-            Prim(s, PrimitiveType.Cube, "Poste", new Vector3(x, 1.4f, 0.35f), new Vector3(0.14f, 2.8f, 0.14f), wood, false);
+            Prim(s, PrimitiveType.Cube, "Poste", new Vector3(x, 1.55f, 0.35f), new Vector3(0.14f, 3.1f, 0.14f), wood, false);
         // toldo a rayas
         for (int k = 0; k < 6; k++)
         {
-            var stripe = Prim(s, PrimitiveType.Cube, "Toldo", new Vector3(-1.9f + k * 0.76f, 2.75f, -0.05f), new Vector3(0.76f, 0.05f, 1.6f),
+            var stripe = Prim(s, PrimitiveType.Cube, "Toldo", new Vector3(-1.9f + k * 0.76f, 3.05f, 0.45f), new Vector3(0.76f, 0.05f, 2.3f),
                               LitMaterial(k % 2 == 0 ? "Tela_Toldo_A" : "Tela_Toldo_B", k % 2 == 0 ? new Color(0.6f, 0.15f, 0.3f) : new Color(0.85f, 0.75f, 0.55f)), false);
             stripe.transform.localRotation = Quaternion.Euler(-14f, 0f, 0f);
         }
@@ -756,6 +788,104 @@ public class FloorLayout : MonoBehaviour
         lt.transform.localPosition = new Vector3(0f, 2.3f, -0.6f);
         lt.type = LightType.Point; lt.range = 6f; lt.intensity = 6f; lt.color = new Color(1f, 0.75f, 0.45f); lt.shadows = LightShadows.Soft;
         lt.gameObject.AddComponent<LightFlicker>().amount = 0.1f;
+        Merchant(s, new Vector3(0f, 0f, 1.05f));
+    }
+
+    /// <summary>El mercader: viajero encapuchado con túnica, bufanda, mochila llena de cachivaches y bastón con farol.</summary>
+    void Merchant(Transform parent, Vector3 pos)
+    {
+        var m = NewChild(parent, "Mercader_Personaje");
+        m.localPosition = pos;
+        m.localRotation = Quaternion.Euler(0f, 180f, 0f);   // mira hacia la sala (-Z del puesto)
+        var body = NewChild(m, "Cuerpo");
+        var robe = LitMaterial("Tela_Mercader", new Color(0.32f, 0.2f, 0.45f));
+        var robeDark = LitMaterial("Tela_MercaderOscura", new Color(0.18f, 0.11f, 0.26f));
+        var scarf = LitMaterial("Tela_Bufanda", new Color(0.85f, 0.55f, 0.2f));
+        var skin = LitMaterial("Piel_Mercader", new Color(0.12f, 0.1f, 0.12f));
+
+        Prim(body, PrimitiveType.Cylinder, "Tunica", new Vector3(0f, 0.55f, 0f), new Vector3(0.95f, 0.55f, 0.85f), robe, true);
+        Prim(body, PrimitiveType.Cylinder, "Ruedo", new Vector3(0f, 0.08f, 0f), new Vector3(1.05f, 0.08f, 0.95f), robeDark, false);
+        Prim(body, PrimitiveType.Sphere, "Torso", new Vector3(0f, 1.2f, 0f), new Vector3(0.8f, 0.75f, 0.7f), robe, false);
+        Prim(body, PrimitiveType.Cylinder, "Bufanda", new Vector3(0f, 1.5f, 0f), new Vector3(0.62f, 0.08f, 0.58f), scarf, false);
+        var tail = Prim(body, PrimitiveType.Cube, "BufandaCola", new Vector3(0.18f, 1.25f, 0.3f), new Vector3(0.14f, 0.45f, 0.05f), scarf, false);
+        tail.transform.localRotation = Quaternion.Euler(10f, 0f, -8f);
+        // capucha con la cara en sombra y ojos que brillan
+        Prim(body, PrimitiveType.Sphere, "Capucha", new Vector3(0f, 1.82f, -0.04f), new Vector3(0.62f, 0.6f, 0.62f), robeDark, false);
+        Prim(body, PrimitiveType.Sphere, "Cara", new Vector3(0f, 1.78f, 0.14f), new Vector3(0.42f, 0.4f, 0.38f), skin, false);
+        var tip = Prim(body, PrimitiveType.Cube, "PuntaCapucha", new Vector3(0f, 2.1f, -0.2f), new Vector3(0.18f, 0.3f, 0.18f), robeDark, false);
+        tip.transform.localRotation = Quaternion.Euler(-35f, 45f, 0f);
+        foreach (float x in new[] { -0.08f, 0.08f })
+        {
+            var eye = Prim(body, PrimitiveType.Cube, "Ojo", new Vector3(x, 1.8f, 0.33f), new Vector3(0.06f, 0.04f, 0.02f), GlowMaterial("Glow_OjosMercader", new Color(1f, 0.85f, 0.4f)), false);
+            eye.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        // mochila enorme con ollas y rollos
+        var pack = Prim(body, PrimitiveType.Cube, "Mochila", new Vector3(0f, 1.35f, -0.48f), new Vector3(0.75f, 0.95f, 0.45f), LitMaterial("Cuero", new Color(0.4f, 0.25f, 0.14f)), false);
+        pack.transform.localRotation = Quaternion.Euler(-6f, 0f, 0f);
+        Prim(body, PrimitiveType.Cylinder, "Rollo", new Vector3(0f, 1.95f, -0.5f), new Vector3(0.2f, 0.42f, 0.2f), scarf, false).transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        Prim(body, PrimitiveType.Sphere, "Olla", new Vector3(0.38f, 1.0f, -0.55f), new Vector3(0.28f, 0.24f, 0.28f), MetalMaterial(), false);
+        // brazo que saluda (pivote en el hombro)
+        var arm = NewChild(body, "Brazo");
+        arm.localPosition = new Vector3(-0.38f, 1.4f, 0.05f);
+        Prim(arm, PrimitiveType.Cube, "Manga", new Vector3(-0.22f, 0f, 0f), new Vector3(0.45f, 0.16f, 0.16f), robe, false);
+        Prim(arm, PrimitiveType.Sphere, "Mano", new Vector3(-0.47f, 0f, 0f), Vector3.one * 0.14f, skin, false);
+        // bastón con farol
+        Prim(body, PrimitiveType.Cylinder, "Baston", new Vector3(0.55f, 1.05f, 0.1f), new Vector3(0.06f, 1.05f, 0.06f), LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f)), false);
+        var lamp = Prim(body, PrimitiveType.Cube, "Farolito", new Vector3(0.55f, 2.2f, 0.1f), new Vector3(0.16f, 0.22f, 0.16f), GlowMaterial("Glow_Farolito", new Color(1f, 0.7f, 0.35f)), false);
+        lamp.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        var npc = m.gameObject.AddComponent<MerchantNPC>();
+        npc.body = body;
+        npc.arm = arm;
+    }
+
+    /// <summary>Hueco en un muro libre, tapado por un Velo de Fase, con un cofre adentro.</summary>
+    void SecretAlcove(Transform parent, RoomSpec r, List<Gap> gaps)
+    {
+        // muro sin puertas: preferimos E, si no O
+        Side side = Side.E;
+        foreach (var g in gaps) if (g.side == Side.E) side = Side.W;
+        float sgn = side == Side.E ? 1f : -1f;
+        float hx = r.size.x / 2f;
+        float depth = 2.4f, width = 3f, h = wallHeight;
+        var a = NewChild(parent, "Escondite");
+        a.localPosition = new Vector3(sgn * (hx - depth / 2f), 0f, 0f);
+        var stone = StoneMaterial();
+
+        // paredes laterales del escondite (con collider)
+        foreach (float z in new[] { -width / 2f, width / 2f })
+            Prim(a, PrimitiveType.Cube, "ParedEscondite", new Vector3(0f, h / 2f, z), new Vector3(depth, h, 0.3f), stone, true);
+        Prim(a, PrimitiveType.Cube, "TechoEscondite", new Vector3(0f, h + 0.1f, 0f), new Vector3(depth, 0.2f, width + 0.3f), stone, false);
+
+        // el velo (frente del escondite)
+        var veil = new GameObject("VeloDeFase");
+        veil.transform.SetParent(a, false);
+        veil.transform.localPosition = new Vector3(-sgn * depth / 2f, h / 2f, 0f);
+        var box = veil.AddComponent<BoxCollider>();
+        box.size = new Vector3(0.3f, h + 2f, width);
+        foreach (float off in new[] { -0.03f, 0.03f })
+        {
+            var face = Prim(veil.transform, PrimitiveType.Cube, "Cara", new Vector3(off, 0f, 0f), new Vector3(0.02f, h, width - 0.3f), BeamMaterial(), false);
+            face.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        veil.AddComponent<PhaseVeil>();
+        Motes(veil.transform, Vector3.zero, new Vector3(0.2f, h, width), new Color(0.75f, 0.45f, 1f), 12f, 0.3f, 2f);
+
+        // cofre
+        var chest = NewChild(a, "Cofre");
+        chest.localPosition = new Vector3(sgn * 0.3f, 0f, 0f);
+        chest.localRotation = Quaternion.Euler(0f, sgn > 0 ? -90f : 90f, 0f);   // la tapa abre hacia la sala
+        var wood = LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f));
+        Prim(chest, PrimitiveType.Cube, "Caja", new Vector3(0f, 0.3f, 0f), new Vector3(1f, 0.6f, 0.65f), wood, true);
+        var lid = NewChild(chest, "TapaPivote");
+        lid.localPosition = new Vector3(0f, 0.6f, -0.32f);
+        Prim(lid, PrimitiveType.Cube, "Tapa", new Vector3(0f, 0.1f, 0.32f), new Vector3(1.04f, 0.2f, 0.68f), wood, false);
+        Prim(chest, PrimitiveType.Cube, "Herraje", new Vector3(0f, 0.3f, 0f), new Vector3(1.04f, 0.1f, 0.68f), GlowMaterial("Glow_Oro", new Color(1f, 0.75f, 0.35f)), false);
+        var lt = NewChild(chest, "Brillo").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, 1f, 0f);
+        lt.type = LightType.Point; lt.range = 4f; lt.intensity = 3f; lt.color = new Color(1f, 0.8f, 0.4f); lt.shadows = LightShadows.None;
+        var tc = chest.gameObject.AddComponent<TreasureChest>();
+        tc.lid = lid; tc.glow = lt; tc.fragments = 20;
     }
 
     void Shrine(Transform parent, Vector3 pos)
@@ -989,7 +1119,7 @@ public class FloorLayout : MonoBehaviour
         return go.transform;
     }
 
-    static void CreateFace(Transform parent, string faceName, Vector3 center, Vector3 inwardNormal, float width, float height, Material mat, float uScale, float vScale, bool castShadows = false)
+    static GameObject CreateFace(Transform parent, string faceName, Vector3 center, Vector3 inwardNormal, float width, float height, Material mat, float uScale, float vScale, bool castShadows = false)
     {
         var go = new GameObject(faceName);
         go.transform.SetParent(parent, false);
@@ -1003,6 +1133,7 @@ public class FloorLayout : MonoBehaviour
         mr.sharedMaterial = mat;
         // los muros son de una cara: TwoSided para que su sombra exista aunque se vean de espaldas
         mr.shadowCastingMode = castShadows ? UnityEngine.Rendering.ShadowCastingMode.TwoSided : UnityEngine.Rendering.ShadowCastingMode.Off;
+        return go;
     }
 
     static void CreateCollider(Transform parent, string colliderName, Vector3 center, Vector3 size)

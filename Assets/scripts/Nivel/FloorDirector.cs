@@ -22,7 +22,7 @@ public class FloorDirector : MonoBehaviour
 
     public static FloorDirector Instance { get; private set; }
 
-    struct PopupText { public Vector3 pos; public string text; public Color color; public float t; public float drift; }
+    struct PopupText { public Vector3 pos; public string text; public Color color; public float t; public float drift; public float life; }
 
     Transform player;
     PlayerHealth health;
@@ -54,6 +54,7 @@ public class FloorDirector : MonoBehaviour
             health = p.GetComponent<PlayerHealth>();
             if (health == null) health = p.AddComponent<PlayerHealth>();
             health.SetMaxHealth(playerMaxHealth + RunState.MaxHealthBonus, true);   // mejoras compradas al mercader
+            if (p.GetComponent<AbbyDash>() == null) p.AddComponent<AbbyDash>();
             if (p.GetComponent<AbbyAttack>() == null) p.AddComponent<AbbyAttack>();
             health.Died += OnPlayerDied;
             health.Damaged += _ => hurtVignette = 1f;
@@ -139,10 +140,10 @@ public class FloorDirector : MonoBehaviour
 
     // ------------------------------------------------------------------ API para otros scripts
 
-    public static void Popup(Vector3 worldPos, string text, Color color)
+    public static void Popup(Vector3 worldPos, string text, Color color, float life = 0.9f)
     {
         if (Instance == null) return;
-        Instance.popups.Add(new PopupText { pos = worldPos, text = text, color = color, t = 0f, drift = Random.Range(-0.4f, 0.4f) });
+        Instance.popups.Add(new PopupText { pos = worldPos, text = text, color = color, t = 0f, drift = life > 1.5f ? 0f : Random.Range(-0.4f, 0.4f), life = life });
     }
 
     public static void Banner(string top, string bottom, Color color, float seconds)
@@ -165,7 +166,7 @@ public class FloorDirector : MonoBehaviour
         for (int i = popups.Count - 1; i >= 0; i--)
         {
             var p = popups[i]; p.t += dt; popups[i] = p;
-            if (p.t > 0.9f) popups.RemoveAt(i);
+            if (p.t > p.life) popups.RemoveAt(i);
         }
 
         if (activeRoom != null && activeRoom.isBoss && boss == null)
@@ -207,12 +208,12 @@ public class FloorDirector : MonoBehaviour
             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 3.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             foreach (var p in popups)
             {
-                Vector3 sp = cam.WorldToScreenPoint(p.pos + new Vector3(p.drift, p.t * 1.2f, 0f));
+                Vector3 sp = cam.WorldToScreenPoint(p.pos + new Vector3(p.drift, Mathf.Min(p.t, 0.7f) * 1.2f, 0f));
                 if (sp.z < 0f) continue;
-                float a = 1f - Mathf.Clamp01((p.t - 0.5f) / 0.4f);
+                float a = 1f - Mathf.Clamp01((p.t - (p.life - 0.4f)) / 0.4f);
                 float pop = 1f + Mathf.Max(0f, 0.25f - p.t) * 2f;
                 st.fontSize = Mathf.RoundToInt(u * 3.2f * pop);
-                Text(new Rect(sp.x - 100, sh - sp.y - 20, 200, 40), p.text, st, new Color(p.color.r, p.color.g, p.color.b, a));
+                Text(new Rect(sp.x - 400, sh - sp.y - 20, 800, 40), p.text, st, new Color(p.color.r, p.color.g, p.color.b, a));
             }
 
             // barritas sobre enemigos heridos (no jefe)
@@ -294,7 +295,7 @@ public class FloorDirector : MonoBehaviour
         if (hintTimer > 0f && !dead && !completed)
         {
             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2f), alignment = TextAnchor.LowerCenter };
-            Text(new Rect(0, sh - u * 6f, sw, u * 4f), "WASD mover  ·  Espacio saltar  ·  Clic / J atacar (3 golpes)  ·  E comerciar  ·  Mouse cámara",
+            Text(new Rect(0, sh - u * 6f, sw, u * 4f), "WASD mover  ·  Espacio saltar  ·  Shift impulso  ·  Clic / J atacar (3 golpes)  ·  E comerciar  ·  Mouse cámara",
                  st, new Color(1f, 1f, 1f, 0.75f * Mathf.Clamp01(hintTimer)));
         }
 

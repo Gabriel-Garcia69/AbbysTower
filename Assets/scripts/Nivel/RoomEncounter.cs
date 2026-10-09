@@ -30,6 +30,17 @@ public class RoomEncounter : MonoBehaviour
     public int maxAlive = 4;
     [Tooltip("Nombre que muestra el HUD al entrar.")]
     public string displayName = "";
+    [Tooltip("Multiplica la vida de los enemigos integrados.")]
+    public float healthMultiplier = 1f;
+    [Tooltip("Nombre del jefe (si esta sala es la del jefe).")]
+    public string bossName = "";
+
+    TowerEnemy Prepare(TowerEnemy e)
+    {
+        e.ScaleHealth(healthMultiplier);
+        if (e.IsBoss && !string.IsNullOrEmpty(bossName)) e.customName = bossName;
+        return e;
+    }
     public Transform player;   // vacío = busca el tag "Player"
 
     public State Current { get; private set; } = State.Esperando;
@@ -108,14 +119,14 @@ public class RoomEncounter : MonoBehaviour
             return;
         }
         var kind = isBoss ? TowerEnemy.Kind.Jefe : (index % 3 == 2 ? TowerEnemy.Kind.Bruto : TowerEnemy.Kind.Sombra);
-        alive.Add(TowerEnemy.Create(kind, sp.position, transform, this, player).gameObject);
+        alive.Add(Prepare(TowerEnemy.Create(kind, sp.position, transform, this, player)).gameObject);
     }
 
     /// <summary>Agrega un enemigo a la pelea en curso (invocaciones del jefe).</summary>
     public void SpawnExtra(TowerEnemy.Kind kind, Vector3 position)
     {
         if (Current != State.Combate) return;
-        alive.Add(TowerEnemy.Create(kind, position, transform, this, player).gameObject);
+        alive.Add(Prepare(TowerEnemy.Create(kind, position, transform, this, player)).gameObject);
         Total++;
     }
 

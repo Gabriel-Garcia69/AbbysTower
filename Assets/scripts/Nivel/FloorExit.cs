@@ -60,8 +60,8 @@ public class FloorExit : MonoBehaviour
         if (d.magnitude > radius) return;
 
         used = true;
-        if (!string.IsNullOrEmpty(nextScene)) fadeT = 0f;
-        else if (FloorDirector.Instance != null) FloorDirector.Instance.CompleteFloor();
+        if (FloorDirector.Instance != null) FloorDirector.Instance.CompleteFloor(nextScene);   // pantalla de piso completado → siguiente piso
+        else if (!string.IsNullOrEmpty(nextScene)) fadeT = 0f;
         else { Debug.Log("¡Piso completado!"); messageTimer = 4f; }
     }
 

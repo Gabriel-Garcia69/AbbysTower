@@ -19,6 +19,10 @@ public class FloorDirector : MonoBehaviour
     [Tooltip("Material con el shader Abby/Particle (para que el shader de los efectos entre en el build).")]
     public Material fxMaterial;
     public float playerMaxHealth = 100f;
+    [Tooltip("Siguiente piso (al terminar este). Vacío = vuelve a returnScene.")]
+    public string nextScene = "";
+    [Tooltip("Más abajo que esto = cayó al vacío (reaparece en el último suelo firme).")]
+    public float killY = -3f;
 
     public static FloorDirector Instance { get; private set; }
 
@@ -55,6 +59,8 @@ public class FloorDirector : MonoBehaviour
             if (health == null) health = p.AddComponent<PlayerHealth>();
             health.SetMaxHealth(playerMaxHealth + RunState.MaxHealthBonus, true);   // mejoras compradas al mercader
             if (p.GetComponent<AbbyDash>() == null) p.AddComponent<AbbyDash>();
+            var fall = p.GetComponent<FallGuard>(); if (fall == null) fall = p.AddComponent<FallGuard>();
+            fall.killY = killY;
             if (p.GetComponent<AbbyAttack>() == null) p.AddComponent<AbbyAttack>();
             health.Died += OnPlayerDied;
             health.Damaged += _ => hurtVignette = 1f;
@@ -94,7 +100,7 @@ public class FloorDirector : MonoBehaviour
         activeRoom = room;
         if (room.isBoss)
         {
-            Banner("GUARDIÁN DE LA BASE", "Derrótalo para abrir el camino", new Color(1f, 0.35f, 0.3f), 3.5f);
+            Banner((string.IsNullOrEmpty(room.bossName) ? "Guardián" : room.bossName).ToUpper(), "Derrótalo para abrir el camino", new Color(1f, 0.35f, 0.3f), 3.5f);
             CameraShake.Shake(0.3f, 0.8f);
         }
         else Banner("¡EMBOSCADA!", string.IsNullOrEmpty(room.displayName) ? "" : room.displayName, new Color(1f, 0.65f, 0.35f), 2.2f);
@@ -104,7 +110,7 @@ public class FloorDirector : MonoBehaviour
     {
         if (room != activeRoom) return;
         activeRoom = null; boss = null;
-        if (room.isBoss) Banner("¡GUARDIÁN DERROTADO!", "La salida se ha abierto", new Color(1f, 0.85f, 0.45f), 4f);
+        if (room.isBoss) Banner("¡JEFE DERROTADO!", "La salida se ha abierto", new Color(1f, 0.85f, 0.45f), 4f);
         else if (room.Total > 0) Banner("SALA DESPEJADA", "Las puertas se abren", new Color(0.5f, 1f, 0.85f), 2f);
     }
 
@@ -113,7 +119,7 @@ public class FloorDirector : MonoBehaviour
     float fragPulse;
     void OnRunChanged() => fragPulse = 1f;
 
-    void OnBossEnraged(TowerEnemy e) => Banner("¡EL GUARDIÁN SE ENFURECE!", "", new Color(1f, 0.3f, 0.2f), 2f);
+    void OnBossEnraged(TowerEnemy e) => Banner("¡" + e.DisplayName.ToUpper() + " SE ENFURECE!", "", new Color(1f, 0.3f, 0.2f), 2f);
 
     void OnPlayerDied()
     {
@@ -125,9 +131,10 @@ public class FloorDirector : MonoBehaviour
     int lostFragments;
 
     /// <summary>Lo llama FloorExit al pisar la salida del jefe (sin siguiente escena asignada).</summary>
-    public void CompleteFloor()
+    public void CompleteFloor(string next = null)
     {
         if (completed) return;
+        if (!string.IsNullOrEmpty(next)) nextScene = next;
         completed = true; endTimer = 0f;
         float secs = Time.time - runStart;
         completeTime = $"{(int)(secs / 60f)}:{(int)(secs % 60f):00}";
@@ -179,8 +186,9 @@ public class FloorDirector : MonoBehaviour
             if (dead && endTimer > 3f) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             if (completed && endTimer > 1.5f && Continue())
             {
+                bool hasNext = !string.IsNullOrEmpty(nextScene) && Application.CanStreamedLevelBeLoaded(nextScene);
                 bool hasReturn = !string.IsNullOrEmpty(returnScene) && Application.CanStreamedLevelBeLoaded(returnScene);
-                SceneManager.LoadScene(hasReturn ? returnScene : SceneManager.GetActiveScene().name);
+                SceneManager.LoadScene(hasNext ? nextScene : hasReturn ? returnScene : SceneManager.GetActiveScene().name);
             }
         }
         else fade = Mathf.MoveTowards(fade, 0f, dt / 1.2f);

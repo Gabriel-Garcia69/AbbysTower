@@ -39,7 +39,15 @@ public class TowerEnemy : MonoBehaviour, IHittable
     public bool IsBoss => kind == Kind.Jefe;
     public bool Enraged { get; private set; }
     public float LastHitTime { get; private set; } = -10f;
-    public string DisplayName => kind == Kind.Jefe ? "Guardián de la Base" : kind == Kind.Bruto ? "Bruto" : "Sombra";
+    public string customName;
+    public string DisplayName => !string.IsNullOrEmpty(customName) ? customName : kind == Kind.Jefe ? "Guardián de la Base" : kind == Kind.Bruto ? "Bruto" : "Sombra";
+
+    /// <summary>Multiplica la vida (pisos más altos = enemigos más duros).</summary>
+    public void ScaleHealth(float mult)
+    {
+        if (mult <= 0f || Mathf.Approximately(mult, 1f)) return;
+        maxHealth *= mult; Health = maxHealth;
+    }
 
     public static readonly List<TowerEnemy> All = new List<TowerEnemy>();
     public static event Action<TowerEnemy> AnyDied;

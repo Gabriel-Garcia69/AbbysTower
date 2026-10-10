@@ -48,7 +48,9 @@ Shader "Abby/Particle"
             half4 frag(Varyings i) : SV_Target
             {
                 half4 c = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv) * _BaseColor * i.color;
-                c.rgb = MixFog(c.rgb, i.fog);
+                // aditivo (_DstBlend = One): la niebla solo lo apaga hacia negro; si le sumáramos el color de la niebla,
+                // cada brillo se volvería una mancha de niebla y juntos lavan toda la pantalla
+                c.rgb = _DstBlend < 1.5 ? MixFogColor(c.rgb, half3(0, 0, 0), i.fog) : MixFog(c.rgb, i.fog);
                 return c;
             }
             ENDHLSL

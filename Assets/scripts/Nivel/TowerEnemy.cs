@@ -40,6 +40,12 @@ public class TowerEnemy : MonoBehaviour, IHittable
     public bool Enraged { get; private set; }
     public float LastHitTime { get; private set; } = -10f;
     public string customName;
+    [Tooltip("Dormido: no se mueve hasta que Abby se acerca (wakeRadius) o lo golpea. Lo usa el piso de la Pereza.")]
+    public bool asleep;
+    public float wakeRadius = 3.2f;
+
+    /// <summary>Colores del piso actual (los pone FloorDirector según el pecado). null = colores de siempre.</summary>
+    public static Color? ThemeBody, ThemeEye;
     public string DisplayName => !string.IsNullOrEmpty(customName) ? customName : kind == Kind.Jefe ? "Guardián de la Base" : kind == Kind.Bruto ? "Bruto" : "Sombra";
 
     /// <summary>Multiplica la vida (pisos más altos = enemigos más duros).</summary>
@@ -105,6 +111,8 @@ public class TowerEnemy : MonoBehaviour, IHittable
                 eyeColor = new Color(1f, 0.22f, 0.15f); bodyColor = new Color(0.09f, 0.05f, 0.11f);
                 break;
         }
+        if (ThemeBody.HasValue) bodyColor = Color.Lerp(bodyColor, ThemeBody.Value, kind == Kind.Jefe ? 0.85f : 0.65f);
+        if (ThemeEye.HasValue) eyeColor = Color.Lerp(eyeColor, ThemeEye.Value, kind == Kind.Bruto ? 0.6f : 0.9f);
         var diff = Difficulty.Active;
         maxHealth *= diff.enemyHealth; moveSpeed *= diff.enemySpeed;
         Health = maxHealth;
@@ -223,6 +231,17 @@ public class TowerEnemy : MonoBehaviour, IHittable
         r.SetPropertyBlock(mpb);
     }
 
+    /// <summary>Despierta de golpe (sobresalto): pequeño salto, aviso y ataca pronto.</summary>
+    public void WakeUp()
+    {
+        if (!asleep) return;
+        asleep = false;
+        visual.localScale = Vector3.one;
+        cooldown = 0.5f;
+        FloorDirector.Popup(transform.position + Vector3.up * (1.6f * Scale + 0.4f), "!", new Color(1f, 0.85f, 0.3f), 1f);
+        CombatFx.Burst(transform.position + Vector3.up * Scale, eyeColor, 12, 3f, 0.12f, 0.4f);
+    }
+
     // ------------------------------------------------------------------ ciclo
 
     void OnEnable() => All.Add(this);
@@ -267,6 +286,17 @@ public class TowerEnemy : MonoBehaviour, IHittable
             case State.Chase:
             {
                 if (!playerAlive) break;
+                if (asleep)
+                {
+                    if (dist < wakeRadius) WakeUp();
+                    else
+                    {
+                        if (UnityEngine.Random.value < dt * 0.35f)
+                            FloorDirector.Popup(transform.position + Vector3.up * (1.6f * Scale + 0.2f), "z z z", new Color(0.7f, 0.85f, 1f, 0.8f), 1.6f);
+                        visual.localScale = new Vector3(1f, 0.92f + Mathf.Sin(bob * 1.6f) * 0.04f, 1f);   // respira dormido
+                        break;
+                    }
+                }
                 if (dist > 0.01f) facing = Vector3.Slerp(facing, toPlayer / dist, 8f * dt).normalized;
                 float speed = moveSpeed * (Enraged ? 1.35f : 1f);
                 Vector3 move = dist > attackRange * 0.7f ? facing * speed : Vector3.zero;
@@ -416,15 +446,21 @@ public class TowerEnemy : MonoBehaviour, IHittable
         return push;
     }
 
+    /// <summary>Límites para enemigos que no vienen de un RoomEncounter (p. ej. el cofre mímico): sala y tamaño.</summary>
+    public Transform boundsRoot;
+    public Vector2 boundsSize;
+
     void KeepInRoom()
     {
-        if (room == null) return;
-        Vector3 local = room.transform.InverseTransformPoint(transform.position);
-        float hx = room.size.x / 2f - radius - 0.4f, hz = room.size.y / 2f - radius - 0.4f;
+        Transform rt = room != null ? room.transform : boundsRoot;
+        if (rt == null) return;
+        Vector2 size = room != null ? room.size : boundsSize;
+        Vector3 local = rt.InverseTransformPoint(transform.position);
+        float hx = size.x / 2f - radius - 0.4f, hz = size.y / 2f - radius - 0.4f;
         local.x = Mathf.Clamp(local.x, -hx, hx);
         local.z = Mathf.Clamp(local.z, -hz, hz);
         local.y = 0f;
-        transform.position = room.transform.TransformPoint(local);
+        transform.position = rt.TransformPoint(local);
     }
 
     // ------------------------------------------------------------------ jefe
@@ -472,6 +508,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         if (state == State.Spawning || state == State.Dying) return false;
         if (hit.attacker is TowerEnemy) return false;   // sin fuego amigo
 
+        if (asleep) WakeUp();
         Health -= hit.damage;
         LastHitTime = Time.time;
         flash = 0.08f;

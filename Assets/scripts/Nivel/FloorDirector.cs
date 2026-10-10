@@ -23,6 +23,8 @@ public class FloorDirector : MonoBehaviour
     public string nextScene = "";
     [Tooltip("Más abajo que esto = cayó al vacío (reaparece en el último suelo firme).")]
     public float killY = -3f;
+    [Tooltip("Pecado del piso: niebla, luz ambiente y color de los enemigos (Base = lo que tenga la escena).")]
+    public FloorTheme theme = FloorTheme.Base;
 
     public static FloorDirector Instance { get; private set; }
 
@@ -47,6 +49,14 @@ public class FloorDirector : MonoBehaviour
     {
         Instance = this;
         if (fxMaterial != null) CombatFx.sourceMaterial = fxMaterial;
+        if (theme != FloorTheme.Base)
+        {
+            var p = FloorThemes.Get(theme);
+            FloorThemes.ApplyAtmosphere(theme);
+            TowerEnemy.ThemeBody = p.enemyBody;
+            TowerEnemy.ThemeEye = p.enemyEye;
+        }
+        else { TowerEnemy.ThemeBody = null; TowerEnemy.ThemeEye = null; }
     }
 
     void Start()

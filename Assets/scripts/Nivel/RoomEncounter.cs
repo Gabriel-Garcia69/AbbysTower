@@ -35,9 +35,13 @@ public class RoomEncounter : MonoBehaviour
     [Tooltip("Nombre del jefe (si esta sala es la del jefe).")]
     public string bossName = "";
 
+    [Tooltip("Los enemigos aparecen dormidos y despiertan al acercarse Abby (piso de la Pereza).")]
+    public bool sleepingEnemies;
+
     TowerEnemy Prepare(TowerEnemy e)
     {
         e.ScaleHealth(healthMultiplier);
+        if (sleepingEnemies && !e.IsBoss) e.asleep = true;
         if (e.IsBoss && !string.IsNullOrEmpty(bossName)) e.customName = bossName;
         return e;
     }

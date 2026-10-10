@@ -190,7 +190,7 @@ public class PauseMenu : MonoBehaviour
     {
         BuildItems();
         float pw = Mathf.Min(sw - 4f * u, 56f * u), bh = 6.6f * u, gap = 1.3f * u;
-        float ph = 25f * u + items.Count * (bh + gap) + 7f * u;
+        float ph = 25f * u + items.Count * (bh + gap) + 11f * u;
         Rect panel = PanelRect(sw, sh, u, pw, ph);
         DrawPanel(panel, u);
 
@@ -199,6 +199,8 @@ public class PauseMenu : MonoBehaviour
         Text(new Rect(panel.x, panel.y + 14.6f * u, pw, 3f * u), "ABBY'S TOWER   ·   " + SceneLabel(), 1.9f * u, false, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
         var diff = Difficulty.Active;
         Text(new Rect(panel.x + 2f * u, panel.y + 17.6f * u, pw - 4f * u, 3f * u), "Modo: " + diff.name, FitSize("Modo: " + diff.name, 1.9f * u, pw - 4f * u, true), true, TextAnchor.MiddleCenter, diff.color);
+        string found = $"◆ Reliquias {SecretTracker.Relics}/{SecretTracker.TotalRelics}   ·   Escondites {SecretTracker.Hideouts}   ·   Notas {SecretTracker.Notes}";
+        Text(new Rect(panel.x, panel.yMax - 9.5f * u, pw, 3f * u), found, FitSize(found, 1.7f * u, pw - 4f * u, false), false, TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.55f, 0.75f));
 
         float y0 = panel.y + 22f * u, x = panel.x + 3f * u, w = pw - 6f * u;
         DrawHighlight(new Rect(x, y0 + selAnim * (bh + gap), w, bh), Gold, u, t);

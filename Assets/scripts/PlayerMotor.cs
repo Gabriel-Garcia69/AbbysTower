@@ -24,6 +24,21 @@ public class PlayerMotor : MonoBehaviour
     public Vector3 WorldMoveDirection { get; private set; }
     public bool IsMoving { get; private set; }
     public bool IsGrounded { get; private set; }
+    /// <summary>Multiplicador de velocidad vigente (1 = normal). Lo bajan la niebla de la Pereza, el empacho de la Gula, etc.</summary>
+    public float SpeedScale => Time.time < _slowUntil ? _slowFactor : 1f;
+
+    float _slowFactor = 1f, _slowUntil;
+    Vector3 _push;
+
+    /// <summary>Ralentiza a Abby unos segundos. Si ya está más lenta por otra cosa, se queda el efecto más fuerte.</summary>
+    public void Slow(float factor, float seconds)
+    {
+        if (Time.time >= _slowUntil || factor < _slowFactor) _slowFactor = factor;
+        _slowUntil = Mathf.Max(_slowUntil, Time.time + seconds);
+    }
+
+    /// <summary>Empuje externo (m/s) solo para este cuadro: vórtices, corrientes. Se suma al movimiento.</summary>
+    public void Push(Vector3 velocity) => _push += velocity;
 
     CharacterController _cc;
     IMoveInput _input;
@@ -54,7 +69,7 @@ public class PlayerMotor : MonoBehaviour
         IsMoving = wish.sqrMagnitude > 0.0001f;
         if (IsMoving) WorldMoveDirection = wish.normalized;
 
-        _horizontalVelocity = Vector3.MoveTowards(_horizontalVelocity, wish * speed, acceleration * dt);
+        _horizontalVelocity = Vector3.MoveTowards(_horizontalVelocity, wish * speed * SpeedScale, acceleration * dt);
 
         // Suelo / coyote time / salto
         bool grounded = _cc.isGrounded;
@@ -75,7 +90,8 @@ public class PlayerMotor : MonoBehaviour
         _verticalVelocity += Physics.gravity.y * gravityScale * dt;
 
         // UNA sola llamada a Move por frame
-        _cc.Move((_horizontalVelocity + Vector3.up * _verticalVelocity) * dt);
+        _cc.Move((_horizontalVelocity + _push + Vector3.up * _verticalVelocity) * dt);
+        _push = Vector3.zero;
         IsGrounded = _cc.isGrounded;
     }
 }

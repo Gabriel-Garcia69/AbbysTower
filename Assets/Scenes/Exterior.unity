@@ -142612,6 +142612,14 @@ MonoBehaviour:
   collisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  onlyBlockUnder:
+  - Ext_Terreno
+  - Ext_AbbysTower
+  - ParedRoca
+  - CuerpoEscalinata
+  - Descanso
+  - BloqueLado
+  minBlockerSize: 2
   minCollisionDistance: 0.8
   pullInSmoothTime: 0.05
   returnSmoothTime: 0.35

@@ -46,6 +46,11 @@ public class MouseOrbitCamera : MonoBehaviour
     [SerializeField] float collisionRadius = 0.3f;
     [Tooltip("Capas que bloquean la cámara. Los colliders del jugador se ignoran siempre.")]
     [SerializeField] LayerMask collisionMask = ~0;
+    [Tooltip("Si tiene nombres, solo bloquean la cámara los colliders que cuelgan de un objeto con alguno de esos nombres " +
+             "(p. ej. el suelo y la torre). Vacío = bloquea todo. Por nombre para que sobreviva a regenerar la escena.")]
+    [SerializeField] string[] onlyBlockUnder = new string[0];
+    [Tooltip("Colliders más chicos que esto (su lado más largo, en m) no bloquean: postes, braseros, rocas…")]
+    [SerializeField] float minBlockerSize = 0f;
     [Tooltip("Lo más cerca que puede quedar la cámara del pivote (m).")]
     [SerializeField] float minCollisionDistance = 0.8f;
     [Tooltip("Qué tan rápido se acerca al chocar (s). Bajo = no atraviesa paredes.")]
@@ -147,6 +152,7 @@ public class MouseOrbitCamera : MonoBehaviour
                 var h = hits[i];
                 if (h.distance <= 0f && h.point == Vector3.zero) continue;   // empezó dentro del collider: no sirve para medir
                 if (player != null && h.collider.transform.IsChildOf(player)) continue;
+                if (!Blocks(h.collider)) continue;
                 allowed = Mathf.Min(allowed, Mathf.Max(minCollisionDistance, h.distance));
             }
         }
@@ -168,6 +174,29 @@ public class MouseOrbitCamera : MonoBehaviour
 
         var lp = cam.transform.localPosition;
         cam.transform.localPosition = new Vector3(lp.x, lp.y, -currentDistance);
+    }
+
+    readonly System.Collections.Generic.Dictionary<Collider, bool> blockCache = new System.Collections.Generic.Dictionary<Collider, bool>();
+
+    /// <summary>¿Este collider debe acercar la cámara? (se calcula una vez por collider)</summary>
+    bool Blocks(Collider c)
+    {
+        if (blockCache.TryGetValue(c, out bool b)) return b;
+        b = true;
+        if (minBlockerSize > 0f)
+        {
+            Vector3 s = c.bounds.size;
+            b = Mathf.Max(s.x, Mathf.Max(s.y, s.z)) >= minBlockerSize;
+        }
+        if (b && onlyBlockUnder != null && onlyBlockUnder.Length > 0)
+        {
+            b = false;
+            for (var t = c.transform; t != null && !b; t = t.parent)
+                foreach (var n in onlyBlockUnder)
+                    if (t.name == n) { b = true; break; }
+        }
+        blockCache[c] = b;
+        return b;
     }
 
     static void Lock(bool locked)

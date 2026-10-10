@@ -291,11 +291,16 @@ public class ExteriorBuilder : MonoBehaviour
         MeshObject(root, "Fondo", Disc(4.1f, 48, 4, 1.5f, 0.04f), mStoneDark, false, false);
         MeshObject(root, "Agua", Disc(4.12f, 96, 24, 1f, 0.52f), mFountainWater, false, false);
 
-        var col = MeshObject(root, "Columna", Cylinder(0.55f, 0.4f, 1.65f, 20, 1.5f, true), mStone, true, true);
-        col.AddComponent<CapsuleCollider>().radius = 0.6f;
+        // columna: del fondo de la pileta hasta dentro del fondo del plato (su tapa queda oculta dentro)
+        var col = MeshObject(root, "Columna", Cylinder(0.55f, 0.42f, 1.4f, 20, 1.5f, true), mStone, true, true);
+        var colCap = col.AddComponent<CapsuleCollider>(); colCap.radius = 0.6f; colCap.height = 1.9f; colCap.center = new Vector3(0f, 0.95f, 0f);
         var bowl = MeshObject(root, "Plato", Ring(1.75f, 1.5f, 0.35f, 40, 1.5f), mStone, true, true);
         bowl.transform.localPosition = new Vector3(0f, 1.55f, 0f);
-        MeshObject(root, "PlatoFondo", Cylinder(1.75f, 0.6f, 0.25f, 40, 1.5f, false), mStone, true, false).transform.localPosition = new Vector3(0f, 1.3f, 0f);
+        // fondo del plato: cono invertido que nace en la columna (r 0.42) y abre hasta el borde exterior del plato (r 1.75):
+        // antes estaba al revés (ancho abajo, angosto arriba) y dejaba abierto el anillo bajo el plato: se veía flotando
+        var under = MeshObject(root, "PlatoFondo", Cylinder(0.42f, 1.75f, 0.3f, 40, 1.5f, true), mStone, true, false);
+        under.transform.localPosition = new Vector3(0f, 1.25f, 0f);
+        under.AddComponent<MeshCollider>().sharedMesh = under.GetComponent<MeshFilter>().sharedMesh;
         MeshObject(root, "PlatoBase", Disc(1.5f, 40, 2, 1.5f, 1.58f), mStoneDark, false, false);
         MeshObject(root, "AguaPlato", Disc(1.52f, 64, 10, 1f, 1.82f), mFountainWater, false, false);
         MeshObject(root, "Surtidor", Cylinder(0.2f, 0.12f, 0.75f, 12, 1f, true), mStone, true, false).transform.localPosition = new Vector3(0f, 1.6f, 0f);

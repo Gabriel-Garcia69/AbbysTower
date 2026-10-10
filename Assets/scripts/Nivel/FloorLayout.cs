@@ -1,0 +1,1553 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+public enum RoomType { Inicio, Combate, Descanso, Antesala, Jefe, Prueba }
+
+/// <summary>Estructura vertical de una sala de Prueba.</summary>
+public enum RoomFeature
+{
+    Ninguna,
+    Foso,      // el centro de la sala es un vacío: se cruza saltando entre plataformas (un hueco pide salto + dash)
+    Ascenso,   // la salida norte está en alto: escalera → terraza → salto + dash → plataforma → escalera → cornisa
+}
+
+[Serializable]
+public class RoomSpec
+{
+    public string name = "Sala";
+    public RoomType type = RoomType.Combate;
+    [Tooltip("Centro de la sala en el plano (x, z), en metros.")]
+    public Vector2 center;
+    [Tooltip("Tamaño del área jugable (ancho x, fondo z), en metros.")]
+    public Vector2 size = new Vector2(16f, 12f);
+    [Tooltip("Cuántos enemigos aparecen al entrar (solo Combate). En Jefe siempre es 1.")]
+    public int enemies = 3;
+    [Tooltip("Altura del suelo de la sala (m). Un pasillo entre salas de distinta altura va a la altura mayor: la sala baja necesita un Ascenso para llegar a esa puerta.")]
+    public float elevation;
+    public RoomFeature feature;
+}
+
+[Serializable]
+public class CorridorSpec
+{
+    [Tooltip("Índices de las salas que une. Tienen que estar alineadas en X o en Z.")]
+    public int from, to;
+    public float width = 4f;
+}
+
+/// <summary>
+/// Genera un piso completo de la torre: salas + pasillos rectos, muros con huecos para las puertas,
+/// puertas de energía que se cierran durante los combates, puntos de aparición y la salida al siguiente piso.
+///
+/// Los muros visibles son de UNA cara (miran hacia adentro): los que quedan entre la cámara y Abby
+/// se vuelven invisibles solos, pero sus colliders siguen bloqueando. Mismo truco que LevelRoom.
+///
+/// Uso: clic derecho en el componente → "Generar piso". Los datos por defecto son el Piso 1.
+/// </summary>
+public class FloorLayout : MonoBehaviour
+{
+    [Header("Salas y pasillos (por defecto: Piso 1)")]
+    public RoomSpec[] rooms = DefaultFloor1Rooms();
+    public CorridorSpec[] corridors = DefaultFloor1Corridors();
+
+    [Header("Medidas")]
+    public float wallHeight = 3f;
+    public float colliderThickness = 1f;
+    [Tooltip("Metros que cubre una repetición de la textura (128 px = 2 m a 64 px por metro).")]
+    public float tileMeters = 2f;
+
+    [Header("Materiales (si faltan se usan los de Assets/Materials)")]
+    public Material floorMaterial;
+    public Material wallMaterial;
+    public Material doorMaterial;
+    [Tooltip("Suelo oscuro bajo todo el piso: es lo que ve la cámara cuando queda fuera de una sala.")]
+    public Material outsideMaterial;
+    public float outsideMargin = 30f;
+
+    [Header("Iluminación")]
+    [Tooltip("Antorchas en los muros de cada sala (el color depende del tipo de sala).")]
+    public bool torches = true;
+    public float torchRange = 10f;
+    public float torchIntensity = 16f;
+    [Tooltip("Luz colgante en el centro de cada sala (da la sombra principal de los personajes).")]
+    public float centerLightIntensity = 14f;
+    [Tooltip("Cuántas antorchas por sala proyectan sombra (las del muro N primero). Cada luz puntual con sombra renderiza la escena 6 veces: es lo que más cuesta en FPS.")]
+    public int shadowTorchesPerRoom = 2;
+
+    [Header("Enemigos (vacío = las salas no se cierran todavía)")]
+    public GameObject enemyPrefab;
+    public GameObject bossPrefab;
+
+    [Header("Decoración")]
+    [Tooltip("Pilares, alfombras, estandartes, escombros, brasas flotando, arena y trono del jefe, mercader y santuario.")]
+    public bool decorations = true;
+    public int decorSeed = 11;
+
+    [Header("Salida")]
+    [Tooltip("Escena que se carga al usar la salida (tiene que estar en Build Settings). Vacío = pantalla de 'Piso completado' y vuelve a returnScene.")]
+    public string nextScene = "";
+    public string returnScene = "Exterior";
+    public string floorTitle = "PISO 1";
+    public string floorSubtitle = "La Base de la Torre";
+
+    [Header("Dificultad del piso")]
+    public string bossName = "Guardián de la Base";
+    [Tooltip("Multiplica la vida de todos los enemigos del piso (incluido el jefe).")]
+    public float enemyHealthMultiplier = 1f;
+
+    const string Prefix = "Floor_";
+
+    /// <summary>Piso 2 — Las Galerías Colgantes: foso con plataformas, sala de ascenso y la segunda mitad en alto.</summary>
+    public static RoomSpec[] DefaultFloor2Rooms() => new[]
+    {
+        new RoomSpec { name = "0 Inicio",                 type = RoomType.Inicio,   center = new Vector2(0f, 0f),     size = new Vector2(12f, 10f), enemies = 0 },
+        new RoomSpec { name = "1 Combate (horda 1)",      type = RoomType.Combate,  center = new Vector2(0f, 22f),    size = new Vector2(18f, 14f), enemies = 5 },
+        new RoomSpec { name = "2 Prueba (foso)",          type = RoomType.Prueba,   center = new Vector2(0f, 46f),    size = new Vector2(18f, 18f), feature = RoomFeature.Foso },
+        new RoomSpec { name = "3 Combate (horda 2)",      type = RoomType.Combate,  center = new Vector2(26f, 46f),   size = new Vector2(20f, 16f), enemies = 7 },
+        new RoomSpec { name = "4 Prueba (ascenso)",       type = RoomType.Prueba,   center = new Vector2(26f, 70f),   size = new Vector2(16f, 16f), feature = RoomFeature.Ascenso },
+        new RoomSpec { name = "5 Descanso / Tienda",      type = RoomType.Descanso, center = new Vector2(26f, 92f),   size = new Vector2(14f, 10f), elevation = 4.5f },
+        new RoomSpec { name = "6 Antesala",               type = RoomType.Antesala, center = new Vector2(26f, 108f),  size = new Vector2(10f, 8f),  elevation = 4.5f },
+        new RoomSpec { name = "7 Jefe",                   type = RoomType.Jefe,     center = new Vector2(26f, 132f),  size = new Vector2(26f, 20f), elevation = 4.5f, enemies = 1 },
+    };
+
+    public static CorridorSpec[] DefaultFloor2Corridors() => new[]
+    {
+        new CorridorSpec { from = 0, to = 1 },
+        new CorridorSpec { from = 1, to = 2 },
+        new CorridorSpec { from = 2, to = 3 },
+        new CorridorSpec { from = 3, to = 4 },
+        new CorridorSpec { from = 4, to = 5 },   // sale en alto (4.5 m)
+        new CorridorSpec { from = 5, to = 6 },
+        new CorridorSpec { from = 6, to = 7 },
+    };
+
+    public static RoomSpec[] DefaultFloor1Rooms() => new[]
+    {
+        new RoomSpec { name = "0 Inicio",              type = RoomType.Inicio,   center = new Vector2(0f, 0f),    size = new Vector2(12f, 10f), enemies = 0 },
+        new RoomSpec { name = "1 Combate (horda 1)",   type = RoomType.Combate,  center = new Vector2(0f, 22f),   size = new Vector2(18f, 14f), enemies = 3 },
+        new RoomSpec { name = "2 Combate (horda 2)",   type = RoomType.Combate,  center = new Vector2(30f, 22f),  size = new Vector2(18f, 14f), enemies = 5 },
+        new RoomSpec { name = "3 Descanso / Tienda",   type = RoomType.Descanso, center = new Vector2(30f, 0f),   size = new Vector2(14f, 10f), enemies = 0 },
+        new RoomSpec { name = "4 Combate (horda 3)",   type = RoomType.Combate,  center = new Vector2(30f, 46f),  size = new Vector2(22f, 16f), enemies = 7 },
+        new RoomSpec { name = "5 Antesala",            type = RoomType.Antesala, center = new Vector2(30f, 66f),  size = new Vector2(10f, 8f),  enemies = 0 },
+        new RoomSpec { name = "6 Jefe",                type = RoomType.Jefe,     center = new Vector2(30f, 88f),  size = new Vector2(26f, 20f), enemies = 1 },
+    };
+
+    public static CorridorSpec[] DefaultFloor1Corridors() => new[]
+    {
+        new CorridorSpec { from = 0, to = 1 },
+        new CorridorSpec { from = 1, to = 2 },
+        new CorridorSpec { from = 2, to = 3 },   // desvío opcional a la tienda
+        new CorridorSpec { from = 2, to = 4 },
+        new CorridorSpec { from = 4, to = 5 },
+        new CorridorSpec { from = 5, to = 6 },
+    };
+
+    // ------------------------------------------------------------------ generación
+
+    enum Side { N, S, E, W }
+
+    struct Gap { public Side side; public float offset, width, elevation; }
+
+    float roomHeight;   // alto de los muros de la sala que se está generando
+
+    // Súbelo cada vez que cambie lo que genera Build(): las escenas con un piso de una versión anterior se regeneran solas.
+    const int LayoutVersion = 3;
+    [SerializeField, HideInInspector] int builtVersion;
+
+    void Awake()
+    {
+        // Red de seguridad: si olvidaste generarlo (o regenerarlo tras cambiar el código), se crea al iniciar.
+        if (transform.Find(Prefix + "Rooms") == null || builtVersion != LayoutVersion) Build();
+    }
+
+    void OnValidate()
+    {
+        wallHeight = Mathf.Max(1f, wallHeight);
+        colliderThickness = Mathf.Max(0.1f, colliderThickness);
+        tileMeters = Mathf.Max(0.25f, tileMeters);
+#if UNITY_EDITOR
+        // piso generado con código viejo: se regenera al abrir la escena (no se puede crear/borrar objetos dentro de OnValidate)
+        if (!Application.isPlaying && builtVersion != LayoutVersion && gameObject.scene.IsValid())
+            EditorApplication.delayCall += () =>
+            {
+                if (this == null || Application.isPlaying || builtVersion == LayoutVersion) return;
+                Build();
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+                Debug.Log($"[FloorLayout] {gameObject.scene.name}: piso regenerado (versión {LayoutVersion}). Guarda la escena.");
+            };
+#endif
+    }
+
+    [ContextMenu("Generar piso")]
+    public void Build()
+    {
+        Clear();
+#if UNITY_EDITOR
+        LoadDefaultMaterials();
+#endif
+        var roomsRoot = NewChild(transform, Prefix + "Rooms");
+        var corrRoot = NewChild(transform, Prefix + "Corridors");
+
+        // 1) huecos en los muros de cada sala, según los pasillos que llegan
+        var gaps = new List<Gap>[rooms.Length];
+        for (int i = 0; i < rooms.Length; i++) gaps[i] = new List<Gap>();
+        foreach (var c in corridors)
+        {
+            if (!ValidCorridor(c, out Side sideFrom, out Side sideTo)) continue;
+            // los pasillos son rectos y salen del centro del muro (las salas están alineadas);
+            // van a la altura de la sala más alta: en la sala baja el hueco queda en alto
+            float elev = Mathf.Max(rooms[c.from].elevation, rooms[c.to].elevation);
+            gaps[c.from].Add(new Gap { side = sideFrom, width = c.width, offset = 0f, elevation = elev - rooms[c.from].elevation });
+            gaps[c.to].Add(new Gap { side = sideTo, width = c.width, offset = 0f, elevation = elev - rooms[c.to].elevation });
+        }
+
+        // 2) salas
+        var roomObjects = new Transform[rooms.Length];
+        var encounters = new RoomEncounter[rooms.Length];
+        for (int i = 0; i < rooms.Length; i++)
+        {
+            RoomSpec r = rooms[i];
+            var root = NewChild(roomsRoot, r.name);
+            root.localPosition = new Vector3(r.center.x, r.elevation, r.center.y);
+            roomObjects[i] = root;
+
+            // los muros suben lo necesario para que quepa la puerta más alta
+            roomHeight = wallHeight;
+            foreach (var g in gaps[i]) roomHeight = Mathf.Max(roomHeight, g.elevation + wallHeight);
+
+            if (r.feature == RoomFeature.Foso) CreatePitFloor(root, r);
+            else CreateFloor(root, r.size.x, r.size.y);
+            foreach (Side s in new[] { Side.N, Side.S, Side.E, Side.W })
+                CreateWallWithGaps(root, r.size, s, gaps[i].FindAll(g => g.side == s));
+
+            // puertas: una por hueco
+            var doors = new List<LevelDoor>();
+            foreach (var g in gaps[i]) doors.Add(CreateDoor(root, r.size, g));
+
+            encounters[i] = SetupRoomContent(root, r, doors);
+            if (torches) AddTorches(root, r, gaps[i]);
+            if (decorations) AddDecor(root, r, gaps[i], i);
+            if (r.feature == RoomFeature.Foso) BuildPit(root, r, gaps[i]);
+            if (r.feature == RoomFeature.Ascenso) BuildAscent(root, r, gaps[i]);
+        }
+
+        // 3) pasillos
+        foreach (var c in corridors)
+        {
+            if (!ValidCorridor(c, out Side sideFrom, out _)) continue;
+            roomHeight = wallHeight;
+            CreateCorridor(corrRoot, rooms[c.from], rooms[c.to], sideFrom, c.width, Mathf.Max(rooms[c.from].elevation, rooms[c.to].elevation));
+        }
+
+        // 4) suelo exterior oscuro, un poco por debajo para no pelear con los pisos
+        CreateOutside();
+
+        // 5) salida en la sala del jefe (se activa al derrotarlo)
+        for (int i = 0; i < rooms.Length; i++)
+        {
+            if (rooms[i].type != RoomType.Jefe) continue;
+            var exit = CreateExit(roomObjects[i], rooms[i]);
+            exit.unlockedBy = encounters[i];
+        }
+
+        // 6) director del piso: vida y ataque de Abby, HUD, muerte y final del piso
+        var systems = NewChild(transform, Prefix + "Systems");
+        var director = systems.gameObject.AddComponent<FloorDirector>();
+        director.floorTitle = floorTitle;
+        director.floorSubtitle = floorSubtitle;
+        director.returnScene = returnScene;
+        director.fxMaterial = FxMaterial();
+        director.nextScene = nextScene;
+        float lowest = 0f;
+        foreach (var r in rooms) lowest = Mathf.Min(lowest, r.elevation);
+        director.killY = transform.position.y + lowest - 3f;   // más abajo que esto = caíste al vacío
+        builtVersion = LayoutVersion;
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying) EditorUtility.SetDirty(gameObject);
+#endif
+    }
+
+    [ContextMenu("Borrar piso")]
+    public void Clear()
+    {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            GameObject c = transform.GetChild(i).gameObject;
+            if (!c.name.StartsWith(Prefix)) continue;
+            if (Application.isPlaying) Destroy(c); else DestroyImmediate(c);
+        }
+    }
+
+    /// <summary>Posición (mundo) donde aparece Abby: centro de la sala de Inicio.</summary>
+    public Vector3 PlayerSpawn
+    {
+        get
+        {
+            foreach (var r in rooms)
+                if (r.type == RoomType.Inicio)
+                    return transform.TransformPoint(new Vector3(r.center.x, 0f, r.center.y));
+            return transform.position;
+        }
+    }
+
+    bool ValidCorridor(CorridorSpec c, out Side sideFrom, out Side sideTo)
+    {
+        sideFrom = sideTo = Side.N;
+        if (c.from < 0 || c.to < 0 || c.from >= rooms.Length || c.to >= rooms.Length || c.from == c.to)
+        {
+            Debug.LogWarning($"FloorLayout: pasillo {c.from}→{c.to} con índices inválidos.", this);
+            return false;
+        }
+        Vector2 a = rooms[c.from].center, b = rooms[c.to].center;
+        if (Mathf.Abs(a.x - b.x) < 0.01f) { sideFrom = b.y > a.y ? Side.N : Side.S; sideTo = b.y > a.y ? Side.S : Side.N; return true; }
+        if (Mathf.Abs(a.y - b.y) < 0.01f) { sideFrom = b.x > a.x ? Side.E : Side.W; sideTo = b.x > a.x ? Side.W : Side.E; return true; }
+        Debug.LogWarning($"FloorLayout: las salas {rooms[c.from].name} y {rooms[c.to].name} no están alineadas en X ni en Z; el pasillo se omite.", this);
+        return false;
+    }
+
+    // ------------------------------------------------------------------ piezas
+
+    void CreateFloor(Transform parent, float w, float d)
+    {
+        float k = 1f / tileMeters, t = colliderThickness;
+        CreateFace(parent, "Floor", Vector3.zero, Vector3.up, w, d, floorMaterial, k, k);
+        CreateCollider(parent, "Collider_Floor", new Vector3(0f, -t / 2, 0f), new Vector3(w, t, d));
+    }
+
+    /// <summary>Muro de un lado de la sala, partido en tramos para dejar los huecos de las puertas.</summary>
+    void CreateWallWithGaps(Transform parent, Vector2 size, Side side, List<Gap> gaps)
+    {
+        bool ns = side == Side.N || side == Side.S;
+        float length = ns ? size.x : size.y;
+        float half = length / 2f;
+
+        // tramos sólidos entre huecos (coordenada a lo largo del muro, de -half a +half)
+        var cuts = new List<Vector2>();
+        foreach (var g in gaps) cuts.Add(new Vector2(g.offset - g.width / 2f, g.offset + g.width / 2f));
+        cuts.Sort((p, q) => p.x.CompareTo(q.x));
+
+        float cursor = -half;
+        int n = 0;
+        foreach (var cut in cuts)
+        {
+            if (cut.x > cursor) CreateWallSegment(parent, size, side, cursor, cut.x, n++, 0f, roomHeight);
+            cursor = Mathf.Max(cursor, cut.y);
+        }
+        if (cursor < half) CreateWallSegment(parent, size, side, cursor, half, n++, 0f, roomHeight);
+
+        // puertas en alto: muro debajo del hueco (y encima, si la sala es más alta que la puerta)
+        foreach (var g in gaps)
+        {
+            float a = g.offset - g.width / 2f, b = g.offset + g.width / 2f;
+            if (g.elevation > 0.01f) CreateWallSegment(parent, size, side, a, b, n++, 0f, g.elevation, false);
+            if (g.elevation + wallHeight < roomHeight - 0.01f) CreateWallSegment(parent, size, side, a, b, n++, g.elevation + wallHeight, roomHeight);
+        }
+    }
+
+    void CreateWallSegment(Transform parent, Vector2 size, Side side, float a, float b, int index, float y0, float y1, bool cap = true)
+    {
+        float len = b - a, h = y1 - y0;
+        if (len < 0.01f || h < 0.01f) return;
+        float mid = (a + b) / 2f, cy = (y0 + y1) / 2f, t = colliderThickness, k = 1f / tileMeters;
+        float hx = size.x / 2f, hz = size.y / 2f;
+
+        Vector3 pos, inward, colCenter, colSize;
+        float extra = y1 >= roomHeight - 0.01f ? 2f : 0f;   // el de arriba sube 2 m extra (no se puede saltar por encima)
+        switch (side)
+        {
+            case Side.N: pos = new Vector3(mid, cy, hz);  inward = Vector3.back;    colCenter = new Vector3(mid, cy + extra / 2f, hz + t / 2);  colSize = new Vector3(len, h + extra, t); break;
+            case Side.S: pos = new Vector3(mid, cy, -hz); inward = Vector3.forward; colCenter = new Vector3(mid, cy + extra / 2f, -hz - t / 2); colSize = new Vector3(len, h + extra, t); break;
+            case Side.E: pos = new Vector3(hx, cy, mid);  inward = Vector3.left;    colCenter = new Vector3(hx + t / 2, cy + extra / 2f, mid);  colSize = new Vector3(t, h + extra, len); break;
+            default:     pos = new Vector3(-hx, cy, mid); inward = Vector3.right;   colCenter = new Vector3(-hx - t / 2, cy + extra / 2f, mid); colSize = new Vector3(t, h + extra, len); break;
+        }
+        string id = "Wall" + side + (index > 0 ? "_" + index : "");
+        CreateFace(parent, id, pos, inward, len, h, wallMaterial, k, k, true);
+        if (cap) AddCap(parent, pos + Vector3.up * h / 2f, inward, len);
+        CreateCollider(parent, "Collider_" + id, colCenter, colSize);
+    }
+
+    void CreateCorridor(Transform parent, RoomSpec a, RoomSpec b, Side sideFromA, float width, float elevation = 0f)
+    {
+        float h = wallHeight, t = colliderThickness, k = 1f / tileMeters;
+        bool alongZ = sideFromA == Side.N || sideFromA == Side.S;
+        Vector3 start, end;   // bordes de las dos salas, en el eje del pasillo
+        if (alongZ)
+        {
+            float sgn = sideFromA == Side.N ? 1f : -1f;
+            start = new Vector3(a.center.x, 0f, a.center.y + sgn * a.size.y / 2f);
+            end = new Vector3(b.center.x, 0f, b.center.y - sgn * b.size.y / 2f);
+        }
+        else
+        {
+            float sgn = sideFromA == Side.E ? 1f : -1f;
+            start = new Vector3(a.center.x + sgn * a.size.x / 2f, 0f, a.center.y);
+            end = new Vector3(b.center.x - sgn * b.size.x / 2f, 0f, b.center.y);
+        }
+        float len = Vector3.Distance(start, end);
+        if (len < 0.01f) return;
+
+        var root = NewChild(parent, $"Pasillo {a.name.Split(' ')[0]}-{b.name.Split(' ')[0]}");
+        root.localPosition = (start + end) / 2f + Vector3.up * elevation;
+
+        float w = alongZ ? width : len, d = alongZ ? len : width;
+        CreateFloor(root, w, d);
+        if (torches)
+        {
+            var lt = NewChild(root, "Luz").gameObject.AddComponent<Light>();
+            lt.transform.localPosition = new Vector3(0f, wallHeight - 0.4f, 0f);
+            lt.type = LightType.Point; lt.range = Mathf.Max(6f, len * 0.7f); lt.intensity = 6f;
+            lt.color = new Color(0.55f, 0.75f, 1f); lt.shadows = LightShadows.None;
+        }
+
+        if (alongZ)
+        {
+            CreateFace(root, "WallE", new Vector3(width / 2, h / 2, 0f), Vector3.left, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(width / 2, h, 0f), Vector3.left, len);
+            CreateFace(root, "WallW", new Vector3(-width / 2, h / 2, 0f), Vector3.right, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(-width / 2, h, 0f), Vector3.right, len);
+            CreateCollider(root, "Collider_WallE", new Vector3(width / 2 + t / 2, h / 2, 0f), new Vector3(t, h + 2f, len + 2 * t));
+            CreateCollider(root, "Collider_WallW", new Vector3(-width / 2 - t / 2, h / 2, 0f), new Vector3(t, h + 2f, len + 2 * t));
+        }
+        else
+        {
+            CreateFace(root, "WallN", new Vector3(0f, h / 2, width / 2), Vector3.back, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(0f, h, width / 2), Vector3.back, len);
+            CreateFace(root, "WallS", new Vector3(0f, h / 2, -width / 2), Vector3.forward, len, h, wallMaterial, k, k, true);
+            AddCap(root, new Vector3(0f, h, -width / 2), Vector3.forward, len);
+            CreateCollider(root, "Collider_WallN", new Vector3(0f, h / 2, width / 2 + t / 2), new Vector3(len + 2 * t, h + 2f, t));
+            CreateCollider(root, "Collider_WallS", new Vector3(0f, h / 2, -width / 2 - t / 2), new Vector3(len + 2 * t, h + 2f, t));
+        }
+    }
+
+    LevelDoor CreateDoor(Transform parent, Vector2 size, Gap g)
+    {
+        float h = wallHeight, hx = size.x / 2f, hz = size.y / 2f;
+        Vector3 pos; Quaternion rot;
+        switch (g.side)
+        {
+            case Side.N: pos = new Vector3(g.offset, 0f, hz);  rot = Quaternion.identity; break;
+            case Side.S: pos = new Vector3(g.offset, 0f, -hz); rot = Quaternion.identity; break;
+            case Side.E: pos = new Vector3(hx, 0f, g.offset);  rot = Quaternion.Euler(0f, 90f, 0f); break;
+            default:     pos = new Vector3(-hx, 0f, g.offset); rot = Quaternion.Euler(0f, 90f, 0f); break;
+        }
+        var door = NewChild(parent, "Puerta" + g.side);
+        door.localPosition = pos + Vector3.up * g.elevation;
+        door.localRotation = rot;
+
+        // barrera visible desde los dos lados (dos caras opuestas) + collider
+        var visual = NewChild(door, "Barrera");
+        float us = 1f / 2f, vs = 1f / h; // la textura de energía mide 2 m de ancho y cubre el alto una vez
+        CreateFace(visual, "CaraA", new Vector3(0f, h / 2, 0f), Vector3.back, g.width, h, doorMaterial, us, vs, false);
+        CreateFace(visual, "CaraB", new Vector3(0f, h / 2, 0f), Vector3.forward, g.width, h, doorMaterial, us, vs, false);
+        var col = door.gameObject.AddComponent<BoxCollider>();
+        col.center = new Vector3(0f, h / 2, 0f);
+        col.size = new Vector3(g.width, h + 2f, 0.5f);
+
+        var ld = door.gameObject.AddComponent<LevelDoor>();
+        ld.barrier = visual.gameObject;
+        ld.blocker = col;
+        var glow = NewChild(door, "Brillo").gameObject.AddComponent<Light>();
+        glow.transform.localPosition = new Vector3(0f, h * 0.5f, 0f);
+        glow.type = LightType.Point; glow.range = 7f; glow.intensity = 10f;
+        glow.color = new Color(0.35f, 0.95f, 1f); glow.shadows = LightShadows.None;
+        ld.glow = glow;
+        ld.SetClosed(false);
+        return ld;
+    }
+
+    RoomEncounter SetupRoomContent(Transform root, RoomSpec r, List<LevelDoor> doors)
+    {
+        switch (r.type)
+        {
+            case RoomType.Inicio:
+            {
+                var spawn = NewChild(root, "PlayerSpawn");
+                spawn.localPosition = Vector3.zero;
+                return null;
+            }
+            case RoomType.Descanso:
+            {
+                // Placeholder de la tienda: mostrador al fondo (con decoración se arma el puesto del mercader y el santuario).
+                // La economía (recursos → monedas → equipo) va aparte.
+                if (!decorations)
+                {
+                    var counter = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    counter.name = "Tienda (placeholder)";
+                    counter.transform.SetParent(root, false);
+                    counter.transform.localPosition = new Vector3(0f, 0.6f, r.size.y / 2f - 1.5f);
+                    counter.transform.localScale = new Vector3(4f, 1.2f, 1f);
+                }
+                var light = NewChild(root, "Luz");
+                light.localPosition = new Vector3(0f, 2.5f, 0f);
+                var l = light.gameObject.AddComponent<Light>();
+                l.type = LightType.Point; l.range = 10f; l.intensity = 3f; l.color = new Color(1f, 0.8f, 0.5f);
+                return null;
+            }
+            case RoomType.Combate:
+            case RoomType.Jefe:
+            {
+                bool boss = r.type == RoomType.Jefe;
+                int count = boss ? 1 : Mathf.Max(0, r.enemies);
+                var points = NewChild(root, "SpawnPoints");
+                var list = new List<Transform>();
+                for (int i = 0; i < count; i++)
+                {
+                    var p = NewChild(points, "Spawn_" + i);
+                    p.localPosition = boss ? new Vector3(0f, 0f, r.size.y * 0.25f) : SpawnOffset(i, count, r.size);
+                    list.Add(p);
+                }
+                var enc = root.gameObject.AddComponent<RoomEncounter>();
+                enc.size = r.size;
+                enc.doors = doors.ToArray();
+                enc.spawnPoints = list.ToArray();
+                enc.enemyPrefab = boss ? bossPrefab : enemyPrefab;
+                enc.isBoss = boss;
+                enc.maxAlive = 4;
+                enc.healthMultiplier = enemyHealthMultiplier;
+                enc.bossName = bossName;
+                if (boss) enc.displayName = bossName;
+                else
+                {
+                    int n = 0;
+                    foreach (var other in rooms) { if (other.type == RoomType.Combate) n++; if (other == r) break; }
+                    enc.displayName = "Sala de la Horda " + (n <= 3 ? new[] { "I", "II", "III" }[n - 1] : n.ToString());
+                }
+                return enc;
+            }
+            default:
+                return null;
+        }
+    }
+
+    static Color RoomLightColor(RoomType t)
+    {
+        switch (t)
+        {
+            case RoomType.Inicio:   return new Color(0.6f, 0.8f, 1f);    // frío, tranquilo
+            case RoomType.Descanso: return new Color(1f, 0.78f, 0.45f);  // cálido, seguro
+            case RoomType.Antesala: return new Color(0.75f, 0.45f, 1f);  // morado, inquietante
+            case RoomType.Prueba:   return new Color(0.35f, 1f, 0.85f);  // turquesa, desafío
+            case RoomType.Jefe:     return new Color(1f, 0.3f, 0.2f);    // rojo, peligro
+            default:                return new Color(1f, 0.6f, 0.3f);    // antorcha
+        }
+    }
+
+    /// <summary>Antorchas a 1/4 y 3/4 de los muros N, E y O (el S casi nunca se ve), esquivando los huecos de las puertas.</summary>
+    void AddTorches(Transform root, RoomSpec r, List<Gap> gaps)
+    {
+        Color c = RoomLightColor(r.type);
+        float y = r.feature == RoomFeature.Ascenso ? 4.2f : wallHeight * 0.7f;   // en el ascenso, por encima de las terrazas
+        int shadowsLeft = shadowTorchesPerRoom;
+
+        var center = NewChild(root, "LuzCentral").gameObject.AddComponent<Light>();
+        center.transform.localPosition = new Vector3(0f, roomHeight + 2f, -r.size.y * 0.1f);
+        center.type = LightType.Point;
+        center.range = Mathf.Max(r.size.x, r.size.y) * 0.9f;
+        center.intensity = centerLightIntensity * Mathf.Max(1f, Mathf.Max(r.size.x, r.size.y) / 16f);
+        center.color = Color.Lerp(c, Color.white, 0.55f);
+        center.shadows = LightShadows.Soft;
+        foreach (Side side in r.feature == RoomFeature.Ascenso ? new[] { Side.E, Side.W } : new[] { Side.N, Side.E, Side.W })   // en el ascenso el muro N queda tapado por la cornisa
+        {
+            bool ns = side == Side.N;
+            float len = ns ? r.size.x : r.size.y;
+            foreach (float along in new[] { -len / 4f, len / 4f })
+            {
+                bool blocked = false;
+                foreach (var g in gaps)
+                    if (g.side == side && Mathf.Abs(along - g.offset) < g.width / 2f + 0.8f) blocked = true;
+                if (blocked) continue;
+
+                Vector3 wallPos, inward;
+                switch (side)
+                {
+                    case Side.N: wallPos = new Vector3(along, y, r.size.y / 2f); inward = Vector3.back; break;
+                    case Side.E: wallPos = new Vector3(r.size.x / 2f, y, along); inward = Vector3.left; break;
+                    default:     wallPos = new Vector3(-r.size.x / 2f, y, along); inward = Vector3.right; break;
+                }
+                var torch = NewChild(root, "Antorcha");
+                torch.localPosition = wallPos + inward * 0.15f;
+
+                var flame = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                flame.name = "Llama";
+                flame.transform.SetParent(torch, false);
+                flame.transform.localScale = new Vector3(0.18f, 0.28f, 0.18f);
+                DestroyImmediate(flame.GetComponent<Collider>());
+                var fr = flame.GetComponent<MeshRenderer>();
+                fr.sharedMaterial = TorchMaterialFor(c);
+                fr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+                var lt = NewChild(torch, "Luz").gameObject.AddComponent<Light>();
+                lt.transform.localPosition = inward * 0.5f;
+                lt.type = LightType.Point; lt.range = torchRange; lt.intensity = torchIntensity; lt.color = c;
+                lt.shadows = shadowsLeft-- > 0 ? LightShadows.Soft : LightShadows.None;
+                torch.gameObject.AddComponent<LightFlicker>();
+            }
+        }
+    }
+
+    readonly Dictionary<Color, Material> torchMats = new Dictionary<Color, Material>();
+
+    /// <summary>Material emisivo del color de la sala (se reutiliza; en el editor se guarda en Assets/Materials).</summary>
+    Material TorchMaterialFor(Color c)
+    {
+        if (torchMats.TryGetValue(c, out var m) && m != null) return m;
+#if UNITY_EDITOR
+        string path = "Assets/Materials/Torch_" + ColorUtility.ToHtmlStringRGB(c) + ".mat";
+        m = AssetDatabase.LoadAssetAtPath<Material>(path);
+#endif
+        if (m == null)
+        {
+            Shader sh = Shader.Find("Universal Render Pipeline/Unlit");
+            if (sh == null) sh = Shader.Find("Unlit/Color");
+            m = new Material(sh) { name = "Torch" };
+            Color hdr = c * 4f; hdr.a = 1f;   // HDR para que el Bloom la haga brillar
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", hdr);
+            if (m.HasProperty("_Color")) m.SetColor("_Color", hdr);
+#if UNITY_EDITOR
+            AssetDatabase.CreateAsset(m, path);
+#endif
+        }
+        torchMats[c] = m;
+        return m;
+    }
+
+    /// <summary>Reparte los enemigos en un anillo alrededor del centro, lejos de las puertas.</summary>
+    static Vector3 SpawnOffset(int i, int count, Vector2 size)
+    {
+        float ang = (i + 0.5f) / count * Mathf.PI * 2f;
+        return new Vector3(Mathf.Cos(ang) * size.x * 0.28f, 0f, Mathf.Sin(ang) * size.y * 0.28f);
+    }
+
+    FloorExit CreateExit(Transform room, RoomSpec r)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.name = "Salida";
+        go.transform.SetParent(room, false);
+        go.transform.localPosition = new Vector3(0f, 0.05f, r.size.y / 2f - (decorations ? 4.6f : 2.5f));   // delante del trono
+        go.transform.localScale = new Vector3(2.5f, 0.05f, 2.5f);
+        DestroyImmediate(go.GetComponent<Collider>());   // no debe bloquear; se detecta por distancia
+        var exit = go.AddComponent<FloorExit>();
+        exit.nextScene = nextScene;
+        exit.radius = 1.4f;
+
+        // haz de luz + chispas que suben (se encienden al derrotar al jefe)
+        var fx = NewChild(room, "Salida_Haz");
+        fx.localPosition = go.transform.localPosition;
+        var beam = Prim(fx, PrimitiveType.Cylinder, "Haz", new Vector3(0f, 4f, 0f), new Vector3(2.2f, 4f, 2.2f), BeamMaterial(), false);
+        beam.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var lt = NewChild(fx, "Luz").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, 1.5f, 0f);
+        lt.type = LightType.Point; lt.range = 9f; lt.intensity = 12f; lt.color = new Color(0.4f, 1f, 0.95f); lt.shadows = LightShadows.None;
+        fx.gameObject.AddComponent<LightFlicker>().amount = 0.15f;
+        Motes(fx, Vector3.zero, new Vector3(2f, 0.2f, 2f), new Color(0.5f, 1f, 0.95f), 30f, 1.6f, 2.5f);
+        exit.unlockedFx = fx.gameObject;
+        fx.gameObject.SetActive(false);
+        return exit;
+    }
+
+    /// <summary>Tapa de piedra encima del muro (grosor visto desde arriba). Se oculta junto con el muro (WallCap).</summary>
+    void AddCap(Transform parent, Vector3 topCenter, Vector3 inward, float len)
+    {
+        float t = colliderThickness * 0.8f;
+        bool alongX = Mathf.Abs(inward.z) > 0.5f;   // muros N/S corren a lo largo de X
+        Vector3 pos = topCenter - inward * (t / 2f) + Vector3.up * (alongX ? 0.012f : 0.01f);
+        float w = alongX ? len + t : t, d = alongX ? t : len + t;
+        var go = CreateFace(parent, "Tapa", pos, Vector3.up, w, d, CapMaterial(), 1f / tileMeters, 1f / tileMeters, false);
+        go.AddComponent<WallCap>().inward = inward;
+    }
+
+    Material CapMaterial() => SavedMaterial("TapaMuro", () =>
+    {
+        var m = new Material(LitShader);
+#if UNITY_EDITOR
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Exterior/Stone.png");
+        if (tex != null && m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
+#endif
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.42f, 0.4f, 0.48f));
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.05f);
+        return m;
+    });
+
+    // ------------------------------------------------------------------ decoración
+
+    System.Random drng;
+    float DR(float a, float b) => a + (float)drng.NextDouble() * (b - a);
+
+    void AddDecor(Transform root, RoomSpec r, List<Gap> gaps, int index)
+    {
+        drng = new System.Random(decorSeed * 97 + index);
+        var deco = NewChild(root, "Decoracion");
+        float hx = r.size.x / 2f, hz = r.size.y / 2f, h = wallHeight;
+        Color tint = RoomLightColor(r.type);
+
+        // pilares en las esquinas
+        if (Mathf.Min(r.size.x, r.size.y) >= 10f && r.type != RoomType.Prueba)
+            foreach (var c in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
+                Pillar(deco, new Vector3(c.x * (hx - 0.9f), 0f, c.y * (hz - 0.9f)), 0.42f, h + 0.3f);
+
+        // brasas flotando por toda la sala, del color de la sala
+        Motes(deco, new Vector3(0f, 1.2f, 0f), new Vector3(r.size.x - 2f, 2f, r.size.y - 2f), Color.Lerp(tint, Color.white, 0.3f), 6f, 0.15f, 7f);
+
+        switch (r.type)
+        {
+            case RoomType.Inicio:
+            {
+                RuneRing(deco, Vector3.up * 0.02f, 2.1f, 2.4f, new Color(0.45f, 0.8f, 1f), "CirculoInicio");
+                RuneRing(deco, Vector3.up * 0.02f, 1.2f, 1.35f, new Color(0.45f, 0.8f, 1f), "CirculoInicio2");
+                Crate(deco, new Vector3(-hx + 1.8f, 0f, hz - 1.0f), 0.8f);
+                Crate(deco, new Vector3(-hx + 2.7f, 0f, hz - 1.1f), 0.6f);
+                Crate(deco, new Vector3(hx - 1.8f, 0f, -hz + 1.6f), 0.7f);
+                Banners(deco, r, gaps, new Color(0.2f, 0.35f, 0.7f));
+                break;
+            }
+            case RoomType.Combate:
+            {
+                Rug(deco, new Vector2(r.size.x * 0.55f, r.size.y * 0.5f), new Color(0.38f, 0.07f, 0.08f), new Color(0.75f, 0.58f, 0.25f));
+                Banners(deco, r, gaps, new Color(0.55f, 0.1f, 0.12f));
+                Rubble(deco, r, gaps, 7);
+                // la 2a sala de combate esconde un cofre tras un Velo de Fase (enseña el impulso)
+                int n = 0;
+                foreach (var other in rooms) { if (other.type == RoomType.Combate) n++; if (other == r) break; }
+                if (n == 2) SecretAlcove(deco, r, gaps);
+                break;
+            }
+            case RoomType.Descanso:
+            {
+                MerchantStall(deco, new Vector3(0f, 0f, hz - 2.4f));   // con espacio detrás para el mercader
+                Shrine(deco, new Vector3(0f, 0f, -0.8f));
+                Rug(deco, new Vector2(4f, r.size.y * 0.7f), new Color(0.15f, 0.3f, 0.22f), new Color(0.75f, 0.65f, 0.35f));
+                Crate(deco, new Vector3(hx - 1.4f, 0f, hz - 1.2f), 0.75f);
+                Crate(deco, new Vector3(hx - 1.5f, 0.75f, hz - 1.2f), 0.5f);
+                Crate(deco, new Vector3(-hx + 1.4f, 0f, hz - 1.3f), 0.8f);
+                break;
+            }
+            case RoomType.Antesala:
+            {
+                foreach (float x in new[] { -2.9f, 2.9f }) Brazier(deco, new Vector3(x, 0f, hz - 1.1f), tint, 1f);
+                for (int k = 0; k < 3; k++) RuneRing(deco, new Vector3(0f, 0.02f, -hz + 2f + k * 2f), 0.45f, 0.6f, tint, "Runa");
+                Rubble(deco, r, gaps, 3);
+                break;
+            }
+            case RoomType.Jefe:
+            {
+                // arena: anillos de runas, cuatro pilares grandes con braseros y el trono al fondo
+                RuneRing(deco, Vector3.up * 0.02f, 7.4f, 7.8f, new Color(1f, 0.25f, 0.2f), "Arena");
+                RuneRing(deco, Vector3.up * 0.02f, 3.0f, 3.2f, new Color(1f, 0.25f, 0.2f), "ArenaCentro");
+                for (int k = 0; k < 8; k++)
+                {
+                    float a = k / 8f * Mathf.PI * 2f;
+                    var glyph = Prim(deco, PrimitiveType.Cube, "Glifo", new Vector3(Mathf.Cos(a) * 5.3f, 0.02f, Mathf.Sin(a) * 5.3f), new Vector3(0.5f, 0.02f, 0.5f), GlowMaterial("Glow_Jefe", new Color(1f, 0.25f, 0.2f)), false);
+                    glyph.transform.localRotation = Quaternion.Euler(0f, 45f + a * Mathf.Rad2Deg, 0f);
+                }
+                foreach (var c in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(-1, 1), new Vector2(1, 1) })
+                {
+                    var p = new Vector3(c.x * r.size.x * 0.33f, 0f, c.y * r.size.y * 0.3f);
+                    Pillar(deco, p, 0.75f, h + 1.5f);
+                    Brazier(deco, p + Vector3.up * (h + 1.5f), tint, 0.9f, c.y > 0);
+                }
+                Throne(deco, new Vector3(0f, 0f, hz - 1.6f));
+                Banners(deco, r, gaps, new Color(0.35f, 0.05f, 0.08f));
+                Rubble(deco, r, gaps, 6);
+                break;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ salas de prueba (vertical)
+
+    const float PitDepth = 8f;
+
+    /// <summary>Suelo del foso: solo una orilla delante de cada puerta; lo demás es vacío.</summary>
+    void CreatePitFloor(Transform root, RoomSpec r)
+    {
+        foreach (var rect in PitLedges(r))
+        {
+            var c = rect.center; float k = 1f / tileMeters, t = colliderThickness;
+            CreateFace(root, "Orilla", new Vector3(c.x, 0f, c.y), Vector3.up, rect.width, rect.height, floorMaterial, k, k);
+            CreateCollider(root, "Collider_Orilla", new Vector3(c.x, -t / 2, c.y), new Vector3(rect.width, t, rect.height));
+        }
+    }
+
+    /// <summary>Rectángulos (x, z locales) de las orillas: 2.5 m de fondo delante de cada puerta, 6 m de ancho.</summary>
+    List<Rect> PitLedges(RoomSpec r)
+    {
+        var list = new List<Rect>();
+        float hx = r.size.x / 2f, hz = r.size.y / 2f, d = 2.5f, w = 6f;
+        int idx = Array.IndexOf(rooms, r);
+        foreach (var c in corridors)
+        {
+            if (c.from != idx && c.to != idx) continue;
+            if (!ValidCorridor(c, out Side sf, out Side st)) continue;
+            Side s = c.from == idx ? sf : st;
+            switch (s)
+            {
+                case Side.S: list.Add(new Rect(-w / 2f, -hz, w, d)); break;
+                case Side.N: list.Add(new Rect(-w / 2f, hz - d, w, d)); break;
+                case Side.E: list.Add(new Rect(hx - d, -w / 2f, d, w)); break;
+                default:     list.Add(new Rect(-hx, -w / 2f, d, w)); break;
+            }
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Foso (pensado para entrada S y salida E, como en el Piso 2): plataformas sobre el vacío.
+    /// Orilla S → P1 (salto corto) → P2 (hueco de 4.8 m: salto + impulso en el aire) → P3 (sube 0.6) → orilla E.
+    /// P4 (opcional, con cofre) está alta y lejos de P2: también pide el impulso.
+    /// </summary>
+    void BuildPit(Transform root, RoomSpec r, List<Gap> gaps)
+    {
+        var pit = NewChild(root, "Foso");
+        float hx = r.size.x / 2f, hz = r.size.y / 2f;
+        Color glow = new Color(0.55f, 0.3f, 1f);
+
+        // paredes del foso: los muros de la sala siguen hacia abajo + la cara de cada orilla
+        var dark = LitMaterial("PiedraFoso", new Color(0.18f, 0.16f, 0.24f));
+        float k = 1f / tileMeters;
+        CreateFace(pit, "ParedFosoN", new Vector3(0f, -PitDepth / 2f, hz), Vector3.back, r.size.x, PitDepth, dark, k, k);
+        CreateFace(pit, "ParedFosoS", new Vector3(0f, -PitDepth / 2f, -hz), Vector3.forward, r.size.x, PitDepth, dark, k, k);
+        CreateFace(pit, "ParedFosoE", new Vector3(hx, -PitDepth / 2f, 0f), Vector3.left, r.size.y, PitDepth, dark, k, k);
+        CreateFace(pit, "ParedFosoW", new Vector3(-hx, -PitDepth / 2f, 0f), Vector3.right, r.size.y, PitDepth, dark, k, k);
+        foreach (var l in PitLedges(r))
+        {
+            // caras de la orilla que dan al vacío
+            if (l.yMax < hz - 0.01f) CreateFace(pit, "CaraOrilla", new Vector3(l.center.x, -PitDepth / 2f, l.yMax), Vector3.forward, l.width, PitDepth, dark, k, k);
+            if (l.yMin > -hz + 0.01f) CreateFace(pit, "CaraOrilla", new Vector3(l.center.x, -PitDepth / 2f, l.yMin), Vector3.back, l.width, PitDepth, dark, k, k);
+            if (l.xMax < hx - 0.01f) CreateFace(pit, "CaraOrilla", new Vector3(l.xMax, -PitDepth / 2f, l.center.y), Vector3.right, l.height, PitDepth, dark, k, k);
+            if (l.xMin > -hx + 0.01f) CreateFace(pit, "CaraOrilla", new Vector3(l.xMin, -PitDepth / 2f, l.center.y), Vector3.left, l.height, PitDepth, dark, k, k);
+        }
+        // fondo: bruma morada que sube
+        CreateFace(pit, "FondoFoso", new Vector3(0f, -PitDepth, 0f), Vector3.up, r.size.x, r.size.y, LitMaterial("FondoFoso", new Color(0.05f, 0.03f, 0.09f)), 1f, 1f);
+        Motes(pit, new Vector3(0f, -PitDepth + 0.5f, 0f), new Vector3(r.size.x - 1f, 0.5f, r.size.y - 1f), glow, 25f, 1.2f, 6f);
+        var lt = NewChild(pit, "LuzFondo").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, -PitDepth + 2f, 0f);
+        lt.type = LightType.Point; lt.range = 14f; lt.intensity = 12f; lt.color = glow; lt.shadows = LightShadows.None;
+
+        // plataformas (x, altura, z) relativas al tamaño 18x18
+        float sx = r.size.x / 18f, sz = r.size.y / 18f;
+        Platform(pit, new Vector3(-1.5f * sx, 0f, -4.1f * sz), 2.4f);
+        Platform(pit, new Vector3(-1.5f * sx, 0f, 3.1f * sz), 2.4f);
+        Platform(pit, new Vector3(2.4f * sx, 0.6f, 3.1f * sz), 2.4f);
+        var p4 = Platform(pit, new Vector3(-7.0f * sx, 1.0f, 7.3f * sz), 2.4f);
+        TreasureChestAt(p4, new Vector3(0f, 0f, 0f), 15);
+
+        // flechas de runas en el suelo de la entrada y aviso
+        Hint(root, r, "EL FOSO", "Salta (Espacio) y usa el impulso (Shift) en el aire para cruzar los huecos grandes");
+    }
+
+    /// <summary>Plataforma flotante: losa con borde de runas y una columna que baja al fondo del foso.</summary>
+    Transform Platform(Transform parent, Vector3 topCenter, float size)
+    {
+        var p = NewChild(parent, "Plataforma");
+        p.localPosition = topCenter;
+        float k = 1f / tileMeters;
+        CreateFace(p, "Tapa", new Vector3(0f, 0.01f, 0f), Vector3.up, size, size, floorMaterial, k, k);
+        Prim(p, PrimitiveType.Cube, "Losa", new Vector3(0f, -0.25f, 0f), new Vector3(size, 0.5f, size), StoneMaterial(), true);
+        var col = Prim(p, PrimitiveType.Cube, "Columna", new Vector3(0f, -(PitDepth + topCenter.y) / 2f - 0.25f, 0f), new Vector3(size * 0.45f, PitDepth + topCenter.y - 0.5f, size * 0.45f), StoneMaterial(), false);
+        col.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        RuneRing(p, Vector3.up * 0.02f, size * 0.36f, size * 0.42f, new Color(0.35f, 1f, 0.85f), "Runa");
+        return p;
+    }
+
+    /// <summary>
+    /// Ascenso (entrada S en el suelo, salida N a 4.5 m): escalera → terraza O → hueco de 6.6 m (salto + impulso) →
+    /// torre central → escalera → cornisa N con la puerta. La terraza E (cofre) se alcanza saltando desde la torre.
+    /// </summary>
+    void BuildAscent(Transform root, RoomSpec r, List<Gap> gaps)
+    {
+        var a = NewChild(root, "Ascenso");
+        float hx = r.size.x / 2f, hz = r.size.y / 2f;
+        float top = 0f;
+        foreach (var g in gaps) top = Mathf.Max(top, g.elevation);
+        if (top < 0.5f) top = 4.5f;
+        float mid = top / 2f;          // altura de terrazas y torre
+        float ledgeZ = hz - 2.3f;      // frente de la cornisa N
+        var half = new Vector2(hx, hz);
+
+        Block(a, "TerrazaO", new Vector3(-hx, 0f, -hz + 2f), new Vector3(-hx + 2.6f, mid, ledgeZ), half);
+        Block(a, "Torre", new Vector3(1.2f, 0f, 1.5f), new Vector3(3.6f, mid, ledgeZ), half);   // a 6.6 m de la terraza O: solo con impulso
+        Block(a, "Cornisa", new Vector3(-hx, 0f, ledgeZ), new Vector3(hx, top, hz), half);
+        Block(a, "TerrazaE", new Vector3(hx - 2.4f, 0f, -4f), new Vector3(hx, mid, 2f), half);
+
+        // relleno suave sin sombra: la luz central está muy alta y la cornisa y la torre dejan el suelo en penumbra
+        var fill = NewChild(a, "LuzRelleno").gameObject.AddComponent<Light>();
+        fill.transform.localPosition = new Vector3(-1f, mid + 0.8f, -hz * 0.35f);
+        fill.type = LightType.Point; fill.range = Mathf.Max(hx, hz) * 1.6f; fill.intensity = 5f;
+        fill.color = new Color(0.75f, 0.95f, 0.95f); fill.shadows = LightShadows.None;
+
+        Ladder(a, new Vector3(-hx + 2.6f, 0f, -3f), Vector3.right, 0f, mid);       // suelo → terraza O
+        Ladder(a, new Vector3(2.4f, 0f, ledgeZ), Vector3.back, mid, top);          // torre → cornisa
+
+        TreasureChestAt(a, new Vector3(hx - 1.3f, mid, -1f), 20, -90f);
+
+        // luces de las alturas
+        foreach (var lp in new[] { new Vector3(0f, top + 1.3f, hz - 1.2f), new Vector3(2.4f, mid + 1.5f, 3.5f), new Vector3(-hx + 1.3f, mid + 1.5f, 0f) })
+        {
+            var l = NewChild(a, "LuzAlta").gameObject.AddComponent<Light>();
+            l.transform.localPosition = lp;
+            l.type = LightType.Point; l.range = 8f; l.intensity = 9f; l.color = new Color(0.45f, 1f, 0.9f); l.shadows = LightShadows.None;   // relleno: la sombra la da la luz central
+            var orb = Prim(l.transform, PrimitiveType.Sphere, "Orbe", Vector3.zero, Vector3.one * 0.3f, GlowMaterial("Glow_Prueba", new Color(0.35f, 1f, 0.85f)), false);
+            orb.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            l.gameObject.AddComponent<LightFlicker>().amount = 0.08f;
+        }
+        // marca de dónde saltar con impulso (borde de la terraza O frente a la torre)
+        RuneRing(a, new Vector3(-hx + 1.8f, mid + 0.02f, 3.4f), 0.45f, 0.6f, new Color(0.35f, 1f, 0.85f), "MarcaSalto");
+        Hint(root, r, "EL ASCENSO", "W junto a una escalera para trepar · salta + impulso para llegar a la torre");
+    }
+
+    /// <summary>
+    /// Bloque sólido (terraza, torre, cornisa) con suelo de baldosa arriba, muros a los lados y collider.
+    /// Los lados pegados a los muros de la sala (roomHalf) no se dibujan: quedarían en el mismo plano que el muro y parpadearían.
+    /// </summary>
+    void Block(Transform parent, string name, Vector3 min, Vector3 max, Vector2 roomHalf)
+    {
+        var b = NewChild(parent, name);
+        Vector3 c = (min + max) / 2f, s = max - min;
+        b.localPosition = c;
+        float k = 1f / tileMeters;
+        const float eps = 0.01f;
+        bool n = max.z < roomHalf.y - eps, so = min.z > -roomHalf.y + eps, e = max.x < roomHalf.x - eps, w = min.x > -roomHalf.x + eps;
+        CreateFace(b, "Arriba", new Vector3(0f, s.y / 2f, 0f), Vector3.up, s.x, s.z, floorMaterial, k, k);
+        if (n)  CreateFace(b, "LadoN", new Vector3(0f, 0f, s.z / 2f), Vector3.forward, s.x, s.y, wallMaterial, k, k, true);
+        if (so) CreateFace(b, "LadoS", new Vector3(0f, 0f, -s.z / 2f), Vector3.back, s.x, s.y, wallMaterial, k, k, true);
+        if (e)  CreateFace(b, "LadoE", new Vector3(s.x / 2f, 0f, 0f), Vector3.right, s.z, s.y, wallMaterial, k, k, true);
+        if (w)  CreateFace(b, "LadoO", new Vector3(-s.x / 2f, 0f, 0f), Vector3.left, s.z, s.y, wallMaterial, k, k, true);
+        // borde de piedra: un marco en los lados libres que asoma 3 cm sobre la baldosa. Antes era un cubo entero
+        // con la cara de arriba en el mismo plano que el suelo y las dos texturas se peleaban (z-fighting).
+        const float rim = 0.2f, lip = 0.05f, up = 0.03f, depth = 0.18f;
+        float ry = s.y / 2f + up - depth / 2f;
+        float lenX = s.x + (e ? lip : 0f) + (w ? lip : 0f), offX = ((e ? lip : 0f) - (w ? lip : 0f)) / 2f;
+        var cap = CapMaterial();
+        if (n)  Prim(b, PrimitiveType.Cube, "BordeN", new Vector3(offX, ry, s.z / 2f - rim / 2f + lip), new Vector3(lenX, depth, rim), cap, false);
+        if (so) Prim(b, PrimitiveType.Cube, "BordeS", new Vector3(offX, ry, -s.z / 2f + rim / 2f - lip), new Vector3(lenX, depth, rim), cap, false);
+        // los laterales, 2 mm más bajos y cortos para no coincidir con los de N/S en las esquinas
+        if (e)  Prim(b, PrimitiveType.Cube, "BordeE", new Vector3(s.x / 2f - rim / 2f + lip, ry - 0.002f, 0f), new Vector3(rim, depth, s.z - 0.004f), cap, false);
+        if (w)  Prim(b, PrimitiveType.Cube, "BordeO", new Vector3(-s.x / 2f + rim / 2f - lip, ry - 0.002f, 0f), new Vector3(rim, depth, s.z - 0.004f), cap, false);
+        b.gameObject.AddComponent<BoxCollider>().size = s;
+    }
+
+    /// <summary>Escalera de madera pegada a una cara (facing = hacia donde está quien trepa) con su ClimbZone.</summary>
+    void Ladder(Transform parent, Vector3 baseOnFace, Vector3 facing, float y0, float y1)
+    {
+        var lad = NewChild(parent, "Escalera");
+        lad.localPosition = new Vector3(baseOnFace.x, y0, baseOnFace.z);
+        lad.localRotation = Quaternion.LookRotation(facing);
+        float h = y1 - y0;
+        var wood = LitMaterial("MaderaClara", new Color(0.6f, 0.43f, 0.26f));   // la madera oscura se perdía contra la piedra
+        foreach (float x in new[] { -0.45f, 0.45f })
+            Prim(lad, PrimitiveType.Cube, "Larguero", new Vector3(x, h / 2f + 0.2f, 0.1f), new Vector3(0.1f, h + 0.4f, 0.1f), wood, false);
+        for (float y = 0.3f; y < h + 0.1f; y += 0.4f)
+            Prim(lad, PrimitiveType.Cube, "Peldaño", new Vector3(0f, y, 0.1f), new Vector3(0.9f, 0.07f, 0.07f), wood, false);
+        // enredadera que brilla un poco: se distingue de lejos
+        Prim(lad, PrimitiveType.Cube, "Marca", new Vector3(0f, h + 0.45f, 0.12f), new Vector3(0.3f, 0.12f, 0.04f), GlowMaterial("Glow_Prueba", new Color(0.35f, 1f, 0.85f)), false);
+        // hilos de luz por fuera de los largueros: la silueta se lee aunque la escalera quede a la sombra del bloque
+        foreach (float x in new[] { -0.53f, 0.53f })
+        {
+            var vine = Prim(lad, PrimitiveType.Cube, "Hilo", new Vector3(x, h / 2f + 0.2f, 0.14f), new Vector3(0.03f, h + 0.4f, 0.03f), GlowMaterial("Glow_Prueba", new Color(0.35f, 1f, 0.85f)), false);
+            vine.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        // luz propia delante, sin sombra: la cara del bloque donde va la escalera queda de espaldas a las antorchas
+        var lt = NewChild(lad, "Luz").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, h * 0.6f + 0.4f, 1.4f);
+        lt.type = LightType.Point; lt.range = h + 3.5f; lt.intensity = 7f; lt.color = new Color(1f, 0.86f, 0.66f); lt.shadows = LightShadows.None;
+
+        var zone = NewChild(lad, "ZonaTrepar");
+        zone.localPosition = new Vector3(0f, 0f, 0.45f);
+        var cz = zone.gameObject.AddComponent<ClimbZone>();
+        cz.height = h;
+        cz.footprint = new Vector2(1.2f, 0.9f);
+    }
+
+    void TreasureChestAt(Transform parent, Vector3 pos, int fragments, float yaw = 0f)
+    {
+        var chest = NewChild(parent, "Cofre");
+        chest.localPosition = pos;
+        chest.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        var wood = LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f));
+        Prim(chest, PrimitiveType.Cube, "Caja", new Vector3(0f, 0.3f, 0f), new Vector3(1f, 0.6f, 0.65f), wood, true);
+        var lid = NewChild(chest, "TapaPivote");
+        lid.localPosition = new Vector3(0f, 0.6f, -0.32f);
+        Prim(lid, PrimitiveType.Cube, "Tapa", new Vector3(0f, 0.1f, 0.32f), new Vector3(1.04f, 0.2f, 0.68f), wood, false);
+        Prim(chest, PrimitiveType.Cube, "Herraje", new Vector3(0f, 0.3f, 0f), new Vector3(1.04f, 0.1f, 0.68f), GlowMaterial("Glow_Oro", new Color(1f, 0.75f, 0.35f)), false);
+        var lt = NewChild(chest, "Brillo").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, 1f, 0f);
+        lt.type = LightType.Point; lt.range = 4f; lt.intensity = 3f; lt.color = new Color(1f, 0.8f, 0.4f); lt.shadows = LightShadows.None;
+        var tc = chest.gameObject.AddComponent<TreasureChest>();
+        tc.lid = lid; tc.glow = lt; tc.fragments = fragments;
+    }
+
+    void Hint(Transform room, RoomSpec r, string title, string text)
+    {
+        var h = room.gameObject.AddComponent<HintZone>();
+        h.size = r.size - Vector2.one * 3f;
+        h.title = title;
+        h.text = text;
+    }
+
+    void Pillar(Transform parent, Vector3 pos, float radius, float height)
+    {
+        var p = NewChild(parent, "Pilar");
+        p.localPosition = pos;
+        var shaft = Prim(p, PrimitiveType.Cylinder, "Fuste", new Vector3(0f, height / 2f, 0f), new Vector3(radius * 2f, height / 2f, radius * 2f), StoneMaterial(), true);
+        shaft.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        Prim(p, PrimitiveType.Cube, "Base", new Vector3(0f, 0.18f, 0f), new Vector3(radius * 2.7f, 0.36f, radius * 2.7f), StoneMaterial(), false);
+        Prim(p, PrimitiveType.Cube, "Capitel", new Vector3(0f, height - 0.15f, 0f), new Vector3(radius * 2.8f, 0.3f, radius * 2.8f), StoneMaterial(), false);
+        var ring = Prim(p, PrimitiveType.Cylinder, "Runa", new Vector3(0f, height * 0.62f, 0f), new Vector3(radius * 2.08f, 0.04f, radius * 2.08f), GlowMaterial("Glow_Runa", new Color(0.35f, 0.85f, 1f)), false);
+        ring.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    void Rug(Transform parent, Vector2 size, Color inner, Color border)
+    {
+        float k = 1f / tileMeters;
+        CreateFace(parent, "Alfombra_Borde", new Vector3(0f, 0.01f, 0f), Vector3.up, size.x, size.y, LitMaterial("Tela_" + ColorUtility.ToHtmlStringRGB(border), border), k, k);
+        CreateFace(parent, "Alfombra", new Vector3(0f, 0.015f, 0f), Vector3.up, size.x - 0.5f, size.y - 0.5f, LitMaterial("Tela_" + ColorUtility.ToHtmlStringRGB(inner), inner), k, k);
+    }
+
+    /// <summary>Estandartes colgando del muro norte, a los lados (esquivando la puerta y las antorchas).</summary>
+    void Banners(Transform parent, RoomSpec r, List<Gap> gaps, Color color)
+    {
+        float hz = r.size.y / 2f, len = r.size.x;
+        var mat = LitMaterial("Tela_" + ColorUtility.ToHtmlStringRGB(color), color);
+        var trim = GlowMaterial("Glow_Oro", new Color(1f, 0.75f, 0.35f));
+        foreach (float along in new[] { -len / 4f - 1.5f, len / 4f + 1.5f })
+        {
+            if (Mathf.Abs(along) > len / 2f - 1.8f) continue;
+            bool blocked = false;
+            foreach (var g in gaps) if (g.side == Side.N && Mathf.Abs(along - g.offset) < g.width / 2f + 0.8f) blocked = true;
+            if (blocked) continue;
+            float bh = wallHeight * 0.6f;
+            CreateFace(parent, "Estandarte", new Vector3(along, wallHeight - 0.25f - bh / 2f, hz - 0.04f), Vector3.back, 1f, bh, mat, 1f, 1f, true);
+            CreateFace(parent, "Estandarte_Emblema", new Vector3(along, wallHeight - 0.25f - bh * 0.45f, hz - 0.05f), Vector3.back, 0.35f, 0.35f, trim, 1f, 1f);
+            Prim(parent, PrimitiveType.Cube, "Barra", new Vector3(along, wallHeight - 0.22f, hz - 0.08f), new Vector3(1.3f, 0.06f, 0.06f), MetalMaterial(), false);
+        }
+    }
+
+    void Rubble(Transform parent, RoomSpec r, List<Gap> gaps, int count)
+    {
+        float hx = r.size.x / 2f, hz = r.size.y / 2f;
+        for (int k = 0, tries = 0; k < count && tries < 60; tries++)
+        {
+            // pegado a un muro (no el sur: casi no se ve) y lejos de las puertas
+            int side = drng.Next(3);
+            Vector3 p = side == 0 ? new Vector3(DR(-hx + 1.5f, hx - 1.5f), 0f, hz - DR(0.4f, 1.2f))
+                      : side == 1 ? new Vector3(hx - DR(0.4f, 1.2f), 0f, DR(-hz + 1.5f, hz - 1.5f))
+                                  : new Vector3(-hx + DR(0.4f, 1.2f), 0f, DR(-hz + 1.5f, hz - 1.5f));
+            bool nearDoor = false;
+            foreach (var g in gaps)
+            {
+                Vector3 d = g.side == Side.N ? new Vector3(g.offset, 0f, hz) : g.side == Side.S ? new Vector3(g.offset, 0f, -hz)
+                          : g.side == Side.E ? new Vector3(hx, 0f, g.offset) : new Vector3(-hx, 0f, g.offset);
+                if (Vector3.Distance(d, p) < g.width / 2f + 1.5f) nearDoor = true;
+            }
+            if (nearDoor) continue;
+            float s = DR(0.2f, 0.55f);
+            var rock = Prim(parent, PrimitiveType.Cube, "Escombro", p + Vector3.up * s * 0.35f, new Vector3(s * DR(0.8f, 1.6f), s * DR(0.5f, 1f), s * DR(0.8f, 1.4f)), StoneMaterial(), false);
+            rock.transform.localRotation = Quaternion.Euler(DR(-15f, 15f), DR(0f, 360f), DR(-15f, 15f));
+            k++;
+        }
+    }
+
+    void Crate(Transform parent, Vector3 pos, float s)
+    {
+        var c = Prim(parent, PrimitiveType.Cube, "Caja", pos + Vector3.up * s / 2f, Vector3.one * s, LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f)), true);
+        c.transform.localRotation = Quaternion.Euler(0f, DR(-20f, 20f), 0f);
+        Prim(c.transform, PrimitiveType.Cube, "Fleje", Vector3.zero, new Vector3(1.02f, 0.12f, 1.02f), MetalMaterial(), false);
+    }
+
+    void Brazier(Transform parent, Vector3 pos, Color color, float scale, bool shadows = false)
+    {
+        var b = NewChild(parent, "Brasero");
+        b.localPosition = pos;
+        Prim(b, PrimitiveType.Cylinder, "Pie", new Vector3(0f, 0.45f, 0f) * scale, new Vector3(0.18f, 0.45f, 0.18f) * scale, MetalMaterial(), false);
+        Prim(b, PrimitiveType.Cylinder, "Cuenco", new Vector3(0f, 0.95f, 0f) * scale, new Vector3(0.75f, 0.1f, 0.75f) * scale, MetalMaterial(), false);
+        var fire = Prim(b, PrimitiveType.Sphere, "Fuego", new Vector3(0f, 1.2f, 0f) * scale, new Vector3(0.5f, 0.65f, 0.5f) * scale, TorchMaterialFor(color), false);
+        fire.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var lt = NewChild(b, "Luz").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, 1.6f, 0f) * scale;
+        lt.type = LightType.Point; lt.range = 8f; lt.intensity = 10f; lt.color = color;
+        lt.shadows = shadows ? LightShadows.Soft : LightShadows.None;
+        b.gameObject.AddComponent<LightFlicker>().amount = 0.25f;
+        Motes(b, new Vector3(0f, 1.3f, 0f) * scale, new Vector3(0.4f, 0.1f, 0.4f), color, 10f, 1.2f, 1.4f);
+    }
+
+    void MerchantStall(Transform parent, Vector3 pos)
+    {
+        var s = NewChild(parent, "Mercader");
+        s.localPosition = pos;
+        s.gameObject.AddComponent<MerchantShop>();
+        var wood = LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f));
+        Prim(s, PrimitiveType.Cube, "Mostrador", new Vector3(0f, 0.55f, 0f), new Vector3(4.2f, 1.1f, 0.9f), wood, true);
+        Prim(s, PrimitiveType.Cube, "Tablero", new Vector3(0f, 1.13f, 0f), new Vector3(4.4f, 0.06f, 1.05f), LitMaterial("MaderaClara", new Color(0.6f, 0.43f, 0.26f)), false);
+        foreach (float x in new[] { -2.05f, 2.05f })
+            Prim(s, PrimitiveType.Cube, "Poste", new Vector3(x, 1.55f, 0.35f), new Vector3(0.14f, 3.1f, 0.14f), wood, false);
+        // toldo a rayas
+        for (int k = 0; k < 6; k++)
+        {
+            var stripe = Prim(s, PrimitiveType.Cube, "Toldo", new Vector3(-1.9f + k * 0.76f, 3.05f, 0.45f), new Vector3(0.76f, 0.05f, 2.3f),
+                              LitMaterial(k % 2 == 0 ? "Tela_Toldo_A" : "Tela_Toldo_B", k % 2 == 0 ? new Color(0.6f, 0.15f, 0.3f) : new Color(0.85f, 0.75f, 0.55f)), false);
+            stripe.transform.localRotation = Quaternion.Euler(-14f, 0f, 0f);
+        }
+        // pociones brillando sobre el mostrador
+        Color[] potions = { new Color(1f, 0.3f, 0.35f), new Color(0.35f, 0.7f, 1f), new Color(0.5f, 1f, 0.5f), new Color(1f, 0.8f, 0.3f) };
+        for (int k = 0; k < potions.Length; k++)
+        {
+            var bottle = Prim(s, PrimitiveType.Sphere, "Pocion", new Vector3(-1.4f + k * 0.9f, 1.32f, -0.1f), new Vector3(0.26f, 0.32f, 0.26f), GlowMaterial("Glow_" + ColorUtility.ToHtmlStringRGB(potions[k]), potions[k]), false);
+            bottle.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        var lt = NewChild(s, "Farol").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, 2.3f, -0.6f);
+        lt.type = LightType.Point; lt.range = 6f; lt.intensity = 6f; lt.color = new Color(1f, 0.75f, 0.45f); lt.shadows = LightShadows.None;   // sin sombra: ahorra 6 pasadas
+        lt.gameObject.AddComponent<LightFlicker>().amount = 0.1f;
+        Merchant(s, new Vector3(0f, 0f, 1.05f));
+    }
+
+    /// <summary>El mercader: viajero encapuchado con túnica, bufanda, mochila llena de cachivaches y bastón con farol.</summary>
+    void Merchant(Transform parent, Vector3 pos)
+    {
+        var m = NewChild(parent, "Mercader_Personaje");
+        m.localPosition = pos;
+        m.localRotation = Quaternion.Euler(0f, 180f, 0f);   // mira hacia la sala (-Z del puesto)
+        var body = NewChild(m, "Cuerpo");
+        var robe = LitMaterial("Tela_Mercader", new Color(0.32f, 0.2f, 0.45f));
+        var robeDark = LitMaterial("Tela_MercaderOscura", new Color(0.18f, 0.11f, 0.26f));
+        var scarf = LitMaterial("Tela_Bufanda", new Color(0.85f, 0.55f, 0.2f));
+        var skin = LitMaterial("Piel_Mercader", new Color(0.12f, 0.1f, 0.12f));
+
+        Prim(body, PrimitiveType.Cylinder, "Tunica", new Vector3(0f, 0.55f, 0f), new Vector3(0.95f, 0.55f, 0.85f), robe, true);
+        Prim(body, PrimitiveType.Cylinder, "Ruedo", new Vector3(0f, 0.08f, 0f), new Vector3(1.05f, 0.08f, 0.95f), robeDark, false);
+        Prim(body, PrimitiveType.Sphere, "Torso", new Vector3(0f, 1.2f, 0f), new Vector3(0.8f, 0.75f, 0.7f), robe, false);
+        Prim(body, PrimitiveType.Cylinder, "Bufanda", new Vector3(0f, 1.5f, 0f), new Vector3(0.62f, 0.08f, 0.58f), scarf, false);
+        var tail = Prim(body, PrimitiveType.Cube, "BufandaCola", new Vector3(0.18f, 1.25f, 0.3f), new Vector3(0.14f, 0.45f, 0.05f), scarf, false);
+        tail.transform.localRotation = Quaternion.Euler(10f, 0f, -8f);
+        // capucha con la cara en sombra y ojos que brillan
+        Prim(body, PrimitiveType.Sphere, "Capucha", new Vector3(0f, 1.82f, -0.04f), new Vector3(0.62f, 0.6f, 0.62f), robeDark, false);
+        Prim(body, PrimitiveType.Sphere, "Cara", new Vector3(0f, 1.78f, 0.14f), new Vector3(0.42f, 0.4f, 0.38f), skin, false);
+        var tip = Prim(body, PrimitiveType.Cube, "PuntaCapucha", new Vector3(0f, 2.1f, -0.2f), new Vector3(0.18f, 0.3f, 0.18f), robeDark, false);
+        tip.transform.localRotation = Quaternion.Euler(-35f, 45f, 0f);
+        foreach (float x in new[] { -0.08f, 0.08f })
+        {
+            var eye = Prim(body, PrimitiveType.Cube, "Ojo", new Vector3(x, 1.8f, 0.33f), new Vector3(0.06f, 0.04f, 0.02f), GlowMaterial("Glow_OjosMercader", new Color(1f, 0.85f, 0.4f)), false);
+            eye.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        // mochila enorme con ollas y rollos
+        var pack = Prim(body, PrimitiveType.Cube, "Mochila", new Vector3(0f, 1.35f, -0.48f), new Vector3(0.75f, 0.95f, 0.45f), LitMaterial("Cuero", new Color(0.4f, 0.25f, 0.14f)), false);
+        pack.transform.localRotation = Quaternion.Euler(-6f, 0f, 0f);
+        Prim(body, PrimitiveType.Cylinder, "Rollo", new Vector3(0f, 1.95f, -0.5f), new Vector3(0.2f, 0.42f, 0.2f), scarf, false).transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        Prim(body, PrimitiveType.Sphere, "Olla", new Vector3(0.38f, 1.0f, -0.55f), new Vector3(0.28f, 0.24f, 0.28f), MetalMaterial(), false);
+        // brazo que saluda (pivote en el hombro)
+        var arm = NewChild(body, "Brazo");
+        arm.localPosition = new Vector3(-0.38f, 1.4f, 0.05f);
+        Prim(arm, PrimitiveType.Cube, "Manga", new Vector3(-0.22f, 0f, 0f), new Vector3(0.45f, 0.16f, 0.16f), robe, false);
+        Prim(arm, PrimitiveType.Sphere, "Mano", new Vector3(-0.47f, 0f, 0f), Vector3.one * 0.14f, skin, false);
+        // bastón con farol
+        Prim(body, PrimitiveType.Cylinder, "Baston", new Vector3(0.55f, 1.05f, 0.1f), new Vector3(0.06f, 1.05f, 0.06f), LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f)), false);
+        var lamp = Prim(body, PrimitiveType.Cube, "Farolito", new Vector3(0.55f, 2.2f, 0.1f), new Vector3(0.16f, 0.22f, 0.16f), GlowMaterial("Glow_Farolito", new Color(1f, 0.7f, 0.35f)), false);
+        lamp.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        var npc = m.gameObject.AddComponent<MerchantNPC>();
+        npc.body = body;
+        npc.arm = arm;
+    }
+
+    /// <summary>Hueco en un muro libre, tapado por un Velo de Fase, con un cofre adentro.</summary>
+    void SecretAlcove(Transform parent, RoomSpec r, List<Gap> gaps)
+    {
+        // muro sin puertas: preferimos E, si no O
+        Side side = Side.E;
+        foreach (var g in gaps) if (g.side == Side.E) side = Side.W;
+        float sgn = side == Side.E ? 1f : -1f;
+        float hx = r.size.x / 2f;
+        float depth = 2.4f, width = 3f, h = wallHeight;
+        var a = NewChild(parent, "Escondite");
+        a.localPosition = new Vector3(sgn * (hx - depth / 2f), 0f, 0f);
+        var stone = StoneMaterial();
+
+        // paredes laterales del escondite (con collider)
+        foreach (float z in new[] { -width / 2f, width / 2f })
+            Prim(a, PrimitiveType.Cube, "ParedEscondite", new Vector3(0f, h / 2f, z), new Vector3(depth, h, 0.3f), stone, true);
+        Prim(a, PrimitiveType.Cube, "TechoEscondite", new Vector3(0f, h + 0.1f, 0f), new Vector3(depth, 0.2f, width + 0.3f), stone, false);
+
+        // el velo (frente del escondite)
+        var veil = new GameObject("VeloDeFase");
+        veil.transform.SetParent(a, false);
+        veil.transform.localPosition = new Vector3(-sgn * depth / 2f, h / 2f, 0f);
+        var box = veil.AddComponent<BoxCollider>();
+        box.size = new Vector3(0.3f, h + 2f, width);
+        foreach (float off in new[] { -0.03f, 0.03f })
+        {
+            var face = Prim(veil.transform, PrimitiveType.Cube, "Cara", new Vector3(off, 0f, 0f), new Vector3(0.02f, h, width - 0.3f), BeamMaterial(), false);
+            face.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        veil.AddComponent<PhaseVeil>();
+        Motes(veil.transform, Vector3.zero, new Vector3(0.2f, h, width), new Color(0.75f, 0.45f, 1f), 12f, 0.3f, 2f);
+
+        // cofre
+        var chest = NewChild(a, "Cofre");
+        chest.localPosition = new Vector3(sgn * 0.3f, 0f, 0f);
+        chest.localRotation = Quaternion.Euler(0f, sgn > 0 ? -90f : 90f, 0f);   // la tapa abre hacia la sala
+        var wood = LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f));
+        Prim(chest, PrimitiveType.Cube, "Caja", new Vector3(0f, 0.3f, 0f), new Vector3(1f, 0.6f, 0.65f), wood, true);
+        var lid = NewChild(chest, "TapaPivote");
+        lid.localPosition = new Vector3(0f, 0.6f, -0.32f);
+        Prim(lid, PrimitiveType.Cube, "Tapa", new Vector3(0f, 0.1f, 0.32f), new Vector3(1.04f, 0.2f, 0.68f), wood, false);
+        Prim(chest, PrimitiveType.Cube, "Herraje", new Vector3(0f, 0.3f, 0f), new Vector3(1.04f, 0.1f, 0.68f), GlowMaterial("Glow_Oro", new Color(1f, 0.75f, 0.35f)), false);
+        var lt = NewChild(chest, "Brillo").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, 1f, 0f);
+        lt.type = LightType.Point; lt.range = 4f; lt.intensity = 3f; lt.color = new Color(1f, 0.8f, 0.4f); lt.shadows = LightShadows.None;
+        var tc = chest.gameObject.AddComponent<TreasureChest>();
+        tc.lid = lid; tc.glow = lt; tc.fragments = 20;
+    }
+
+    void Shrine(Transform parent, Vector3 pos)
+    {
+        var s = NewChild(parent, "Santuario");
+        s.localPosition = pos;
+        Prim(s, PrimitiveType.Cylinder, "Pedestal", new Vector3(0f, 0.3f, 0f), new Vector3(1.4f, 0.3f, 1.4f), StoneMaterial(), true);
+        Prim(s, PrimitiveType.Cylinder, "Pedestal2", new Vector3(0f, 0.7f, 0f), new Vector3(0.8f, 0.12f, 0.8f), StoneMaterial(), false);
+        RuneRing(s, Vector3.up * 0.02f, 1.5f, 1.75f, new Color(0.4f, 1f, 0.6f), "CirculoSanacion");
+        var crystal = Prim(s, PrimitiveType.Cube, "Cristal", new Vector3(0f, 1.6f, 0f), new Vector3(0.45f, 0.75f, 0.45f), GlowMaterial("Glow_Sanacion", new Color(0.4f, 1f, 0.6f)), false);
+        crystal.transform.localRotation = Quaternion.Euler(45f, 0f, 45f);
+        crystal.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var lt = NewChild(s, "Luz").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, 1.8f, 0f);
+        lt.type = LightType.Point; lt.range = 7f; lt.intensity = 5f; lt.color = new Color(0.45f, 1f, 0.65f); lt.shadows = LightShadows.None;
+        Motes(s, new Vector3(0f, 0.3f, 0f), new Vector3(1.6f, 0.1f, 1.6f), new Color(0.5f, 1f, 0.7f), 8f, 0.8f, 2.5f);
+        var shrine = s.gameObject.AddComponent<HealingShrine>();
+        shrine.crystal = crystal.transform;
+        shrine.glow = lt;
+    }
+
+    void Throne(Transform parent, Vector3 pos)
+    {
+        var t = NewChild(parent, "Trono");
+        t.localPosition = pos;
+        Prim(t, PrimitiveType.Cube, "Grada1", new Vector3(0f, 0.15f, 0f), new Vector3(5f, 0.3f, 2.2f), StoneMaterial(), true);
+        Prim(t, PrimitiveType.Cube, "Grada2", new Vector3(0f, 0.45f, 0.25f), new Vector3(3.6f, 0.3f, 1.6f), StoneMaterial(), true);
+        Prim(t, PrimitiveType.Cube, "Asiento", new Vector3(0f, 0.95f, 0.35f), new Vector3(1.6f, 0.7f, 1.1f), MetalMaterial(), true);
+        Prim(t, PrimitiveType.Cube, "Respaldo", new Vector3(0f, 2.1f, 0.8f), new Vector3(1.6f, 2.6f, 0.25f), MetalMaterial(), true);
+        foreach (float x in new[] { -0.9f, 0.9f })
+        {
+            Prim(t, PrimitiveType.Cube, "Brazo", new Vector3(x, 1.35f, 0.35f), new Vector3(0.25f, 0.3f, 1.1f), MetalMaterial(), false);
+            var spike = Prim(t, PrimitiveType.Cube, "Punta", new Vector3(x * 0.85f, 3.6f, 0.8f), new Vector3(0.18f, 0.7f, 0.18f), GlowMaterial("Glow_Jefe", new Color(1f, 0.25f, 0.2f)), false);
+            spike.transform.localRotation = Quaternion.Euler(0f, 0f, x > 0 ? -12f : 12f);
+        }
+        var gem = Prim(t, PrimitiveType.Sphere, "Gema", new Vector3(0f, 3.05f, 0.65f), Vector3.one * 0.38f, GlowMaterial("Glow_Jefe", new Color(1f, 0.25f, 0.2f)), false);
+        gem.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    void RuneRing(Transform parent, Vector3 pos, float inner, float outer, Color color, string name)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        go.AddComponent<MeshFilter>().sharedMesh = Annulus(inner, outer, 64);
+        var mr = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = GlowMaterial("Glow_" + ColorUtility.ToHtmlStringRGB(color), color);
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+
+    static Mesh Annulus(float inner, float outer, int segs)
+    {
+        var v = new List<Vector3>(); var t = new List<int>();
+        for (int i = 0; i <= segs; i++)
+        {
+            float a = i / (float)segs * Mathf.PI * 2f;
+            var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            v.Add(d * inner); v.Add(d * outer);
+            if (i < segs) { int b = i * 2; t.AddRange(new[] { b, b + 3, b + 1, b, b + 2, b + 3 }); }
+        }
+        var m = new Mesh { name = "Annulus" };
+        m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals(); m.RecalculateBounds();
+        return m;
+    }
+
+    /// <summary>Partículas lentas que flotan (brasas, polvo mágico).</summary>
+    void Motes(Transform parent, Vector3 pos, Vector3 box, Color color, float rate, float rise, float life)
+    {
+        var mat = FxMaterial();
+        if (mat == null) return;
+        var go = new GameObject("Brasas");
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.loop = true; main.playOnAwake = true; main.prewarm = true;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(life * 0.6f, life);
+        main.startSpeed = 0f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.1f);
+        main.startColor = color;
+        main.maxParticles = 200;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        var em = ps.emission; em.rateOverTime = rate;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = box;
+        var vel = ps.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.World;
+        vel.x = new ParticleSystem.MinMaxCurve(-0.1f, 0.1f); vel.y = new ParticleSystem.MinMaxCurve(rise * 0.5f, rise); vel.z = new ParticleSystem.MinMaxCurve(-0.1f, 0.1f);
+        var noise = ps.noise; noise.enabled = true; noise.strength = 0.3f; noise.frequency = 0.4f;
+        var col = ps.colorOverLifetime; col.enabled = true;
+        var g = new Gradient();
+        g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                  new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.2f), new GradientAlphaKey(0.6f, 0.7f), new GradientAlphaKey(0f, 1f) });
+        col.color = g;
+        var r = go.GetComponent<ParticleSystemRenderer>();
+        r.sharedMaterial = mat;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        ps.Play();
+    }
+
+    GameObject Prim(Transform parent, PrimitiveType type, string name, Vector3 pos, Vector3 scale, Material mat, bool keepCollider)
+    {
+        var go = GameObject.CreatePrimitive(type);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        go.transform.localScale = scale;
+        if (!keepCollider) DestroyImmediate(go.GetComponent<Collider>());
+        var mr = go.GetComponent<MeshRenderer>();
+        mr.sharedMaterial = mat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        return go;
+    }
+
+    // ------------------------------------------------------------------ materiales de decoración (se guardan en Assets/Materials/Nivel)
+
+    readonly Dictionary<string, Material> decoMats = new Dictionary<string, Material>();
+
+    Material SavedMaterial(string name, System.Func<Material> make)
+    {
+        if (decoMats.TryGetValue(name, out var m) && m != null) return m;
+#if UNITY_EDITOR
+        const string dir = "Assets/Materials/Nivel";
+        if (!AssetDatabase.IsValidFolder(dir)) AssetDatabase.CreateFolder("Assets/Materials", "Nivel");
+        string path = dir + "/" + name + ".mat";
+        m = AssetDatabase.LoadAssetAtPath<Material>(path);
+#endif
+        if (m == null)
+        {
+            m = make();
+            m.name = name;
+#if UNITY_EDITOR
+            if (!Application.isPlaying) AssetDatabase.CreateAsset(m, path);
+#endif
+        }
+        decoMats[name] = m;
+        return m;
+    }
+
+    static Shader LitShader => Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+    Material LitMaterial(string name, Color color) => SavedMaterial(name, () =>
+    {
+        var m = new Material(LitShader);
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.1f);
+        return m;
+    });
+
+    Material GlowMaterial(string name, Color color) => SavedMaterial(name, () =>
+    {
+        var m = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
+        Color hdr = color * 3f; hdr.a = 1f;   // HDR: el Bloom lo hace brillar
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", hdr);
+        return m;
+    });
+
+    Material StoneMaterial() => SavedMaterial("Piedra", () =>
+    {
+        var m = new Material(LitShader);
+#if UNITY_EDITOR
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Exterior/Stone.png");
+        if (tex != null && m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
+#endif
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.62f, 0.6f, 0.68f));
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.12f);
+        return m;
+    });
+
+    Material MetalMaterial() => SavedMaterial("MetalOscuro", () =>
+    {
+        var m = new Material(LitShader);
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.16f, 0.15f, 0.2f));
+        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0.7f);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.5f);
+        return m;
+    });
+
+    /// <summary>Aditivo (shader Abby/Particle) para brasas y efectos de combate.</summary>
+    Material FxMaterial() => SavedMaterial("FX_Brasas", () =>
+    {
+        var sh = Shader.Find("Abby/Particle");
+        if (sh == null) return new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+        var m = new Material(sh);
+#if UNITY_EDITOR
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Exterior/SoftDot.png");
+        if (tex != null) m.SetTexture("_BaseMap", tex);
+#endif
+        m.SetColor("_BaseColor", new Color(2.5f, 2.5f, 2.5f, 1f));
+        m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+        m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        return m;
+    });
+
+    Material BeamMaterial() => SavedMaterial("FX_HazSalida", () =>
+    {
+        var sh = Shader.Find("Abby/Particle");
+        var m = new Material(sh != null ? sh : Shader.Find("Universal Render Pipeline/Unlit"));
+        m.SetColor("_BaseColor", new Color(0.35f, 1.2f, 1.1f, 0.35f));
+        if (sh != null)
+        {
+            m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+        }
+        m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        return m;
+    });
+
+    void CreateOutside()
+    {
+        if (rooms.Length == 0) return;
+        Vector2 min = new Vector2(float.MaxValue, float.MaxValue), max = -min;
+        foreach (var r in rooms)
+        {
+            min = Vector2.Min(min, r.center - r.size / 2f);
+            max = Vector2.Max(max, r.center + r.size / 2f);
+        }
+        min -= Vector2.one * outsideMargin; max += Vector2.one * outsideMargin;
+        var root = NewChild(transform, Prefix + "Outside");
+        Vector2 c = (min + max) / 2f, size = max - min;
+        float k = 1f / tileMeters;
+        bool pits = false; foreach (var r in rooms) if (r.feature == RoomFeature.Foso) pits = true;
+        CreateFace(root, "Suelo", new Vector3(c.x, pits ? -9.5f : -0.05f, c.y), Vector3.up, size.x, size.y, outsideMaterial, k, k);
+    }
+
+    // ------------------------------------------------------------------ utilidades
+
+    static Transform NewChild(Transform parent, string name)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        return go.transform;
+    }
+
+    static GameObject CreateFace(Transform parent, string faceName, Vector3 center, Vector3 inwardNormal, float width, float height, Material mat, float uScale, float vScale, bool castShadows = false)
+    {
+        var go = new GameObject(faceName);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = center;
+        if (inwardNormal == Vector3.up)        go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        else if (inwardNormal == Vector3.down) go.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+        else go.transform.localRotation = Quaternion.LookRotation(-inwardNormal, Vector3.up); // la cara visible del quad mira a -Z local
+
+        go.AddComponent<MeshFilter>().sharedMesh = MakeQuad(width, height, uScale, vScale);
+        var mr = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = mat;
+        // los muros son de una cara: TwoSided para que su sombra exista aunque se vean de espaldas
+        mr.shadowCastingMode = castShadows ? UnityEngine.Rendering.ShadowCastingMode.TwoSided : UnityEngine.Rendering.ShadowCastingMode.Off;
+        return go;
+    }
+
+    static void CreateCollider(Transform parent, string colliderName, Vector3 center, Vector3 size)
+    {
+        var go = new GameObject(colliderName);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = center;
+        go.AddComponent<BoxCollider>().size = size;
+    }
+
+    /// <summary>Quad de una cara (visible desde -Z). uScale/vScale = repeticiones de textura por metro.</summary>
+    static Mesh MakeQuad(float w, float h, float uScale, float vScale)
+    {
+        float u = w * uScale, v = h * vScale;
+        var m = new Mesh { name = "FloorQuad" };
+        m.vertices = new[]
+        {
+            new Vector3(-w / 2, -h / 2, 0f), new Vector3(w / 2, -h / 2, 0f),
+            new Vector3(-w / 2,  h / 2, 0f), new Vector3(w / 2,  h / 2, 0f),
+        };
+        m.uv = new[] { new Vector2(0, 0), new Vector2(u, 0), new Vector2(0, v), new Vector2(u, v) };
+        m.normals = new[] { Vector3.back, Vector3.back, Vector3.back, Vector3.back };
+        m.triangles = new[] { 0, 2, 3, 0, 3, 1 };
+        m.RecalculateBounds();
+        return m;
+    }
+
+#if UNITY_EDITOR
+    void LoadDefaultMaterials()
+    {
+        if (floorMaterial == null) floorMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Room_Floor.mat");
+        if (wallMaterial == null) wallMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Room_Wall.mat");
+        if (doorMaterial == null) doorMaterial = DoorMaterial();
+        if (outsideMaterial == null) outsideMaterial = OutsideMaterial();
+    }
+
+    /// <summary>El mismo piso de baldosas pero en penumbra: fuera de las salas se ve "más torre", no un hueco.</summary>
+    Material OutsideMaterial()
+    {
+        const string path = "Assets/Materials/Floor_Outside.mat";
+        var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (existing != null) return existing;
+        var m = floorMaterial != null ? new Material(floorMaterial) : new Material(Shader.Find("Universal Render Pipeline/Lit"));
+        m.name = "Floor_Outside";
+        var dim = new Color(0.5f, 0.5f, 0.58f);
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", dim);
+        if (m.HasProperty("_Color")) m.SetColor("_Color", dim);
+        AssetDatabase.CreateAsset(m, path);
+        AssetDatabase.SaveAssets();
+        return m;
+    }
+
+    /// <summary>Barrera de energía (recorte por alfa + brillo) con la textura de Limits. Se guarda en Assets/Materials.</summary>
+    static Material DoorMaterial()
+    {
+        const string path = "Assets/Materials/Door_Energy.mat";
+        var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (existing != null) return existing;
+
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Limits/Limit_Energy.png");
+        Shader sh = Shader.Find("Universal Render Pipeline/Lit");
+        if (sh == null) sh = Shader.Find("Standard");
+        var m = new Material(sh) { name = "Door_Energy" };
+        if (tex != null)
+        {
+            if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
+            if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
+            m.EnableKeyword("_EMISSION");
+            if (m.HasProperty("_EmissionMap")) m.SetTexture("_EmissionMap", tex);
+        }
+        if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", new Color(1.2f, 1.2f, 1.2f));
+        if (m.HasProperty("_AlphaClip")) m.SetFloat("_AlphaClip", 1f);
+        m.EnableKeyword("_ALPHATEST_ON");
+        if (m.HasProperty("_Cutoff")) m.SetFloat("_Cutoff", 0.5f);
+        if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 2f);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0f);
+        m.renderQueue = 2450;
+        AssetDatabase.CreateAsset(m, path);
+        AssetDatabase.SaveAssets();
+        return m;
+    }
+#endif
+
+    void OnDrawGizmos()
+    {
+        if (rooms == null) return;
+        Gizmos.matrix = transform.localToWorldMatrix;
+        foreach (var r in rooms)
+        {
+            Gizmos.color = r.type switch
+            {
+                RoomType.Inicio => new Color(0.3f, 1f, 0.4f),
+                RoomType.Descanso => new Color(1f, 0.8f, 0.3f),
+                RoomType.Jefe => new Color(1f, 0.25f, 0.25f),
+                RoomType.Antesala => new Color(0.8f, 0.5f, 1f),
+                _ => new Color(0.4f, 0.8f, 1f),
+            };
+            Gizmos.DrawWireCube(new Vector3(r.center.x, 0.05f, r.center.y), new Vector3(r.size.x, 0.1f, r.size.y));
+        }
+    }
+}

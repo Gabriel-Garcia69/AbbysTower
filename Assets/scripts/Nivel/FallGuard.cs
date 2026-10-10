@@ -41,6 +41,15 @@ public class FallGuard : MonoBehaviour
         if (transform.position.y < killY) Respawn();
     }
 
+    /// <summary>Lava, pinchos del vacío…: vuelve al último suelo firme con daño y un aviso propio.</summary>
+    public void Respawn(string message, float hurt, Color color)
+    {
+        pendingMsg = message; pendingDamage = hurt; pendingColor = color;
+        Respawn();
+    }
+
+    string pendingMsg; float pendingDamage = -1f; Color pendingColor;
+
     void Respawn()
     {
         Vector3 to = safe.Count > 0 ? safe.Peek() : transform.position + Vector3.up * 10f;
@@ -50,8 +59,10 @@ public class FallGuard : MonoBehaviour
         safe.Clear(); safe.Enqueue(to);
         if (health == null) health = GetComponent<PlayerHealth>();
         if (health != null)
-            health.ReceiveHit(new HitInfo { damage = damage, knockback = 0f, hitStop = 0f, sourcePosition = to });
-        FloorDirector.Popup(to + Vector3.up * 2f, "¡Caíste al vacío!", new Color(0.8f, 0.6f, 1f), 1.5f);
-        CombatFx.Burst(to + Vector3.up * 0.8f, new Color(0.7f, 0.5f, 1f), 30, 4f, 0.15f, 0.6f, -0.3f);
+            health.ReceiveHit(new HitInfo { damage = pendingDamage >= 0f ? pendingDamage : damage, knockback = 0f, hitStop = 0f, sourcePosition = to });
+        Color c = pendingDamage >= 0f ? pendingColor : new Color(0.8f, 0.6f, 1f);
+        FloorDirector.Popup(to + Vector3.up * 2f, pendingMsg ?? "¡Caíste al vacío!", c, 1.5f);
+        CombatFx.Burst(to + Vector3.up * 0.8f, c, 30, 4f, 0.15f, 0.6f, -0.3f);
+        pendingMsg = null; pendingDamage = -1f;
     }
 }

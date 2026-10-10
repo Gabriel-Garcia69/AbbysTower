@@ -21,6 +21,12 @@ public enum RoomFeature
     Jardin,      // Lujuria: rosales, fuente y remolinos que atraen
     Forja,       // Ira: yunques, canales de lava y respiraderos de fuego
     Salon,       // Soberbia: estatuas, columnas para esconderse del Ojo
+    Columnata,   // bosque de columnas gigantes (y trampas de pinchos entre ellas)
+    Laberinto,   // laberinto de libreros / espejos / setos según el tema, con un cofre en el rincón más lejano
+    FosoLargo,   // foso larguísimo: plataformas fijas, móviles y que se desmoronan, con viento
+    Pinchos,     // pasillo de trampas: oleadas de pinchos que salen del suelo
+    RioLava,     // río de lava con piedras para saltar (algunas se hunden)
+    Garganta,    // suelo lleno de fauces que muerden en oleadas
 }
 
 [Serializable]
@@ -37,6 +43,8 @@ public class RoomSpec
     [Tooltip("Altura del suelo de la sala (m). Un pasillo entre salas de distinta altura va a la altura mayor: la sala baja necesita un Ascenso para llegar a esa puerta.")]
     public float elevation;
     public RoomFeature feature;
+    [Tooltip("Alto de los muros de esta sala (m). 0 = el del piso. Salas grandes con muros altos se sienten imponentes.")]
+    public float height;
 }
 
 [Serializable]
@@ -47,6 +55,10 @@ public class CorridorSpec
     public float width = 4f;
     [Tooltip("Si las salas están a distinta altura: el pasillo es una escalera (sube o baja) en vez de ir en alto.")]
     public bool stairs;
+    [Tooltip("Desplazamiento de la puerta respecto al centro de la sala 'from' (a lo largo del muro). Permite varias puertas por lado.")]
+    public float offset;
+    [Tooltip("Puente abierto sobre el vacío (sin muros) en vez de pasillo.")]
+    public bool bridge;
 }
 
 /// <summary>
@@ -163,12 +175,13 @@ public partial class FloorLayout : MonoBehaviour
 
     enum Side { N, S, E, W }
 
-    struct Gap { public Side side; public float offset, width, elevation; public bool secret; }
+    struct Gap { public Side side; public float offset, width, elevation; public bool secret, bridge; }
 
-    float roomHeight;   // alto de los muros de la sala que se está generando
+    float roomHeight;   // alto de los muros de la sala que se está generando (incluye puertas en alto)
+    float curWall;      // alto "de diseño" de la sala actual (RoomSpec.height o wallHeight)
 
     // Súbelo cada vez que cambie lo que genera Build(): las escenas con un piso de una versión anterior se regeneran solas.
-    const int LayoutVersion = 5;
+    const int LayoutVersion = 6;
     [SerializeField, HideInInspector] int builtVersion;
 
     void Awake()
@@ -213,13 +226,14 @@ public partial class FloorLayout : MonoBehaviour
         for (int i = 0; i < rooms.Length; i++) gaps[i] = new List<Gap>();
         foreach (var c in corridors)
         {
-            if (!ValidCorridor(c, out Side sideFrom, out Side sideTo)) continue;
-            // los pasillos son rectos y salen del centro del muro (las salas están alineadas);
-            // van a la altura de la sala más alta: en la sala baja el hueco queda en alto
+            var geo = Geo(c);
+            if (!geo.ok) continue;
+            // los pasillos son rectos; van a la altura de la sala más alta (en la sala baja el hueco queda en alto),
+            // salvo las escaleras y los puentes, que llegan al nivel del suelo de cada sala
             float elev = Mathf.Max(rooms[c.from].elevation, rooms[c.to].elevation);
-            // con escalera, cada puerta queda al nivel del suelo de su sala
-            gaps[c.from].Add(new Gap { side = sideFrom, width = c.width, offset = 0f, elevation = c.stairs ? 0f : elev - rooms[c.from].elevation });
-            gaps[c.to].Add(new Gap { side = sideTo, width = c.width, offset = 0f, elevation = c.stairs ? 0f : elev - rooms[c.to].elevation });
+            bool level = c.stairs || c.bridge;
+            gaps[c.from].Add(new Gap { side = geo.sideA, width = c.width, offset = geo.offA, elevation = level ? 0f : elev - rooms[c.from].elevation, bridge = c.bridge });
+            gaps[c.to].Add(new Gap { side = geo.sideB, width = c.width, offset = geo.offB, elevation = level ? 0f : elev - rooms[c.to].elevation, bridge = c.bridge });
         }
 
         // 1b) muros falsos (escondites): huecos que se dibujan como muro pero se pueden atravesar
@@ -236,10 +250,12 @@ public partial class FloorLayout : MonoBehaviour
             roomObjects[i] = root;
 
             // los muros suben lo necesario para que quepa la puerta más alta
-            roomHeight = wallHeight;
+            curWall = r.height > 0.5f ? r.height : wallHeight;
+            roomHeight = curWall;
             foreach (var g in gaps[i]) roomHeight = Mathf.Max(roomHeight, g.elevation + wallHeight);
 
             if (r.feature == RoomFeature.Foso) CreatePitFloor(root, r);
+            else if (r.feature == RoomFeature.FosoLargo || r.feature == RoomFeature.RioLava) CreateBandFloor(root, r, gaps[i]);
             else CreateFloor(root, r.size.x, r.size.y);
             foreach (Side s in new[] { Side.N, Side.S, Side.E, Side.W })
                 CreateWallWithGaps(root, r.size, s, gaps[i].FindAll(g => g.side == s));
@@ -254,26 +270,19 @@ public partial class FloorLayout : MonoBehaviour
             if (r.feature == RoomFeature.Foso) BuildPit(root, r, gaps[i]);
             if (r.feature == RoomFeature.Ascenso) BuildAscent(root, r, gaps[i]);
             if (r.feature == RoomFeature.Escalinata) BuildGrandStair(root, r, gaps[i]);
+            BuildStructureFeature(root, r, gaps[i], i, encounters[i]);
             BuildThemeFeature(root, r, gaps[i], i, encounters[i]);
             if (r.elevation > LowestElevation + 0.3f) Foundation(root, r);
 
             var reveal = root.gameObject.AddComponent<AreaReveal>();
             reveal.size = r.size + Vector2.one * (colliderThickness * 2f);
-            reveal.yMin = r.feature == RoomFeature.Foso ? -PitDepth - 1f : -2.5f;
+            reveal.yMin = r.feature == RoomFeature.Foso || r.feature == RoomFeature.FosoLargo ? -PitDepth - 1f : -2.5f;
             reveal.yMax = roomHeight + 2.5f;
             reveal.margin = 3.5f;
         }
 
         // 3) pasillos
-        foreach (var c in corridors)
-        {
-            if (!ValidCorridor(c, out Side sideFrom, out _)) continue;
-            roomHeight = wallHeight;
-            if (c.stairs && Mathf.Abs(rooms[c.from].elevation - rooms[c.to].elevation) > 0.05f)
-                CreateStairCorridor(corrRoot, rooms[c.from], rooms[c.to], sideFrom, c.width);
-            else
-                CreateCorridor(corrRoot, rooms[c.from], rooms[c.to], sideFrom, c.width, Mathf.Max(rooms[c.from].elevation, rooms[c.to].elevation));
-        }
+        foreach (var c in corridors) BuildCorridor(corrRoot, c);
 
         // 3b) secretos, notas y reliquias del tema (dependen de que existan las salas)
         PlaceThemeExtras(roomObjects, gaps);
@@ -327,21 +336,6 @@ public partial class FloorLayout : MonoBehaviour
                     return transform.TransformPoint(new Vector3(r.center.x, 0f, r.center.y));
             return transform.position;
         }
-    }
-
-    bool ValidCorridor(CorridorSpec c, out Side sideFrom, out Side sideTo)
-    {
-        sideFrom = sideTo = Side.N;
-        if (c.from < 0 || c.to < 0 || c.from >= rooms.Length || c.to >= rooms.Length || c.from == c.to)
-        {
-            Debug.LogWarning($"FloorLayout: pasillo {c.from}→{c.to} con índices inválidos.", this);
-            return false;
-        }
-        Vector2 a = rooms[c.from].center, b = rooms[c.to].center;
-        if (Mathf.Abs(a.x - b.x) < 0.01f) { sideFrom = b.y > a.y ? Side.N : Side.S; sideTo = b.y > a.y ? Side.S : Side.N; return true; }
-        if (Mathf.Abs(a.y - b.y) < 0.01f) { sideFrom = b.x > a.x ? Side.E : Side.W; sideTo = b.x > a.x ? Side.W : Side.E; return true; }
-        Debug.LogWarning($"FloorLayout: las salas {rooms[c.from].name} y {rooms[c.to].name} no están alineadas en X ni en Z; el pasillo se omite.", this);
-        return false;
     }
 
     // ------------------------------------------------------------------ piezas
@@ -404,56 +398,6 @@ public partial class FloorLayout : MonoBehaviour
         CreateFace(parent, id, pos, inward, len, h, wallMaterial, WallK, WallK, true);
         if (cap) AddCap(parent, pos + Vector3.up * h / 2f, inward, len);
         CreateCollider(parent, "Collider_" + id, colCenter, colSize);
-    }
-
-    void CreateCorridor(Transform parent, RoomSpec a, RoomSpec b, Side sideFromA, float width, float elevation = 0f)
-    {
-        float h = wallHeight, t = colliderThickness, k = 1f / tileMeters;
-        bool alongZ = sideFromA == Side.N || sideFromA == Side.S;
-        Vector3 start, end;   // bordes de las dos salas, en el eje del pasillo
-        if (alongZ)
-        {
-            float sgn = sideFromA == Side.N ? 1f : -1f;
-            start = new Vector3(a.center.x, 0f, a.center.y + sgn * a.size.y / 2f);
-            end = new Vector3(b.center.x, 0f, b.center.y - sgn * b.size.y / 2f);
-        }
-        else
-        {
-            float sgn = sideFromA == Side.E ? 1f : -1f;
-            start = new Vector3(a.center.x + sgn * a.size.x / 2f, 0f, a.center.y);
-            end = new Vector3(b.center.x - sgn * b.size.x / 2f, 0f, b.center.y);
-        }
-        float len = Vector3.Distance(start, end);
-        if (len < 0.01f) return;
-
-        var root = NewChild(parent, $"Pasillo {a.name.Split(' ')[0]}-{b.name.Split(' ')[0]}");
-        root.localPosition = (start + end) / 2f + Vector3.up * elevation;
-
-        float w = alongZ ? width : len, d = alongZ ? len : width;
-        CreateFloor(root, w, d);
-        if (torches) CorridorLights(root, alongZ, width, len, 0f, 0f);
-        var reveal = root.gameObject.AddComponent<AreaReveal>();
-        reveal.size = new Vector2(w, d);
-        reveal.yMin = -2.5f; reveal.yMax = h + 2f; reveal.margin = 2f;
-
-        if (alongZ)
-        {
-            CreateFace(root, "WallE", new Vector3(width / 2, h / 2, 0f), Vector3.left, len, h, wallMaterial, WallK, WallK, true);
-            AddCap(root, new Vector3(width / 2, h, 0f), Vector3.left, len);
-            CreateFace(root, "WallW", new Vector3(-width / 2, h / 2, 0f), Vector3.right, len, h, wallMaterial, WallK, WallK, true);
-            AddCap(root, new Vector3(-width / 2, h, 0f), Vector3.right, len);
-            CreateCollider(root, "Collider_WallE", new Vector3(width / 2 + t / 2, h / 2, 0f), new Vector3(t, h + 2f, len));
-            CreateCollider(root, "Collider_WallW", new Vector3(-width / 2 - t / 2, h / 2, 0f), new Vector3(t, h + 2f, len));
-        }
-        else
-        {
-            CreateFace(root, "WallN", new Vector3(0f, h / 2, width / 2), Vector3.back, len, h, wallMaterial, WallK, WallK, true);
-            AddCap(root, new Vector3(0f, h, width / 2), Vector3.back, len);
-            CreateFace(root, "WallS", new Vector3(0f, h / 2, -width / 2), Vector3.forward, len, h, wallMaterial, WallK, WallK, true);
-            AddCap(root, new Vector3(0f, h, -width / 2), Vector3.forward, len);
-            CreateCollider(root, "Collider_WallN", new Vector3(0f, h / 2, width / 2 + t / 2), new Vector3(len, h + 2f, t));
-            CreateCollider(root, "Collider_WallS", new Vector3(0f, h / 2, -width / 2 - t / 2), new Vector3(len, h + 2f, t));
-        }
     }
 
     LevelDoor CreateDoor(Transform parent, Vector2 size, Gap g)
@@ -716,7 +660,7 @@ public partial class FloorLayout : MonoBehaviour
         var deco = NewChild(root, "Decoracion");
         float hx = r.size.x / 2f, hz = r.size.y / 2f, h = wallHeight;
         Color tint = RoomLightColor(r.type);
-        if (theme != FloorTheme.Base) { ThemeDecor(deco, r, gaps, index); return; }
+        ThemeDecor(deco, r, gaps, index); return;
 
         // pilares en las esquinas
         if (Mathf.Min(r.size.x, r.size.y) >= 10f && r.type != RoomType.Prueba)
@@ -815,14 +759,16 @@ public partial class FloorLayout : MonoBehaviour
         foreach (var c in corridors)
         {
             if (c.from != idx && c.to != idx) continue;
-            if (!ValidCorridor(c, out Side sf, out Side st)) continue;
-            Side s = c.from == idx ? sf : st;
+            var g = Geo(c);
+            if (!g.ok) continue;
+            Side s = c.from == idx ? g.sideA : g.sideB;
+            float o = c.from == idx ? g.offA : g.offB;
             switch (s)
             {
-                case Side.S: list.Add(new Rect(-w / 2f, -hz, w, d)); break;
-                case Side.N: list.Add(new Rect(-w / 2f, hz - d, w, d)); break;
-                case Side.E: list.Add(new Rect(hx - d, -w / 2f, d, w)); break;
-                default:     list.Add(new Rect(-hx, -w / 2f, d, w)); break;
+                case Side.S: list.Add(new Rect(o - w / 2f, -hz, w, d)); break;
+                case Side.N: list.Add(new Rect(o - w / 2f, hz - d, w, d)); break;
+                case Side.E: list.Add(new Rect(hx - d, o - w / 2f, d, w)); break;
+                default:     list.Add(new Rect(-hx, o - w / 2f, d, w)); break;
             }
         }
         return list;
@@ -937,7 +883,7 @@ public partial class FloorLayout : MonoBehaviour
     /// Bloque sólido (terraza, torre, cornisa) con suelo de baldosa arriba, muros a los lados y collider.
     /// Los lados pegados a los muros de la sala (roomHalf) no se dibujan: quedarían en el mismo plano que el muro y parpadearían.
     /// </summary>
-    void Block(Transform parent, string name, Vector3 min, Vector3 max, Vector2 roomHalf)
+    void Block(Transform parent, string name, Vector3 min, Vector3 max, Vector2 roomHalf, bool solid = false)
     {
         var b = NewChild(parent, name);
         Vector3 c = (min + max) / 2f, s = max - min;
@@ -946,10 +892,13 @@ public partial class FloorLayout : MonoBehaviour
         const float eps = 0.01f;
         bool n = max.z < roomHalf.y - eps, so = min.z > -roomHalf.y + eps, e = max.x < roomHalf.x - eps, w = min.x > -roomHalf.x + eps;
         CreateFace(b, "Arriba", new Vector3(0f, s.y / 2f, 0f), Vector3.up, s.x, s.z, floorMaterial, k, k);
-        if (n)  CreateFace(b, "LadoN", new Vector3(0f, 0f, s.z / 2f), Vector3.forward, s.x, s.y, wallMaterial, WallK, WallK, true);
-        if (so) CreateFace(b, "LadoS", new Vector3(0f, 0f, -s.z / 2f), Vector3.back, s.x, s.y, wallMaterial, WallK, WallK, true);
-        if (e)  CreateFace(b, "LadoE", new Vector3(s.x / 2f, 0f, 0f), Vector3.right, s.z, s.y, wallMaterial, WallK, WallK, true);
-        if (w)  CreateFace(b, "LadoO", new Vector3(-s.x / 2f, 0f, 0f), Vector3.left, s.z, s.y, wallMaterial, WallK, WallK, true);
+        // las caras pegadas a un muro de la sala también se dibujan (miran hacia afuera, así al girar la cámara
+        // el bloque se ve macizo y no hueco); los bordes de piedra sí se omiten ahí
+        bool fn = true, fs = true, fe = true, fw = true;
+        if (fn) CreateFace(b, "LadoN", new Vector3(0f, 0f, s.z / 2f), Vector3.forward, s.x, s.y, wallMaterial, WallK, WallK, true);
+        if (fs) CreateFace(b, "LadoS", new Vector3(0f, 0f, -s.z / 2f), Vector3.back, s.x, s.y, wallMaterial, WallK, WallK, true);
+        if (fe) CreateFace(b, "LadoE", new Vector3(s.x / 2f, 0f, 0f), Vector3.right, s.z, s.y, wallMaterial, WallK, WallK, true);
+        if (fw) CreateFace(b, "LadoO", new Vector3(-s.x / 2f, 0f, 0f), Vector3.left, s.z, s.y, wallMaterial, WallK, WallK, true);
         // borde de piedra: un marco en los lados libres que asoma 3 cm sobre la baldosa. Antes era un cubo entero
         // con la cara de arriba en el mismo plano que el suelo y las dos texturas se peleaban (z-fighting).
         const float rim = 0.2f, lip = 0.05f, up = 0.03f, depth = 0.18f;
@@ -962,6 +911,7 @@ public partial class FloorLayout : MonoBehaviour
         if (e)  Prim(b, PrimitiveType.Cube, "BordeE", new Vector3(s.x / 2f - rim / 2f + lip, ry - 0.002f, 0f), new Vector3(rim, depth, s.z - 0.004f), cap, false);
         if (w)  Prim(b, PrimitiveType.Cube, "BordeO", new Vector3(-s.x / 2f + rim / 2f - lip, ry - 0.002f, 0f), new Vector3(rim, depth, s.z - 0.004f), cap, false);
         b.gameObject.AddComponent<BoxCollider>().size = s;
+        if (s.y > 1.2f) b.gameObject.AddComponent<OccluderFade>();
     }
 
     /// <summary>Escalera de madera pegada a una cara (facing = hacia donde está quien trepa) con su ClimbZone.</summary>
@@ -1026,6 +976,7 @@ public partial class FloorLayout : MonoBehaviour
     {
         var p = NewChild(parent, "Pilar");
         p.localPosition = pos;
+        p.gameObject.AddComponent<OccluderFade>();
         var shaft = Prim(p, PrimitiveType.Cylinder, "Fuste", new Vector3(0f, height / 2f, 0f), new Vector3(radius * 2f, height / 2f, radius * 2f), StoneMaterial(), true);
         shaft.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         Prim(p, PrimitiveType.Cube, "Base", new Vector3(0f, 0.18f, 0f), new Vector3(radius * 2.7f, 0.36f, radius * 2.7f), StoneMaterial(), false);
@@ -1053,10 +1004,11 @@ public partial class FloorLayout : MonoBehaviour
             bool blocked = false;
             foreach (var g in gaps) if (g.side == Side.N && Mathf.Abs(along - g.offset) < g.width / 2f + 0.8f) blocked = true;
             if (blocked) continue;
-            float bh = wallHeight * 0.6f;
-            CreateFace(parent, "Estandarte", new Vector3(along, wallHeight - 0.25f - bh / 2f, hz - 0.04f), Vector3.back, 1f, bh, mat, 1f, 1f, true);
-            CreateFace(parent, "Estandarte_Emblema", new Vector3(along, wallHeight - 0.25f - bh * 0.45f, hz - 0.05f), Vector3.back, 0.35f, 0.35f, trim, 1f, 1f);
-            Prim(parent, PrimitiveType.Cube, "Barra", new Vector3(along, wallHeight - 0.22f, hz - 0.08f), new Vector3(1.3f, 0.06f, 0.06f), MetalMaterial(), false);
+            float top = Mathf.Max(wallHeight, curWall) - 0.25f, bw = curWall > 4.5f ? 1.5f : 1f;
+            float bh = Mathf.Min(top * 0.65f, 5.5f);
+            CreateFace(parent, "Estandarte", new Vector3(along, top - bh / 2f, hz - 0.04f), Vector3.back, bw, bh, mat, 1f, 1f, true);
+            CreateFace(parent, "Estandarte_Emblema", new Vector3(along, top - bh * 0.4f, hz - 0.05f), Vector3.back, bw * 0.35f, bw * 0.35f, trim, 1f, 1f);
+            Prim(parent, PrimitiveType.Cube, "Barra", new Vector3(along, top + 0.03f, hz - 0.08f), new Vector3(bw + 0.3f, 0.06f, 0.06f), MetalMaterial(), false);
         }
     }
 
@@ -1194,7 +1146,10 @@ public partial class FloorLayout : MonoBehaviour
     {
         // muro sin puertas: preferimos E, si no O
         Side side = Side.E;
-        foreach (var g in gaps) if (g.side == Side.E) side = Side.W;
+        bool eBusy = false, wBusy = false;
+        foreach (var g in gaps) { if (g.side == Side.E) eBusy = true; if (g.side == Side.W) wBusy = true; }
+        if (eBusy && wBusy) return;
+        if (eBusy) side = Side.W;
         float sgn = side == Side.E ? 1f : -1f;
         float hx = r.size.x / 2f;
         float depth = 2.4f, width = 3f, h = wallHeight;
@@ -1457,7 +1412,7 @@ public partial class FloorLayout : MonoBehaviour
         var root = NewChild(transform, Prefix + "Outside");
         Vector2 c = (min + max) / 2f, size = max - min;
         float k = 1f / tileMeters;
-        bool pits = false; foreach (var r in rooms) if (r.feature == RoomFeature.Foso) pits = true;
+        bool pits = false; foreach (var r in rooms) if (r.feature == RoomFeature.Foso || r.feature == RoomFeature.FosoLargo || r.feature == RoomFeature.RioLava) pits = true;
         float y = LowestElevation + (pits ? -9.5f : -0.05f);
         CreateFace(root, "Suelo", new Vector3(c.x, y, c.y), Vector3.up, size.x, size.y, outsideMaterial, k, k);
     }

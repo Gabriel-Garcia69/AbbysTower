@@ -23,8 +23,9 @@ public partial class FloorLayout
         var lights = NewChild(root, "Iluminacion");
 
         // luz principal: candelabro / lámpara colgante en el centro (alto: no estorba la vista)
-        float hang = roomHeight + 0.6f;
-        float intensity = centerLightIntensity * Mathf.Max(1f, Mathf.Max(r.size.x, r.size.y) / 16f);
+        // en salas altas el candelabro cuelga de cadenas largas hasta ~5 m: si queda arriba, su luz no llega al suelo
+        float hang = Mathf.Min(roomHeight + 0.6f, Mathf.Max(wallHeight + 0.8f, 5f));
+        float intensity = centerLightIntensity * Mathf.Max(1f, Mathf.Max(r.size.x, r.size.y) / 16f) * Mathf.Max(1f, hang / 3.6f);
         Color centerColor = theme == FloorTheme.Base ? Color.Lerp(c, Color.white, 0.55f) : palette.center;
         var mainPos = new Vector3(0f, hang, -r.size.y * 0.1f);
         switch (theme)
@@ -43,14 +44,22 @@ public partial class FloorLayout
                 Chandelier(lights, mainPos, 0.9f, 8, centerColor, intensity, Mathf.Max(r.size.x, r.size.y) * 0.9f, true, false);
                 break;
         }
+        // salas grandes: dos candelabros más (sin sombra) para que no quede un pozo de luz al centro
+        if (r.size.x >= 24f && r.feature != RoomFeature.Laberinto)
+            foreach (float sx in new[] { -1f, 1f })
+                Chandelier(lights, new Vector3(sx * r.size.x * 0.3f, hang, r.size.y * 0.12f), 0.7f, 6, centerColor, intensity * 0.55f, Mathf.Max(r.size.x, r.size.y) * 0.6f, false, theme == FloorTheme.Soberbia || theme == FloorTheme.Lujuria);
+
+        HighTorches(lights, r, gaps, c);
 
         // antorchas o apliques en los muros
         Side[] sides = r.feature == RoomFeature.Ascenso || r.feature == RoomFeature.Escalinata ? new[] { Side.E, Side.W } : new[] { Side.N, Side.E, Side.W };
         foreach (Side side in sides)
         {
             float len = side == Side.N ? r.size.x : r.size.y;
-            foreach (float along in new[] { -len / 4f, len / 4f })
+            int count = Mathf.Max(2, Mathf.RoundToInt(len / 7f));   // una antorcha cada ~7 m
+            for (int ti = 0; ti < count; ti++)
             {
+                float along = ((ti + 0.5f) / count - 0.5f) * len;
                 bool blocked = false;
                 foreach (var g in gaps)
                     if (g.side == side && Mathf.Abs(along - g.offset) < g.width / 2f + 0.8f) blocked = true;
@@ -81,6 +90,23 @@ public partial class FloorLayout
         }
     }
 
+    /// <summary>En salas de muros altos, antorchas grandes a media altura en E y O: la sala se lee completa, no solo abajo.</summary>
+    void HighTorches(Transform lights, RoomSpec r, List<Gap> gaps, Color c)
+    {
+        if (curWall < 5.5f) return;
+        float y = curWall * 0.62f;
+        foreach (var side in new[] { Side.E, Side.W })
+            foreach (float along in new[] { -r.size.y * 0.12f, r.size.y * 0.38f })
+            {
+                bool blocked = false;
+                foreach (var g in gaps) if (g.side == side && Mathf.Abs(along - g.offset) < g.width / 2f + 1f && g.elevation + wallHeight > y - 0.5f) blocked = true;
+                if (blocked) continue;
+                Vector3 pos = side == Side.E ? new Vector3(r.size.x / 2f, y, along) : new Vector3(-r.size.x / 2f, y, along);
+                Vector3 inward = side == Side.E ? Vector3.left : Vector3.right;
+                WallTorch(lights, pos, inward, c, false, 1.3f);
+            }
+    }
+
     Color TorchColorFor(RoomType t)
     {
         switch (t)
@@ -106,7 +132,7 @@ public partial class FloorLayout
             float side = (i % 2 == 0 ? 1f : -1f) * (width / 2f);
             Vector3 wallPos = alongZ ? new Vector3(side, y + wallHeight * 0.66f, along) : new Vector3(along, y + wallHeight * 0.66f, side);
             Vector3 inward = alongZ ? new Vector3(-Mathf.Sign(side), 0f, 0f) : new Vector3(0f, 0f, -Mathf.Sign(side));
-            if (theme == FloorTheme.Base || theme == FloorTheme.Pereza || theme == FloorTheme.Gula || theme == FloorTheme.Ira)
+            if (theme == FloorTheme.Base || theme == FloorTheme.Galerias || theme == FloorTheme.Pereza || theme == FloorTheme.Gula || theme == FloorTheme.Ira)
                 WallTorch(root, wallPos, inward, c, false, 0.75f);
             else if (theme == FloorTheme.Envidia)
                 WallCrystal(root, wallPos, inward, c, false, 0.75f);
@@ -182,6 +208,7 @@ public partial class FloorLayout
     {
         var t = NewChild(parent, "Farol");
         t.localPosition = pos;
+        t.gameObject.AddComponent<OccluderFade>();   // si tapa a Abby se deja de dibujar (la luz sigue)
         var iron = MetalMaterial();
         for (float y = 0.25f; y < chain; y += 0.16f)
         {
@@ -209,6 +236,7 @@ public partial class FloorLayout
     {
         var t = NewChild(parent, "Candelabro");
         t.localPosition = pos;
+        t.gameObject.AddComponent<OccluderFade>();   // si tapa a Abby se deja de dibujar (la luz sigue)
         var metal = fancy ? BrassMaterial() : MetalMaterial();
         var wax = LitMaterial("Cera", new Color(0.92f, 0.86f, 0.72f));
         var ring = new GameObject("Aro");
@@ -257,6 +285,7 @@ public partial class FloorLayout
     {
         var t = NewChild(parent, "LamparaCristal");
         t.localPosition = pos;
+        t.gameObject.AddComponent<OccluderFade>();   // si tapa a Abby se deja de dibujar (la luz sigue)
         Prim(t, PrimitiveType.Cube, "Cadena", new Vector3(0f, 1.3f, 0f), new Vector3(0.03f, 2.6f, 0.03f), BrassMaterial(), false);
         for (int i = 0; i < 7; i++)
         {
@@ -277,6 +306,7 @@ public partial class FloorLayout
     {
         var t = NewChild(parent, "JaulaBrasas");
         t.localPosition = pos;
+        t.gameObject.AddComponent<OccluderFade>();   // si tapa a Abby se deja de dibujar (la luz sigue)
         var iron = MetalMaterial();
         Prim(t, PrimitiveType.Cube, "Cadena", new Vector3(0f, 1.4f, 0f), new Vector3(0.05f, 2.6f, 0.05f), iron, false);
         for (int i = 0; i < 8; i++)

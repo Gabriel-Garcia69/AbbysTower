@@ -423,7 +423,7 @@ def soberbia_wall():
     save("soberbia_wall", alb, h, np.where(gold, 0.8, 0.7), metal=gold.astype(np.float32), nstrength=3)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(sys.argv) == 2:
     base_floor(); base_wall()
     wood_planks("pereza_floor", 201, col(70, 50, 34), col(118, 88, 60), planks=6, dust=0.55, smooth=0.25)
     pereza_wall()
@@ -433,3 +433,59 @@ if __name__ == "__main__":
     lujuria_floor(); lujuria_wall()
     ira_floor(); ira_wall()
     soberbia_floor(); soberbia_wall()
+
+
+# ------------------------------------------------------------------ GALERÍAS (piso 2): tablones con herrajes y roca de acantilado
+
+def galerias_floor():
+    planks = 5
+    row = np.floor(V * planks).astype(np.int32)
+    grain = fbm(301, 2.0, aniso=(0.08, 1.0))
+    tone = rand_per_id(row, 302, 0.7, 1.05)
+    alb = lerp(col(64, 58, 54), col(110, 98, 86), grain) * tone[..., None]
+    fy = V * planks - row
+    seam = np.clip(np.minimum(fy, 1 - fy) * planks * 50, 0, 1)
+    alb = lerp(alb * 0.3, alb, seam)
+    # flejes de hierro cada medio tablero, con remaches
+    strap = (np.abs(((U * 2) % 1) - 0.5) < 0.035)
+    alb = np.where(strap[..., None], lerp(col(40, 40, 46), col(70, 70, 78), fbm(303, 1.5)), alb)
+    rivet = strap & (np.abs(fy - 0.5) < 0.08)
+    alb = np.where(rivet[..., None], col(120, 120, 130), alb)
+    moss = np.clip((fbm(304, 2.4) - 0.62) * 3, 0, 1) * (1 - seam * 0.5)
+    alb = lerp(alb, col(60, 80, 50), moss * 0.5)
+    h = seam * 0.7 + grain * 0.15 + strap * 0.35 + rivet * 0.3
+    save("galerias_floor", alb, h, 0.2 + 0.4 * strap, metal=strap.astype(np.float32) * 0.8, nstrength=5)
+
+
+def galerias_wall():
+    n = fbm(311, 2.2)
+    strata = 0.5 + 0.5 * np.sin((V * 9 + fbm(312, 2.0) * 1.6) * np.pi * 2)
+    rock = lerp(col(58, 54, 66), col(118, 108, 120), n * 0.6 + strata * 0.4)
+    cracks, ids, _ = lava_cracks(313, 16, 0.006)
+    rock = lerp(rock, col(24, 22, 28), cracks * 0.8)
+    rock *= rand_per_id(ids, 314, 0.85, 1.08)[..., None]
+    lichen = np.clip((fbm(315, 2.6) - 0.6) * 3, 0, 1)
+    rock = lerp(rock, col(150, 160, 110), lichen * 0.35)
+    h = strata * 0.4 + n * 0.4 - cracks * 0.4
+    save("galerias_wall", rock, h, 0.12, nstrength=7)
+
+
+if __name__ == "__main__" and len(sys.argv) > 2 and sys.argv[2] == "galerias":
+    galerias_floor(); galerias_wall()
+
+
+def lava_surface():
+    """Superficie de lava (para material sin luz): magma brillante con placas de costra que flotan."""
+    t = fbm(401, 2.0); fine = fbm(402, 1.3)
+    crust_f1, crust_f2, ids = voronoi(403, 22)
+    edge = crust_f2 - crust_f1
+    crust = np.clip((edge - 0.012) / 0.02, 0, 1) * np.clip((fbm(404, 2.4) - 0.35) * 2.5, 0, 1)
+    hot = lerp(col(255, 120, 20), col(255, 230, 120), np.clip(t * 1.2 - 0.1 + fine * 0.3, 0, 1))
+    dark = lerp(col(40, 12, 6), col(90, 30, 10), fine)
+    alb = lerp(hot, dark, crust * 0.92)
+    Image.fromarray((np.clip(alb, 0, 1) * 255).astype(np.uint8), "RGB").save(f"{OUT}/lava_albedo.png")
+    print("ok lava")
+
+
+if __name__ == "__main__" and len(sys.argv) > 2 and sys.argv[2] == "lava":
+    lava_surface()

@@ -31,69 +31,12 @@ public partial class FloorLayout
     const float StepRise = 0.2f;
 
     /// <summary>
-    /// Pasillo-escalera entre dos salas a distinta altura: descanso, tramo de escalones (con rampa invisible para caminar
-    /// suave) y descanso. Las puertas quedan al nivel del suelo de cada sala.
-    /// </summary>
-    void CreateStairCorridor(Transform parent, RoomSpec a, RoomSpec b, Side sideFromA, float width)
-    {
-        bool alongZ = sideFromA == Side.N || sideFromA == Side.S;
-        Vector3 start, end;
-        if (alongZ)
-        {
-            float sgn = sideFromA == Side.N ? 1f : -1f;
-            start = new Vector3(a.center.x, a.elevation, a.center.y + sgn * a.size.y / 2f);
-            end = new Vector3(b.center.x, b.elevation, b.center.y - sgn * b.size.y / 2f);
-        }
-        else
-        {
-            float sgn = sideFromA == Side.E ? 1f : -1f;
-            start = new Vector3(a.center.x + sgn * a.size.x / 2f, a.elevation, a.center.y);
-            end = new Vector3(b.center.x - sgn * b.size.x / 2f, b.elevation, b.center.y);
-        }
-        Vector3 flat = end - start; flat.y = 0f;
-        float len = flat.magnitude;
-        if (len < 2.5f) { Debug.LogWarning($"FloorLayout: el pasillo-escalera {a.name}→{b.name} es muy corto.", this); return; }
-        float rise = b.elevation - a.elevation;
-        float landing = Mathf.Min(1.2f, len * 0.15f);
-        float run = len - 2f * landing;
-        if (Mathf.Abs(rise) / run > 0.8f) Debug.LogWarning($"FloorLayout: la escalera {a.name}→{b.name} es muy empinada ({Mathf.Abs(rise):0.0} m en {run:0.0} m).", this);
-
-        var root = NewChild(parent, $"Escalera {a.name.Split(' ')[0]}-{b.name.Split(' ')[0]}");
-        root.localPosition = new Vector3((start.x + end.x) / 2f, a.elevation, (start.z + end.z) / 2f);
-        root.localRotation = Quaternion.LookRotation(flat.normalized);   // +Z local = de A hacia B
-        float h = wallHeight, t = colliderThickness, k = 1f / tileMeters;
-        float lo = Mathf.Min(0f, rise), hi = Mathf.Max(0f, rise);
-
-        // descansos
-        var la = NewChild(root, "DescansoA"); la.localPosition = new Vector3(0f, 0f, -len / 2f + landing / 2f);
-        CreateFloor(la, width, landing);
-        var lb = NewChild(root, "DescansoB"); lb.localPosition = new Vector3(0f, rise, len / 2f - landing / 2f);
-        CreateFloor(lb, width, landing);
-
-        StairRun(root, new Vector3(0f, 0f, -len / 2f + landing), Vector3.forward, run, rise, width, false);
-
-        // muros laterales (tan altos como hace falta para cubrir los dos niveles) con tapa
-        float wh = hi - lo + h, wy = lo + wh / 2f;
-        foreach (float sx in new[] { -1f, 1f })
-        {
-            var inward = new Vector3(-sx, 0f, 0f);
-            CreateFace(root, sx > 0 ? "WallE" : "WallW", new Vector3(sx * width / 2f, wy, 0f), inward, len, wh, wallMaterial, WallK, WallK, true);
-            AddCap(root, new Vector3(sx * width / 2f, lo + wh, 0f), inward, len);
-            CreateCollider(root, "Collider_Muro", new Vector3(sx * (width / 2f + t / 2f), wy + 1f, 0f), new Vector3(t, wh + 2f, len));
-        }
-        if (torches) CorridorLights(root, true, width, len, 0f, rise);
-
-        var reveal = root.gameObject.AddComponent<AreaReveal>();
-        reveal.size = new Vector2(width, len);
-        reveal.yMin = lo - 2.5f; reveal.yMax = hi + h + 2f; reveal.margin = 2f;
-    }
-
-    /// <summary>
     /// Tramo de escalones macizos desde 'start' (borde de abajo… o de arriba si rise &lt; 0) avanzando 'run' metros en 'dir'.
     /// Cada escalón tiene huella (material del suelo) y contrahuella (piedra). Colisión: una rampa lisa.
     /// </summary>
-    Transform StairRun(Transform parent, Vector3 start, Vector3 dir, float run, float rise, float width, bool sides)
+    Transform StairRun(Transform parent, Vector3 start, Vector3 dir, float run, float rise, float width, bool sides, float baseY = float.NaN)
     {
+        if (float.IsNaN(baseY)) baseY = Mathf.Min(start.y, start.y + rise);
         if (rise < 0f)   // bajar = la misma escalera vista desde el otro extremo
         {
             start = start + dir * run + Vector3.up * rise;
@@ -114,9 +57,15 @@ public partial class FloorLayout
             // canto: listón fino que marca cada escalón (se lee la escalera aunque esté a contraluz)
             var edge = Prim(s, PrimitiveType.Cube, "Canto", new Vector3(0f, top - 0.015f, z0 + 0.03f), new Vector3(width, 0.03f, 0.06f), nose, false);
             edge.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            if (sides)
-                foreach (float sx in new[] { -1f, 1f })
-                    CreateFace(s, "Lado", new Vector3(sx * width / 2f, top / 2f, z0 + depth / 2f), new Vector3(sx, 0f, 0f), depth, top, wallMaterial, WallK, WallK, true);
+            // lados macizos siempre (al girar la cámara no se ve el hueco), desde la base hasta la huella
+            float y0 = Mathf.Min(0f, baseY - start.y);
+            foreach (float sx in new[] { -1f, 1f })
+                CreateFace(s, "Lado", new Vector3(sx * width / 2f, (top + y0) / 2f, z0 + depth / 2f), new Vector3(sx, 0f, 0f), depth, top - y0, wallMaterial, WallK, WallK, true);
+        }
+        {
+            float y0 = Mathf.Min(0f, baseY - start.y);
+            CreateFace(s, "Espalda", new Vector3(0f, (rise + y0) / 2f, run), Vector3.forward, width, rise - y0, wallMaterial, WallK, WallK, true);
+            if (y0 < -0.05f) CreateFace(s, "Frente", new Vector3(0f, y0 / 2f, 0f), Vector3.back, width, -y0, wallMaterial, WallK, WallK, true);
         }
         // rampa: la superficie pasa por el borde de cada escalón
         float L = Mathf.Sqrt(run * run + rise * rise), ang = Mathf.Atan2(rise, run) * Mathf.Rad2Deg, thick = 0.4f;

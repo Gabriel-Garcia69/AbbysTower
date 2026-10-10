@@ -1,7 +1,7 @@
 using UnityEngine;
 
-/// <summary>Estética y emoción de un piso. Base = pisos 1 y 2; los demás son los siete pecados capitales.</summary>
-public enum FloorTheme { Base, Pereza, Gula, Avaricia, Envidia, Lujuria, Ira, Soberbia }
+/// <summary>Estética y emoción de un piso. Base = piso 1, Galerias = piso 2; los demás son los siete pecados capitales.</summary>
+public enum FloorTheme { Base, Pereza, Gula, Avaricia, Envidia, Lujuria, Ira, Soberbia, Galerias }
 
 /// <summary>Colores, niebla, luces y nombres de cada tema. Lo usan FloorLayout (al generar) y FloorDirector (en juego).</summary>
 public struct ThemePalette
@@ -105,6 +105,17 @@ public static class FloorThemes
                     ambient = new Color(0.3f, 0.3f, 0.34f), fog = new Color(0.55f, 0.55f, 0.6f), fogDensity = 0.008f,
                     enemyBody = new Color(0.82f, 0.8f, 0.76f), enemyEye = new Color(1f, 0.82f, 0.3f),
                     floorTile = 3f, wallTile = 3f, floorSmooth = 1f, wallSmooth = 0.8f,
+                };
+            case FloorTheme.Galerias:
+                return new ThemePalette
+                {
+                    key = "galerias", sin = "", emotion = "Vértigo, viento, vacío bajo los pies",
+                    torch = new Color(1f, 0.68f, 0.38f), center = new Color(0.75f, 0.78f, 1f), corridor = new Color(1f, 0.72f, 0.45f),
+                    accent = new Color(0.6f, 0.55f, 1f), rug = new Color(0.22f, 0.18f, 0.32f), rugBorder = new Color(0.7f, 0.6f, 0.4f),
+                    banner = new Color(0.28f, 0.22f, 0.45f), motes = new Color(0.8f, 0.8f, 1f),
+                    ambient = new Color(0.17f, 0.17f, 0.25f), fog = new Color(0.1f, 0.1f, 0.16f), fogDensity = 0f,
+                    enemyBody = new Color(0.12f, 0.1f, 0.2f), enemyEye = new Color(0.65f, 0.6f, 1f),
+                    floorTile = 3f, wallTile = 3f, floorSmooth = 0.6f, wallSmooth = 0.5f,
                 };
             default:
                 return new ThemePalette

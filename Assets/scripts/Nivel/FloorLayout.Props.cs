@@ -14,7 +14,7 @@ public partial class FloorLayout
 
     void ThemeDecor(Transform deco, RoomSpec r, List<Gap> gaps, int index)
     {
-        float hx = r.size.x / 2f, hz = r.size.y / 2f, h = wallHeight;
+        float hx = r.size.x / 2f, hz = r.size.y / 2f, h = curWall;
         Motes(deco, new Vector3(0f, 1.2f, 0f), new Vector3(r.size.x - 2f, 2f, r.size.y - 2f), palette.motes, 7f, theme == FloorTheme.Pereza ? 0.05f : 0.15f, 8f);
         bool plainRoom = r.feature == RoomFeature.Ninguna;
 
@@ -35,6 +35,12 @@ public partial class FloorLayout
                 if (plainRoom || r.feature == RoomFeature.Espejos) Rug(deco, new Vector2(r.size.x * 0.55f, r.size.y * 0.5f), palette.rug, palette.rugBorder);
                 Banners(deco, r, gaps, palette.banner);
                 ThemeProps(deco, r, gaps, plainRoom ? 6 : 3);
+                if (theme == FloorTheme.Base || theme == FloorTheme.Galerias)
+                {
+                    int n = 0;
+                    foreach (var other in rooms) { if (other.type == RoomType.Combate) n++; if (other == r) break; }
+                    if (n == 2) SecretAlcove(deco, r, gaps);
+                }
                 break;
             case RoomType.Descanso:
                 MerchantStall(deco, new Vector3(0f, 0f, hz - 2.4f));
@@ -67,6 +73,16 @@ public partial class FloorLayout
             }
             case RoomType.Prueba:
                 if (r.feature == RoomFeature.Escalinata) ThemeProps(deco, r, gaps, 4);
+                else if (r.feature == RoomFeature.Ninguna)
+                {
+                    // sala de desvío: premio por explorar
+                    Rug(deco, new Vector2(r.size.x * 0.5f, r.size.y * 0.45f), palette.rug, palette.rugBorder);
+                    ThemeProps(deco, r, gaps, 7);
+                    TreasureChestAt(deco, new Vector3(0f, 0f, hz - 1.6f), 18 + floorNumber * 3, 180f);
+                    Candles(deco, new Vector3(-1.4f, 0f, hz - 1.2f), 5, palette.torch, 0.3f);
+                    Candles(deco, new Vector3(1.4f, 0f, hz - 1.2f), 4, palette.torch, 0.25f);
+                    if (theme == FloorTheme.Galerias) WindAt(deco, Vector3.zero, new Vector3(r.size.x, 4f, r.size.y), 2.2f, 1.2f);
+                }
                 break;
         }
     }
@@ -81,6 +97,7 @@ public partial class FloorLayout
         shaft.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         Prim(p, PrimitiveType.Cube, "Base", new Vector3(0f, 0.18f, 0f), new Vector3(radius * 2.7f, 0.36f, radius * 2.7f), stone, false);
         Prim(p, PrimitiveType.Cube, "Capitel", new Vector3(0f, height - 0.15f, 0f), new Vector3(radius * 2.8f, 0.3f, radius * 2.8f), stone, false);
+        p.gameObject.AddComponent<OccluderFade>();
         bool gold = theme == FloorTheme.Avaricia || theme == FloorTheme.Soberbia || theme == FloorTheme.Lujuria;
         var ring = Prim(p, PrimitiveType.Cylinder, "Anillo", new Vector3(0f, height * 0.62f, 0f), new Vector3(radius * 2.08f, 0.04f, radius * 2.08f),
                         gold ? BrassMaterial() : GlowMaterial("Glow_" + ColorUtility.ToHtmlStringRGB(palette.accent), palette.accent), false);
@@ -183,8 +200,11 @@ public partial class FloorLayout
                 case FloorTheme.Soberbia:
                     if (v == 0) Statue(t, true); else if (v == 1) GoldVase(t); else Statue(t, false);
                     break;
+                case FloorTheme.Galerias:
+                    if (v == 0) RopeCoils(t); else if (v == 1) { Crate(t, new Vector3(-0.3f, 0f, 0f), 0.8f); Crate(t, new Vector3(0.45f, 0f, 0.1f), 0.6f); Crate(t, new Vector3(-0.25f, 0.8f, 0.05f), 0.5f); } else Sacks(t);
+                    break;
                 default:
-                    Crate(t, Vector3.zero, 0.8f);
+                    if (v == 0) Barrels(t); else if (v == 1) WeaponRack(t); else { Crate(t, new Vector3(-0.3f, 0f, 0f), 0.8f); Crate(t, new Vector3(0.45f, 0f, 0.1f), 0.6f); }
                     break;
             }
         }
@@ -263,44 +283,51 @@ public partial class FloorLayout
 
     // ------------------------------------------------------------------ salas especiales
 
-    /// <summary>PEREZA — Biblioteca: hileras de libreros, entrepiso norte (con escalera) y niebla de sopor entre los pasillos.</summary>
+    /// <summary>
+    /// PEREZA — Biblioteca de dos pisos: entrepisos a lo largo de los muros este y oeste (cada uno con su escalera),
+    /// libreros en hileras abajo y contra los muros arriba, mesas de lectura, niebla de sopor y libros flotando.
+    /// Las puertas sur y norte quedan libres.
+    /// </summary>
     void BuildLibrary(Transform t, RoomSpec r, List<Gap> gaps)
     {
-        float hx = r.size.x / 2f, hz = r.size.y / 2f, top = BibliotecaMezzanine, depth = 3.2f;
+        float hx = r.size.x / 2f, hz = r.size.y / 2f, top = BibliotecaMezzanine, depth = 3.4f;
         var half = new Vector2(hx, hz);
-        Block(t, "Entrepiso", new Vector3(-hx, 0f, hz - depth), new Vector3(hx, top, hz), half);
-        // escalera pegada al muro oeste que sube al entrepiso
-        float run = top / 0.6f;
-        StairRun(t, new Vector3(-hx + 1.1f, 0f, hz - depth - run), Vector3.forward, run, top, 2f, true);
-        // barandal del entrepiso
-        for (float x = -hx + 2.6f; x < hx - 0.2f; x += 1.3f)
-            Prim(t, PrimitiveType.Cube, "Balaustre", new Vector3(x, top + 0.5f, hz - depth + 0.1f), new Vector3(0.07f, 1f, 0.07f), LitMaterial("MaderaOscura", new Color(0.26f, 0.16f, 0.09f)), false);
-        Prim(t, PrimitiveType.Cube, "Pasamanos", new Vector3(1.2f, top + 1f, hz - depth + 0.1f), new Vector3(r.size.x - 2.6f, 0.07f, 0.09f), LitMaterial("MaderaOscura", new Color(0.26f, 0.16f, 0.09f)), false);
-        CreateCollider(t, "Collider_Barandal", new Vector3(1.2f, top + 0.6f, hz - depth + 0.1f), new Vector3(r.size.x - 2.6f, 1.2f, 0.15f));
-        // libreros arriba (contra el muro norte) y en hileras abajo
-        for (float x = -hx + 3.2f; x < hx - 1f; x += 1.9f)
+        float run = top / 0.6f, z0 = -hz + 1f;
+        var wood = LitMaterial("MaderaOscura", new Color(0.26f, 0.16f, 0.09f));
+        foreach (float sx in new[] { -1f, 1f })
         {
-            var b = NewChild(t, "LibreroAlto"); b.localPosition = new Vector3(x, top, hz - 0.45f); b.localRotation = Quaternion.Euler(0f, 180f, 0f);
-            Bookcase(b, 1.7f, 2.6f);
-        }
-        foreach (float z in new[] { -hz * 0.35f, hz * 0.1f })
-            for (int i = 0; i < 3; i++)
+            float xIn = sx * (hx - depth);   // borde interior del entrepiso
+            Block(t, sx < 0 ? "EntrepisoO" : "EntrepisoE", new Vector3(sx < 0 ? -hx : hx - depth, 0f, z0 + run), new Vector3(sx < 0 ? -hx + depth : hx, top, hz), half);
+            // escalera que sube pegada al muro hasta el entrepiso
+            StairRun(t, new Vector3(sx * (hx - 1.1f), 0f, z0), Vector3.forward, run, top, 2f, true);
+            // barandal del lado de la sala
+            for (float z = z0 + run + 0.4f; z < hz - 0.2f; z += 1.3f)
+                Prim(t, PrimitiveType.Cube, "Balaustre", new Vector3(xIn, top + 0.5f, z), new Vector3(0.07f, 1f, 0.07f), wood, false);
+            float railLen = hz - (z0 + run);
+            Prim(t, PrimitiveType.Cube, "Pasamanos", new Vector3(xIn, top + 1f, (z0 + run + hz) / 2f), new Vector3(0.09f, 0.07f, railLen), wood, false);
+            CreateCollider(t, "Collider_Barandal", new Vector3(xIn, top + 0.6f, (z0 + run + hz) / 2f), new Vector3(0.15f, 1.2f, railLen));
+            // libreros arriba contra el muro
+            for (float z = z0 + run + 1.2f; z < hz - 0.9f; z += 1.9f)
             {
-                float x = -hx * 0.55f + i * hx * 0.55f;
-                var b = NewChild(t, "Librero"); b.localPosition = new Vector3(x, 0f, z);
-                Bookcase(b, 2.2f, 2.3f, true);
+                var b = NewChild(t, "LibreroAlto"); b.localPosition = new Vector3(sx * (hx - 0.3f), top, z); b.localRotation = Quaternion.Euler(0f, sx < 0 ? 90f : -90f, 0f);
+                Bookcase(b, 1.7f, Mathf.Min(2.8f, curWall - top - 0.3f));
             }
-        // mesas de lectura con velas y libros abiertos
-        foreach (var p in new[] { new Vector3(-hx * 0.55f, 0f, -hz * 0.75f), new Vector3(hx * 0.55f, 0f, -hz * 0.1f) })
-        {
-            var d = NewChild(t, "MesaLectura"); d.localPosition = p;
-            ReadingTable(d);
+            Candles(t, new Vector3(sx * (hx - 1.6f), top, hz - 1.2f), 4, palette.torch, 0.25f);
         }
-        // sopor entre las hileras y libros que flotan
-        MistAt(t, new Vector3(0f, 0f, -hz * 0.12f), new Vector3(r.size.x - 4f, 2f, 3f));
-        MistAt(t, new Vector3(hx * 0.35f, 0f, -hz * 0.6f), new Vector3(5f, 2f, 3.5f));
-        FloatingBooks(t, new Vector3(0f, 2.2f, 0f), new Vector3(r.size.x - 4f, 1.5f, r.size.y - 6f), 10);
-        Hint(t.parent, r, "LA BIBLIOTECA DORMIDA", "La niebla da sueño: crúzala con el impulso (Shift)");
+        // hileras de libreros abajo (dejan el pasillo central libre de puerta a puerta)
+        float inner = hx - depth - 1.2f;
+        foreach (float z in new[] { -hz * 0.4f, -hz * 0.05f, hz * 0.3f })
+            foreach (float x in new[] { -inner * 0.62f, inner * 0.62f })
+            {
+                var b = NewChild(t, "Librero"); b.localPosition = new Vector3(x, 0f, z);
+                Bookcase(b, Mathf.Min(3.2f, inner * 0.75f), 2.5f, true);
+            }
+        foreach (var p in new[] { new Vector3(-inner * 0.6f, 0f, -hz * 0.75f), new Vector3(inner * 0.6f, 0f, hz * 0.62f) })
+        { var d = NewChild(t, "MesaLectura"); d.localPosition = p; ReadingTable(d); }
+        MistAt(t, new Vector3(0f, 0f, -hz * 0.22f), new Vector3(inner * 2f, 2f, 3f));
+        MistAt(t, new Vector3(0f, 0f, hz * 0.12f), new Vector3(inner * 2f, 2f, 2.6f));
+        FloatingBooks(t, new Vector3(0f, top + 1.5f, 0f), new Vector3(inner * 2f, 2f, r.size.y - 6f), 16);
+        Hint(t.parent, r, "LA BIBLIOTECA DORMIDA", "La niebla da sueño: crúzala con el impulso (Shift). Arriba, en los entrepisos, alguien dejó algo");
     }
 
     /// <summary>GULA — Banquete: dos mesas larguísimas llenas de comida (cura pero empacha) y fauces en el suelo.</summary>
@@ -621,6 +648,18 @@ public partial class FloorLayout
         return m;
     });
 
+    /// <summary>Superficie de lava con textura (magma y costra), sin luz y en HDR para que brille con el Bloom.</summary>
+    Material LavaSurfaceMaterial() => SavedMaterial("LavaSuperficie", () =>
+    {
+        var m = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture"));
+#if UNITY_EDITOR
+        var tex = LoadThemeTexture("lava_albedo", UnityEditor.TextureImporterType.Default, true);
+        if (tex != null) m.SetTexture("_BaseMap", tex);
+#endif
+        m.SetColor("_BaseColor", new Color(1.5f, 1.25f, 1.1f));
+        return m;
+    });
+
     Material GazeMaterial() => SavedMaterial("FX_Mirada", () =>
     {
         var sh = Shader.Find("Abby/Particle");
@@ -698,6 +737,7 @@ public partial class FloorLayout
         CreateFace(t, "Libros", new Vector3(0f, height / 2f - 0.05f, d / 2f + 0.005f), Vector3.forward, width - 0.12f, height - 0.2f, books, 1f / 2.5f, 1f / 2.5f);
         if (twoSided) CreateFace(t, "Libros2", new Vector3(0f, height / 2f - 0.05f, -d / 2f - 0.005f), Vector3.back, width - 0.12f, height - 0.2f, books, 1f / 2.5f, 1f / 2.5f);
         Prim(t, PrimitiveType.Cube, "Cornisa", new Vector3(0f, height + 0.05f, 0f), new Vector3(width + 0.1f, 0.1f, d + 0.08f), wood, false);
+        t.gameObject.AddComponent<OccluderFade>();
     }
 
     void BookStacks(Transform t, int stacks)
@@ -873,6 +913,7 @@ public partial class FloorLayout
 
     void Mirror(Transform t, float w, float h)
     {
+        t.gameObject.AddComponent<OccluderFade>();
         var gold = BrassMaterial();
         Prim(t, PrimitiveType.Cube, "Marco", new Vector3(0f, h / 2f + 0.1f, 0f), new Vector3(w + 0.16f, h + 0.16f, 0.08f), gold, true);
         var glass = SavedMaterial("Espejo_" + palette.key, () =>
@@ -983,6 +1024,14 @@ public partial class FloorLayout
         Prim(t, PrimitiveType.Cube, "Grieta", new Vector3(0f, 0.7f, 0.41f), new Vector3(0.05f, 0.9f, 0.01f), LavaMaterial(), false);
     }
 
+    void RopeCoils(Transform t)
+    {
+        var rope = LitMaterial("Cuerda", new Color(0.6f, 0.5f, 0.35f));
+        for (int i = 0; i < 3; i++)
+            Prim(t, PrimitiveType.Cylinder, "Rollo", new Vector3(-0.4f + i * 0.4f, 0.08f + (i == 1 ? 0.16f : 0f), 0f), new Vector3(0.5f, 0.08f, 0.5f), rope, i == 0);
+        Prim(t, PrimitiveType.Cube, "Polea", new Vector3(0.6f, 0.25f, -0.2f), new Vector3(0.3f, 0.5f, 0.1f), LitMaterial("MaderaOscura", new Color(0.26f, 0.16f, 0.09f)), false);
+    }
+
     void HangingChain(Transform parent, Vector3 pos)
     {
         var c = NewChild(parent, "Cadena");
@@ -997,6 +1046,7 @@ public partial class FloorLayout
     /// <summary>Estatua de mármol: arrodillada (los que se rindieron) o de pie con la barbilla alta (los soberbios).</summary>
     void Statue(Transform t, bool kneeling)
     {
+        if (t.GetComponent<OccluderFade>() == null) t.gameObject.AddComponent<OccluderFade>();
         var marble = ThemeStone();
         Prim(t, PrimitiveType.Cube, "Pedestal", new Vector3(0f, 0.3f, 0f), new Vector3(1f, 0.6f, 1f), marble, true);
         float y = 0.6f;

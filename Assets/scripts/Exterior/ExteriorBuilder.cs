@@ -516,7 +516,7 @@ public class ExteriorBuilder : MonoBehaviour
             var b = Primitive(door, PrimitiveType.Cylinder, "Brasero", new Vector3(x, 0.6f, -2.5f), new Vector3(0.9f, 0.6f, 0.9f), mMetal);
             var f = Primitive(b.transform, PrimitiveType.Sphere, "Fuego", new Vector3(0f, 1.1f, 0f), new Vector3(0.7f, 0.9f, 0.7f), mLampGlow);
             f.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            AddLight(door, "LuzBrasero", new Vector3(x, 2.2f, -2.5f), new Color(1f, 0.55f, 0.25f), 12f, 18f, LightShadows.Soft).gameObject.AddComponent<LightFlicker>().amount = 0.25f;
+            AddLight(door, "LuzBrasero", new Vector3(x, 2.2f, -2.5f), new Color(1f, 0.55f, 0.25f), 12f, 18f, LightShadows.None).gameObject.AddComponent<LightFlicker>().amount = 0.25f;
         }
     }
 
@@ -1061,12 +1061,12 @@ public class ExteriorBuilder : MonoBehaviour
         for (int i = 0; i < 6; i++)
         {
             float a = i / 6f * Mathf.PI * 2f;   // 0°, 60°, 120°…: ninguno queda sobre los caminos norte/sur
-            Lamp(root, new Vector3(Mathf.Cos(a) * (plazaRadius - 0.8f), 0f, Mathf.Sin(a) * (plazaRadius - 0.8f)), true);
+            Lamp(root, new Vector3(Mathf.Cos(a) * (plazaRadius - 0.8f), 0f, Mathf.Sin(a) * (plazaRadius - 0.8f)), i % 2 == 0);   // sombra solo en 3: cada luz con sombra cuesta 6 pasadas
         }
         for (float z = plazaRadius + 6f; z < StairsStartZ - 1f; z += 9f)
             foreach (float x in new[] { -3.2f, 3.2f }) Lamp(root, new Vector3(x, 0f, z), false);
-        foreach (float x in new[] { -4f, 4f }) Lamp(root, new Vector3(x, 0f, StairsStartZ - 0.5f), true);           // pie de la escalinata
-        foreach (float x in new[] { -4f, 4f }) Lamp(root, new Vector3(x, mesaHeight, StairsEndZ + 1.5f), true);      // arriba
+        foreach (float x in new[] { -4f, 4f }) Lamp(root, new Vector3(x, 0f, StairsStartZ - 0.5f), false);          // pie de la escalinata
+        foreach (float x in new[] { -4f, 4f }) Lamp(root, new Vector3(x, mesaHeight, StairsEndZ + 1.5f), false);     // arriba (la sombra la dan el portal y el sol)
         foreach (float z in new[] { -plazaRadius - 6f, -plazaRadius - 16f })
             foreach (float x in new[] { -3.2f, 3.2f }) Lamp(root, new Vector3(x, 0f, z), false);
     }

@@ -75,8 +75,8 @@ public class FloorLayout : MonoBehaviour
     public float torchIntensity = 16f;
     [Tooltip("Luz colgante en el centro de cada sala (da la sombra principal de los personajes).")]
     public float centerLightIntensity = 14f;
-    [Tooltip("Cuántas antorchas por sala proyectan sombra (6 = todas; si alguna no tiene, sus sombras no aparecen).")]
-    public int shadowTorchesPerRoom = 6;
+    [Tooltip("Cuántas antorchas por sala proyectan sombra (las del muro N primero). Cada luz puntual con sombra renderiza la escena 6 veces: es lo que más cuesta en FPS.")]
+    public int shadowTorchesPerRoom = 2;
 
     [Header("Enemigos (vacío = las salas no se cierran todavía)")]
     public GameObject enemyPrefab;
@@ -155,7 +155,7 @@ public class FloorLayout : MonoBehaviour
     float roomHeight;   // alto de los muros de la sala que se está generando
 
     // Súbelo cada vez que cambie lo que genera Build(): las escenas con un piso de una versión anterior se regeneran solas.
-    const int LayoutVersion = 2;
+    const int LayoutVersion = 3;
     [SerializeField, HideInInspector] int builtVersion;
 
     void Awake()
@@ -890,7 +890,7 @@ public class FloorLayout : MonoBehaviour
         {
             var l = NewChild(a, "LuzAlta").gameObject.AddComponent<Light>();
             l.transform.localPosition = lp;
-            l.type = LightType.Point; l.range = 8f; l.intensity = 9f; l.color = new Color(0.45f, 1f, 0.9f); l.shadows = LightShadows.Soft;
+            l.type = LightType.Point; l.range = 8f; l.intensity = 9f; l.color = new Color(0.45f, 1f, 0.9f); l.shadows = LightShadows.None;   // relleno: la sombra la da la luz central
             var orb = Prim(l.transform, PrimitiveType.Sphere, "Orbe", Vector3.zero, Vector3.one * 0.3f, GlowMaterial("Glow_Prueba", new Color(0.35f, 1f, 0.85f)), false);
             orb.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             l.gameObject.AddComponent<LightFlicker>().amount = 0.08f;
@@ -1101,7 +1101,7 @@ public class FloorLayout : MonoBehaviour
         }
         var lt = NewChild(s, "Farol").gameObject.AddComponent<Light>();
         lt.transform.localPosition = new Vector3(0f, 2.3f, -0.6f);
-        lt.type = LightType.Point; lt.range = 6f; lt.intensity = 6f; lt.color = new Color(1f, 0.75f, 0.45f); lt.shadows = LightShadows.Soft;
+        lt.type = LightType.Point; lt.range = 6f; lt.intensity = 6f; lt.color = new Color(1f, 0.75f, 0.45f); lt.shadows = LightShadows.None;   // sin sombra: ahorra 6 pasadas
         lt.gameObject.AddComponent<LightFlicker>().amount = 0.1f;
         Merchant(s, new Vector3(0f, 0f, 1.05f));
     }

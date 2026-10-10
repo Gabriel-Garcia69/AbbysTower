@@ -851,11 +851,18 @@ public class FloorLayout : MonoBehaviour
         if (top < 0.5f) top = 4.5f;
         float mid = top / 2f;          // altura de terrazas y torre
         float ledgeZ = hz - 2.3f;      // frente de la cornisa N
+        var half = new Vector2(hx, hz);
 
-        Block(a, "TerrazaO", new Vector3(-hx, 0f, -hz + 2f), new Vector3(-hx + 2.6f, mid, ledgeZ));
-        Block(a, "Torre", new Vector3(1.2f, 0f, 1.5f), new Vector3(3.6f, mid, ledgeZ));   // a 6.6 m de la terraza O: solo con impulso
-        Block(a, "Cornisa", new Vector3(-hx, 0f, ledgeZ), new Vector3(hx, top, hz));
-        Block(a, "TerrazaE", new Vector3(hx - 2.4f, 0f, -4f), new Vector3(hx, mid, 2f));
+        Block(a, "TerrazaO", new Vector3(-hx, 0f, -hz + 2f), new Vector3(-hx + 2.6f, mid, ledgeZ), half);
+        Block(a, "Torre", new Vector3(1.2f, 0f, 1.5f), new Vector3(3.6f, mid, ledgeZ), half);   // a 6.6 m de la terraza O: solo con impulso
+        Block(a, "Cornisa", new Vector3(-hx, 0f, ledgeZ), new Vector3(hx, top, hz), half);
+        Block(a, "TerrazaE", new Vector3(hx - 2.4f, 0f, -4f), new Vector3(hx, mid, 2f), half);
+
+        // relleno suave sin sombra: la luz central está muy alta y la cornisa y la torre dejan el suelo en penumbra
+        var fill = NewChild(a, "LuzRelleno").gameObject.AddComponent<Light>();
+        fill.transform.localPosition = new Vector3(-1f, mid + 0.8f, -hz * 0.35f);
+        fill.type = LightType.Point; fill.range = Mathf.Max(hx, hz) * 1.6f; fill.intensity = 5f;
+        fill.color = new Color(0.75f, 0.95f, 0.95f); fill.shadows = LightShadows.None;
 
         Ladder(a, new Vector3(-hx + 2.6f, 0f, -3f), Vector3.right, 0f, mid);       // suelo → terraza O
         Ladder(a, new Vector3(2.4f, 0f, ledgeZ), Vector3.back, mid, top);          // torre → cornisa
@@ -877,20 +884,34 @@ public class FloorLayout : MonoBehaviour
         Hint(root, r, "EL ASCENSO", "W junto a una escalera para trepar · salta + impulso para llegar a la torre");
     }
 
-    /// <summary>Bloque sólido (terraza, torre, cornisa) con suelo de baldosa arriba, muros a los lados y collider.</summary>
-    void Block(Transform parent, string name, Vector3 min, Vector3 max)
+    /// <summary>
+    /// Bloque sólido (terraza, torre, cornisa) con suelo de baldosa arriba, muros a los lados y collider.
+    /// Los lados pegados a los muros de la sala (roomHalf) no se dibujan: quedarían en el mismo plano que el muro y parpadearían.
+    /// </summary>
+    void Block(Transform parent, string name, Vector3 min, Vector3 max, Vector2 roomHalf)
     {
         var b = NewChild(parent, name);
         Vector3 c = (min + max) / 2f, s = max - min;
         b.localPosition = c;
         float k = 1f / tileMeters;
+        const float eps = 0.01f;
+        bool n = max.z < roomHalf.y - eps, so = min.z > -roomHalf.y + eps, e = max.x < roomHalf.x - eps, w = min.x > -roomHalf.x + eps;
         CreateFace(b, "Arriba", new Vector3(0f, s.y / 2f, 0f), Vector3.up, s.x, s.z, floorMaterial, k, k);
-        CreateFace(b, "LadoN", new Vector3(0f, 0f, s.z / 2f), Vector3.forward, s.x, s.y, wallMaterial, k, k, true);
-        CreateFace(b, "LadoS", new Vector3(0f, 0f, -s.z / 2f), Vector3.back, s.x, s.y, wallMaterial, k, k, true);
-        CreateFace(b, "LadoE", new Vector3(s.x / 2f, 0f, 0f), Vector3.right, s.z, s.y, wallMaterial, k, k, true);
-        CreateFace(b, "LadoO", new Vector3(-s.x / 2f, 0f, 0f), Vector3.left, s.z, s.y, wallMaterial, k, k, true);
-        // borde de piedra arriba (se ve el canto desde la cámara)
-        Prim(b, PrimitiveType.Cube, "Borde", new Vector3(0f, s.y / 2f - 0.08f, 0f), new Vector3(s.x + 0.1f, 0.16f, s.z + 0.1f), CapMaterial(), false);
+        if (n)  CreateFace(b, "LadoN", new Vector3(0f, 0f, s.z / 2f), Vector3.forward, s.x, s.y, wallMaterial, k, k, true);
+        if (so) CreateFace(b, "LadoS", new Vector3(0f, 0f, -s.z / 2f), Vector3.back, s.x, s.y, wallMaterial, k, k, true);
+        if (e)  CreateFace(b, "LadoE", new Vector3(s.x / 2f, 0f, 0f), Vector3.right, s.z, s.y, wallMaterial, k, k, true);
+        if (w)  CreateFace(b, "LadoO", new Vector3(-s.x / 2f, 0f, 0f), Vector3.left, s.z, s.y, wallMaterial, k, k, true);
+        // borde de piedra: un marco en los lados libres que asoma 3 cm sobre la baldosa. Antes era un cubo entero
+        // con la cara de arriba en el mismo plano que el suelo y las dos texturas se peleaban (z-fighting).
+        const float rim = 0.2f, lip = 0.05f, up = 0.03f, depth = 0.18f;
+        float ry = s.y / 2f + up - depth / 2f;
+        float lenX = s.x + (e ? lip : 0f) + (w ? lip : 0f), offX = ((e ? lip : 0f) - (w ? lip : 0f)) / 2f;
+        var cap = CapMaterial();
+        if (n)  Prim(b, PrimitiveType.Cube, "BordeN", new Vector3(offX, ry, s.z / 2f - rim / 2f + lip), new Vector3(lenX, depth, rim), cap, false);
+        if (so) Prim(b, PrimitiveType.Cube, "BordeS", new Vector3(offX, ry, -s.z / 2f + rim / 2f - lip), new Vector3(lenX, depth, rim), cap, false);
+        // los laterales, 2 mm más bajos y cortos para no coincidir con los de N/S en las esquinas
+        if (e)  Prim(b, PrimitiveType.Cube, "BordeE", new Vector3(s.x / 2f - rim / 2f + lip, ry - 0.002f, 0f), new Vector3(rim, depth, s.z - 0.004f), cap, false);
+        if (w)  Prim(b, PrimitiveType.Cube, "BordeO", new Vector3(-s.x / 2f + rim / 2f - lip, ry - 0.002f, 0f), new Vector3(rim, depth, s.z - 0.004f), cap, false);
         b.gameObject.AddComponent<BoxCollider>().size = s;
     }
 
@@ -901,13 +922,23 @@ public class FloorLayout : MonoBehaviour
         lad.localPosition = new Vector3(baseOnFace.x, y0, baseOnFace.z);
         lad.localRotation = Quaternion.LookRotation(facing);
         float h = y1 - y0;
-        var wood = LitMaterial("Madera", new Color(0.42f, 0.27f, 0.15f));
+        var wood = LitMaterial("MaderaClara", new Color(0.6f, 0.43f, 0.26f));   // la madera oscura se perdía contra la piedra
         foreach (float x in new[] { -0.45f, 0.45f })
             Prim(lad, PrimitiveType.Cube, "Larguero", new Vector3(x, h / 2f + 0.2f, 0.1f), new Vector3(0.1f, h + 0.4f, 0.1f), wood, false);
         for (float y = 0.3f; y < h + 0.1f; y += 0.4f)
             Prim(lad, PrimitiveType.Cube, "Peldaño", new Vector3(0f, y, 0.1f), new Vector3(0.9f, 0.07f, 0.07f), wood, false);
         // enredadera que brilla un poco: se distingue de lejos
         Prim(lad, PrimitiveType.Cube, "Marca", new Vector3(0f, h + 0.45f, 0.12f), new Vector3(0.3f, 0.12f, 0.04f), GlowMaterial("Glow_Prueba", new Color(0.35f, 1f, 0.85f)), false);
+        // hilos de luz por fuera de los largueros: la silueta se lee aunque la escalera quede a la sombra del bloque
+        foreach (float x in new[] { -0.53f, 0.53f })
+        {
+            var vine = Prim(lad, PrimitiveType.Cube, "Hilo", new Vector3(x, h / 2f + 0.2f, 0.14f), new Vector3(0.03f, h + 0.4f, 0.03f), GlowMaterial("Glow_Prueba", new Color(0.35f, 1f, 0.85f)), false);
+            vine.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        // luz propia delante, sin sombra: la cara del bloque donde va la escalera queda de espaldas a las antorchas
+        var lt = NewChild(lad, "Luz").gameObject.AddComponent<Light>();
+        lt.transform.localPosition = new Vector3(0f, h * 0.6f + 0.4f, 1.4f);
+        lt.type = LightType.Point; lt.range = h + 3.5f; lt.intensity = 7f; lt.color = new Color(1f, 0.86f, 0.66f); lt.shadows = LightShadows.None;
 
         var zone = NewChild(lad, "ZonaTrepar");
         zone.localPosition = new Vector3(0f, 0f, 0.45f);

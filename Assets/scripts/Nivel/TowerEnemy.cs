@@ -105,6 +105,8 @@ public class TowerEnemy : MonoBehaviour, IHittable
                 eyeColor = new Color(1f, 0.22f, 0.15f); bodyColor = new Color(0.09f, 0.05f, 0.11f);
                 break;
         }
+        var diff = Difficulty.Active;
+        maxHealth *= diff.enemyHealth; moveSpeed *= diff.enemySpeed;
         Health = maxHealth;
         BuildVisual();
 
@@ -377,7 +379,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         {
             Go(State.Slam);
             telegraphFx = CombatFx.Ring(transform.position, 5.2f, new Color(1f, 0.25f, 0.2f, 0.9f), 1.05f * (Enraged ? 0.75f : 1f));
-            cooldown = 1.2f;
+            cooldown = 1.2f * Difficulty.Active.attackCooldown;
             return;
         }
         lungeDir = target != null ? (target.position - transform.position) : facing;
@@ -385,7 +387,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         chain = IsBoss && Enraged ? 2 : 0;
         ShowLine();
         Go(State.Telegraph);
-        cooldown = UnityEngine.Random.Range(0.6f, 1.4f);
+        cooldown = UnityEngine.Random.Range(0.6f, 1.4f) * Difficulty.Active.attackCooldown;
     }
 
     void ShowLine()

@@ -3,7 +3,7 @@ using System;
 /// <summary>
 /// Estado de la partida que sobrevive entre escenas (exterior ↔ pisos): fragmentos de torre (la moneda que sueltan
 /// los enemigos) y mejoras compradas al mercader. Es estático: se pierde al cerrar el juego (todavía no hay guardado).
-/// Al morir se pierde la mitad de los fragmentos; las mejoras se conservan.
+/// Al morir se pierde una parte de los fragmentos según la dificultad (ver Difficulty).
 /// </summary>
 public static class RunState
 {
@@ -33,10 +33,12 @@ public static class RunState
     public static void BuyDamage() { DamageLevel++; Changed?.Invoke(); }
     public static void BuyHeart() { HeartLevel++; Changed?.Invoke(); }
 
-    /// <summary>Castigo al morir: se pierde la mitad de los fragmentos.</summary>
+    /// <summary>Castigo al morir según la dificultad: una parte de los fragmentos (en Hardcore todo, mejoras incluidas).</summary>
     public static void OnDeath()
     {
-        Fragments /= 2;
+        var diff = Difficulty.Active;
+        Fragments -= (int)Math.Ceiling(Fragments * diff.fragmentsLost);
+        if (diff.loseUpgrades) { DamageLevel = 0; HeartLevel = 0; }
         Changed?.Invoke();
     }
 }

@@ -71,6 +71,7 @@ public class PlayerHealth : MonoBehaviour, IHittable
             return false;
         }
         if (invuln > 0f) return false;
+        hit.damage *= Difficulty.Active.damageTaken;
         Health = Mathf.Max(0f, Health - hit.damage);
         Vector3 away = transform.position - hit.sourcePosition; away.y = 0f;
         knock = (away.sqrMagnitude > 0.001f ? away.normalized : -transform.forward) * hit.knockback;
@@ -95,6 +96,7 @@ public class PlayerHealth : MonoBehaviour, IHittable
     public void Heal(float amount)
     {
         if (IsDead) return;
+        amount *= Difficulty.Active.healing;
         Health = Mathf.Min(maxHealth, Health + amount);
         CombatFx.Burst(transform.position + Vector3.up * 0.6f, new Color(0.4f, 1f, 0.6f), 30, 3f, 0.16f, 0.9f, -0.3f);
         FloorDirector.Popup(transform.position + Vector3.up * 1.8f, "+" + Mathf.RoundToInt(amount), new Color(0.5f, 1f, 0.6f));

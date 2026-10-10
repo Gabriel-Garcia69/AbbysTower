@@ -402,11 +402,20 @@ public class ExteriorBuilder : MonoBehaviour
             Face(new Vector3(min.x, min.y, max.z), new Vector3(min.x, min.y, min.z), new Vector3(min.x, max.y, max.z), new Vector3(min.x, max.y, min.z), new Vector2(max.z - min.z, max.y - min.y) / t);   // izq
             Face(new Vector3(max.x, min.y, min.z), new Vector3(max.x, min.y, max.z), new Vector3(max.x, max.y, min.z), new Vector3(max.x, max.y, max.z), new Vector2(max.z - min.z, max.y - min.y) / t);   // der
         }
+        // cada escalón solo ocupa su propio fondo (antes todos llegaban hasta arriba y sus lados se encimaban: parpadeo)
         for (int i = 0; i < steps; i++)
-            Box(new Vector3(-width / 2f, 0f, z0 + i * stepD), new Vector3(width / 2f, (i + 1) * stepH, z1 + 0.5f));
-        // bloques de piedra a los lados, donde la escalinata entra al risco
-        Box(new Vector3(-width / 2f - 2.2f, 0f, z1 - 7f), new Vector3(-width / 2f - 0.3f, mesaHeight, z1 + 1f));
-        Box(new Vector3(width / 2f + 0.3f, 0f, z1 - 7f), new Vector3(width / 2f + 2.2f, mesaHeight, z1 + 1f));
+            Box(new Vector3(-width / 2f, 0f, z0 + i * stepD), new Vector3(width / 2f, (i + 1) * stepH, i == steps - 1 ? z1 + 0.5f : z0 + (i + 1) * stepD));
+        // bloques de piedra a los lados, donde la escalinata entra al risco (con collider: se puede subir encima)
+        foreach (float side in new[] { -1f, 1f })
+        {
+            float xa = side * (width / 2f + 0.3f), xb = side * (width / 2f + 2.2f);
+            var bmin = new Vector3(Mathf.Min(xa, xb), 0f, z1 - 7f); var bmax = new Vector3(Mathf.Max(xa, xb), mesaHeight, z1 + 1f);
+            Box(bmin, bmax);
+            var bc = new GameObject("BloqueLado");
+            bc.transform.SetParent(stairs, false);
+            bc.transform.localPosition = (bmin + bmax) / 2f;
+            bc.AddComponent<BoxCollider>().size = bmax - bmin;
+        }
         var sm = new Mesh { name = "Stairs", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
         sm.SetVertices(sv); sm.SetUVs(0, suv); sm.SetTriangles(st, 0);
         sm.RecalculateNormals(); sm.RecalculateBounds();
@@ -1213,7 +1222,7 @@ public class ExteriorBuilder : MonoBehaviour
         }
         Band(rOut, 0f, rOut, h, false);
         Band(rIn, 0f, rIn, h, true);
-        Band(rOut, h, rIn, h, false);
+        Band(rOut, h, rIn, h, true);   // tapa: mira hacia arriba (antes quedaba al revés: invisible y sin colisión por encima)
         var m = new Mesh { name = "Ring" };
         m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(tri, 0);
         m.RecalculateNormals(); m.RecalculateBounds();

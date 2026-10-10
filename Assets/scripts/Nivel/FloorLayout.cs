@@ -154,10 +154,14 @@ public class FloorLayout : MonoBehaviour
 
     float roomHeight;   // alto de los muros de la sala que se está generando
 
+    // Súbelo cada vez que cambie lo que genera Build(): las escenas con un piso de una versión anterior se regeneran solas.
+    const int LayoutVersion = 2;
+    [SerializeField, HideInInspector] int builtVersion;
+
     void Awake()
     {
-        // Red de seguridad: si olvidaste generarlo en el editor, se crea al iniciar.
-        if (transform.Find(Prefix + "Rooms") == null) Build();
+        // Red de seguridad: si olvidaste generarlo (o regenerarlo tras cambiar el código), se crea al iniciar.
+        if (transform.Find(Prefix + "Rooms") == null || builtVersion != LayoutVersion) Build();
     }
 
     void OnValidate()
@@ -165,6 +169,17 @@ public class FloorLayout : MonoBehaviour
         wallHeight = Mathf.Max(1f, wallHeight);
         colliderThickness = Mathf.Max(0.1f, colliderThickness);
         tileMeters = Mathf.Max(0.25f, tileMeters);
+#if UNITY_EDITOR
+        // piso generado con código viejo: se regenera al abrir la escena (no se puede crear/borrar objetos dentro de OnValidate)
+        if (!Application.isPlaying && builtVersion != LayoutVersion && gameObject.scene.IsValid())
+            EditorApplication.delayCall += () =>
+            {
+                if (this == null || Application.isPlaying || builtVersion == LayoutVersion) return;
+                Build();
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+                Debug.Log($"[FloorLayout] {gameObject.scene.name}: piso regenerado (versión {LayoutVersion}). Guarda la escena.");
+            };
+#endif
     }
 
     [ContextMenu("Generar piso")]
@@ -250,6 +265,7 @@ public class FloorLayout : MonoBehaviour
         float lowest = 0f;
         foreach (var r in rooms) lowest = Mathf.Min(lowest, r.elevation);
         director.killY = transform.position.y + lowest - 3f;   // más abajo que esto = caíste al vacío
+        builtVersion = LayoutVersion;
 
 #if UNITY_EDITOR
         if (!Application.isPlaying) EditorUtility.SetDirty(gameObject);

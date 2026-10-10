@@ -138,7 +138,6 @@ public partial class FloorLayout
 
         var root = NewChild(secretsRoot, "Reliquia_" + spec.id);
         root.position = room.TransformPoint(new Vector3(spec.stand.x, 0f, spec.stand.y));
-        var anchor = flat * 3.2f + Vector3.up * 2.4f;   // delante de Abby (vista desde ese ángulo), un poco arriba
 
         // marca del punto donde pararse: una baldosa apenas más clara (casi no se nota)
         var markMat = SavedMaterial("Marca_" + palette.key, () => { var mm = new Material(floorMaterial); mm.SetColor("_BaseColor", new Color(1.18f, 1.15f, 1.1f)); return mm; });
@@ -148,6 +147,8 @@ public partial class FloorLayout
         // piezas: puntos del símbolo proyectados en paralelo a lo largo de la vista, con profundidad al azar
         Vector3 right = Vector3.Cross(Vector3.up, view).normalized;
         Vector3 up = Vector3.Cross(view, right).normalized;
+        // el símbolo queda justo encima de Abby en pantalla (la cámara la sigue y la deja al centro)
+        var anchor = up * 1.8f + Vector3.up * 0.4f;
         var pieces = new List<Renderer>();
         var mat = GlowMaterial("Glow_Polvo", new Color(0.05f, 0.05f, 0.065f));
         var pts = Symbol(floorNumber);
@@ -155,8 +156,8 @@ public partial class FloorLayout
         foreach (var p in pts)
         {
             float depthAlong = DR(-2.6f, 2.6f);
-            var pos = anchor + right * p.x * 1.1f + up * p.y * 1.1f + view * depthAlong;
-            var g = Prim(piecesRoot, PrimitiveType.Cube, "Pieza", pos, Vector3.one * 0.085f, mat, false);
+            var pos = anchor + right * p.x * 0.9f + up * p.y * 0.9f + view * depthAlong;
+            var g = Prim(piecesRoot, PrimitiveType.Cube, "Pieza", pos, Vector3.one * 0.11f, mat, false);
             g.transform.localRotation = Quaternion.Euler(DR(0f, 90f), DR(0f, 90f), DR(0f, 90f));
             var mr = g.GetComponent<MeshRenderer>(); mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             pieces.Add(mr);
@@ -178,6 +179,7 @@ public partial class FloorLayout
         ana.viewDir = view;
         ana.standPoint = Vector3.zero;
         ana.standRadius = 1.4f;
+        ana.tolerance = 6f;
         ana.pieces = pieces.ToArray();
         ana.reward = reward.gameObject;
         ana.message = "Desde aquí, todo tiene sentido";

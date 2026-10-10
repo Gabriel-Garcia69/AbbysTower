@@ -95,7 +95,10 @@ public class LoreNote : MonoBehaviour
         GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
 
         // hoja: pergamino (o piedra si es inscripción)
-        float pw = Mathf.Min(sw - 6f * u, 80f * u), ph = Mathf.Min(sh - 10f * u, 78f * u);
+        float pw = Mathf.Min(sw - 6f * u, 80f * u);
+        var measure = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.25f), wordWrap = true, richText = true };
+        float needed = measure.CalcHeight(new GUIContent(text), pw - 14f * u) + 26f * u;   // la hoja crece con el texto
+        float ph = Mathf.Clamp(needed, 40f * u, sh - 10f * u);
         var page = new Rect((sw - pw) / 2f, (sh - ph) / 2f, pw, ph);
         bool stone = kind == Kind.Inscripcion;
         Color paper = stone ? new Color(0.32f, 0.31f, 0.34f) : new Color(0.86f, 0.78f, 0.6f);

@@ -124,8 +124,9 @@ public class FloorDirector : MonoBehaviour
     void OnPlayerDied()
     {
         dead = true; endTimer = 0f;
-        lostFragments = RunState.Fragments - RunState.Fragments / 2;
+        int before = RunState.Fragments;
         RunState.OnDeath();
+        lostFragments = before - RunState.Fragments;
     }
 
     int lostFragments;

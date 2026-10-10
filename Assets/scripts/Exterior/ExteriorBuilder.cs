@@ -416,6 +416,20 @@ public class ExteriorBuilder : MonoBehaviour
             bc.transform.localPosition = (bmin + bmax) / 2f;
             bc.AddComponent<BoxCollider>().size = bmax - bmin;
         }
+        // descanso al final: el suelo del risco no llega a la altura de arriba hasta ~1 m después del último escalón
+        // (la malla del terreno baja en pendiente en el borde) y ahí se caía Abby. Losa de piedra que cubre ese hueco
+        // hasta las cajas de los bloques laterales; queda 3 cm por encima del pasto para no parpadear con él.
+        const float landingTop = 0.03f;
+        float landingEnd = z1 + 3f;
+        Box(new Vector3(-width / 2f - 0.3f, mesaHeight - 1.5f, z1 + 0.5f), new Vector3(width / 2f + 0.3f, mesaHeight + landingTop, landingEnd));
+        var landing = new GameObject("Descanso");
+        landing.transform.SetParent(stairs, false);
+        // el collider empieza 0.8 m antes (se traslapa con la rampa) y llega hasta los bloques laterales
+        var lmin = new Vector3(-width / 2f - 0.3f, mesaHeight - 1.5f, z1 - 0.3f);
+        var lmax = new Vector3(width / 2f + 0.3f, mesaHeight + landingTop, landingEnd);
+        landing.transform.localPosition = (lmin + lmax) / 2f;
+        landing.AddComponent<BoxCollider>().size = lmax - lmin;
+
         var sm = new Mesh { name = "Stairs", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
         sm.SetVertices(sv); sm.SetUVs(0, suv); sm.SetTriangles(st, 0);
         sm.RecalculateNormals(); sm.RecalculateBounds();
@@ -429,6 +443,26 @@ public class ExteriorBuilder : MonoBehaviour
         ramp.transform.localPosition = new Vector3(0f, mesaHeight / 2f - 0.25f, (z0 + z1) / 2f);
         ramp.transform.localRotation = Quaternion.Euler(-ang, 0f, 0f);
         ramp.AddComponent<BoxCollider>().size = new Vector3(width, 0.5f, len);
+
+        // cuerpo sólido bajo la rampa (cuña convexa): sin esto, desde el pasto se atravesaban los costados de la
+        // escalinata y se quedaba uno debajo de la rampa
+        var body = new GameObject("CuerpoEscalinata");
+        body.transform.SetParent(stairs, false);
+        float hw = width / 2f, top = mesaHeight - 0.02f;   // 2 cm bajo la rampa: se camina sobre la rampa, no sobre la cuña
+        var wedge = new Mesh { name = "StairsBody" };
+        wedge.vertices = new[]
+        {
+            new Vector3(-hw, 0f, z0), new Vector3(hw, 0f, z0),
+            new Vector3(-hw, 0f, z1 + 0.5f), new Vector3(hw, 0f, z1 + 0.5f),
+            new Vector3(-hw, top, z1), new Vector3(hw, top, z1),
+            new Vector3(-hw, top, z1 + 0.5f), new Vector3(hw, top, z1 + 0.5f),
+        };
+        wedge.triangles = new[] { 0, 2, 1, 1, 2, 3, 0, 1, 4, 1, 5, 4, 4, 5, 6, 5, 7, 6, 2, 6, 3, 3, 6, 7, 0, 4, 2, 2, 4, 6, 1, 3, 5, 3, 7, 5 };
+        wedge.RecalculateBounds();
+        var bodyCol = body.AddComponent<MeshCollider>();
+        bodyCol.sharedMesh = wedge;
+        bodyCol.convex = true;
+
         foreach (float side in new[] { -1f, 1f })
         {
             var rail = Primitive(stairs, PrimitiveType.Cube, "Barandal", Vector3.zero, Vector3.one, mMetal);
@@ -939,7 +973,7 @@ public class ExteriorBuilder : MonoBehaviour
         if (PlateauSdf(p) > -2f - margin) return false;
         foreach (var h in huts) if (Vector2.Distance(p, h) < 4.2f + margin) return false;          // casitas
         if (p.magnitude < plazaRadius + 2f + margin) return false;
-        if (Mathf.Abs(p.x) < 3.5f + margin && p.y > -35f && p.y < StairsEndZ + 1f) return false;     // caminos y escalinata
+        if (Mathf.Abs(p.x) < 3.5f + margin && p.y > -35f && p.y < StairsEndZ + 3.5f) return false;   // caminos, escalinata y su descanso
         if (Vector2.Distance(p, lakeCenter) < lakeRadius - 3f + margin) return false;
         float dt = DistTower(p);
         if (dt < 19f + margin) return false;                                                           // base de la torre
@@ -1178,7 +1212,7 @@ public class ExteriorBuilder : MonoBehaviour
         for (int s = 0; s < segs; s++)
         {
             int i = s * 2;
-            tri.AddRange(new[] { i, i + 1, i + 3, i, i + 3, i + 2 });
+            tri.AddRange(new[] { i, i + 3, i + 1, i, i + 2, i + 3 });   // cara hacia afuera (antes miraba adentro: desde fuera la pared era invisible)
         }
         if (capTop && rTop > 0.001f)
         {
@@ -1220,8 +1254,8 @@ public class ExteriorBuilder : MonoBehaviour
                 else tri.AddRange(new[] { i, i + 3, i + 1, i, i + 2, i + 3 });
             }
         }
-        Band(rOut, 0f, rOut, h, false);
-        Band(rIn, 0f, rIn, h, true);
+        Band(rOut, 0f, rOut, h, true);    // cara exterior mirando afuera
+        Band(rIn, 0f, rIn, h, false);     // cara interior mirando al centro (al agua)
         Band(rOut, h, rIn, h, true);   // tapa: mira hacia arriba (antes quedaba al revés: invisible y sin colisión por encima)
         var m = new Mesh { name = "Ring" };
         m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(tri, 0);

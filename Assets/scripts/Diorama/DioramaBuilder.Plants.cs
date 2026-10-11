@@ -20,7 +20,7 @@ public partial class DioramaBuilder
         for (int tries = 0; placed < 14 && tries < 4000; tries++)
         {
             Vector2 q = new Vector2(R(Walk.xMin + 2f, Walk.xMax - 2f), R(Walk.yMin + 2f, Walk.yMax - 2f));
-            if (!Free(q, 2.2f) || !Flat(q, 1.6f, 0f)) continue;
+            if (!Free(q, 2.2f) || InWater(q) || !Flat(q, 1.6f, 0f)) continue;
             if (rng.NextDouble() < 0.55) Tree(g, q, 0f, R(0.9f, 1.2f), true); else Pine(g, q, 0f, R(0.9f, 1.2f), true);
             blocked.Add(new Rect(q.x - 1.6f, q.y - 1.6f, 3.2f, 3.2f));
             placed++;
@@ -32,7 +32,7 @@ public partial class DioramaBuilder
             if (Walk.Contains(q) && q.y < 36f) continue;
             if (q.y < Walk.yMin && q.y > Walk.yMin - 12f && Mathf.Abs(q.x) < 30f && rng.NextDouble() < 0.9) continue;   // al sur está la cámara
             float h = Height(q.x, q.y);
-            if (h < -4.4f || !Flat(q, 1.2f, h)) continue;
+            if (h < -4.4f || InWater(q) || !Flat(q, 1.2f, h)) continue;
             if (!Free(q, 1f)) continue;
             float s = R(0.95f, 1.6f) * (h < -5f ? 1.3f : 1f);
             if (rng.NextDouble() < 0.6) Pine(g, q, h, s, false); else Tree(g, q, h, s, false);
@@ -43,7 +43,7 @@ public partial class DioramaBuilder
         {
             Vector2 q = new Vector2(R(-40f, 40f), R(-40f, 45f));
             float h = Height(q.x, q.y);
-            if (h < -4.4f || !Free(q, 0.3f) || !Flat(q, 0.8f, h)) continue;
+            if (h < -4.4f || InWater(q) || !Free(q, 0.3f) || !Flat(q, 0.8f, h)) continue;
             Bush(g, new Vector3(q.x, h, q.y), R(0.7f, 1.3f));
             i++;
         }
@@ -271,7 +271,7 @@ public partial class DioramaBuilder
             Vector2 q = new Vector2(R(-50f, 50f), R(-45f, 60f));
             if (!Free(q, 0f) || Terrace.Contains(q)) continue;
             float h = Height(q.x, q.y);
-            if (h < -4.4f || !Flat(q, 0.35f, h)) continue;
+            if (h < -4.4f || InWater(q) || !Flat(q, 0.35f, h)) continue;
             float s = R(0.6f, 1.3f);
             batch.Add(new CombineInstance { mesh = tuft, transform = Matrix4x4.TRS(new Vector3(q.x, h, q.y), Quaternion.Euler(0f, R(0f, 360f), 0f), Vector3.one * s) });
             i++;

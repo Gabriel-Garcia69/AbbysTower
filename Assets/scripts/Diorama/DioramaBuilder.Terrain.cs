@@ -11,6 +11,8 @@ public partial class DioramaBuilder
     const float Cell = 0.7f;
     static readonly Rect TerrainArea = new Rect(-90f, -62f, 180f, 162f);
     const float RiverStartX = -24f, FenceZ = 10.8f, WaterLevel = -4.1f, StreamWater = -0.35f;
+    const float SpringX = -66f;   // donde nace el arroyo (manantial entre rocas)
+    const float OuterY = 12f, OuterSouthY = 4.8f;   // altura de las mesetas de afuera (= último bancal)
     const float Chunk = 30f;
 
     // ------------------------------------------------------------------ forma
@@ -27,9 +29,15 @@ public partial class DioramaBuilder
 
         // bancales que enmarcan el pueblo (este, oeste y sur): suben en escalones con bosque encima
         float ex = Mathf.Abs(x) - 37f + e * 2f;
-        if (ex > 0f) h = Mathf.Max(h, ex < 5f ? 1.5f : ex < 10f ? 3f : ex < 16f ? 4.8f : 7f);
+        if (ex > 0f)
+        {
+            float b = ex < 5f ? 1.5f : ex < 10f ? 3f : ex < 16f ? 4.8f : ex < 23f ? 7f : ex < 31f ? 9.5f : OuterY;
+            // lomas arriba: el terreno alto no es una planicie
+            if (ex >= 16f && ex < 40f && Noise(x * 0.09f + 5f, z * 0.09f) > 0.62f) b += 2.5f;
+            h = Mathf.Max(h, b);
+        }
         float es = -z - 35f + e * 2f;
-        if (es > 0f) h = Mathf.Max(h, es < 6f ? 1.5f : 3f);
+        if (es > 0f) h = Mathf.Max(h, es < 6f ? 1.5f : es < 13f ? 3f : OuterSouthY);
 
         // al norte el terreno baja al valle en escalones
         float en = z - CliffZ + e * 2.5f;
@@ -41,11 +49,23 @@ public partial class DioramaBuilder
         if (inCanyon)
         {
             float d = rz + e * 1.6f;
-            float c = d < 2.6f ? -4.6f : d < 4.4f ? -3.2f : d < 6f ? -1.8f : d < 7.2f ? -0.9f : 0f;
-            h = Mathf.Min(h, c);
+            // solo cerca del río: lejos de él el terreno conserva sus bancales
+            if (d < 7.2f) h = Mathf.Min(h, d < 2.6f ? -4.6f : d < 4.4f ? -3.2f : d < 6f ? -1.8f : -0.9f);
+            else if (d < 9f) h = Mathf.Min(h, 0f);   // orilla a nivel del pueblo
         }
-        else if (rz + e * 0.3f < 2.2f) h = Mathf.Min(h, -0.8f);
+        else if (x > SpringX && rz + e * 0.3f < 2.2f) h -= 0.8f;   // el arroyo baja por los bancales desde el manantial
         return h;
+    }
+
+    /// <summary>¿Cae en el cauce del arroyo o del río? (ahí no van árboles, arbustos ni pasto)</summary>
+    static bool InWater(Vector2 q) => Mathf.Abs(q.y - Meander(q.x)) < 3.4f && q.x > SpringX - 2f;
+
+    /// <summary>Altura del agua del arroyo en x (un poco abajo de la orilla).</summary>
+    float StreamWaterAt(float x)
+    {
+        float z = Meander(x), bank = float.MinValue;
+        foreach (float dz in new[] { -2.6f, 2.6f }) bank = Mathf.Max(bank, Height(x, z + dz));
+        return Mathf.Min(Height(x, z) + 0.45f, bank - 0.3f);
     }
 
     static float Noise(float x, float y)
@@ -149,12 +169,22 @@ public partial class DioramaBuilder
         var g = Group("Alrededores", root);
         float a = TerrainArea.xMin, b = TerrainArea.xMax, s = TerrainArea.yMin, north = CliffZ - 2f;
         const float far = 700f;
-        Flat(g, "MesetaOeste", new Vector3((-far + a) / 2f, 7f, (-far + north) / 2f), a + far, north + far, mGrass, 0.25f);
-        Flat(g, "MesetaEste", new Vector3((b + far) / 2f, 7f, (-far + north) / 2f), far - b, north + far, mGrass, 0.25f);
-        Flat(g, "MesetaSur", new Vector3((a + b) / 2f, 3f, (-far + s) / 2f), b - a, s + far, mGrass, 0.25f);
+        // se meten 1 m bajo el borde del terreno para que no quede rendija entre los dos
+        Flat(g, "MesetaOeste", new Vector3((-far + a + 1f) / 2f, OuterY, (-far + north) / 2f), a + 1f + far, north + far, mGrass, 0.25f);
+        // al este el cañón del río sigue entre las mesetas hasta perderse en la bruma
+        const float gorge = 8f, gx0 = 89f;
+        float gz = Meander(b);
+        Flat(g, "MesetaEsteN", new Vector3((gx0 + far) / 2f, OuterY, (gz + gorge + north) / 2f), far - gx0, north - gz - gorge, mGrass, 0.25f);
+        Flat(g, "MesetaEsteS", new Vector3((gx0 + far) / 2f, OuterY, (-far + gz - gorge) / 2f), far - gx0, far + gz - gorge, mGrass, 0.25f);
+        float wallH = OuterY + 4.8f;
+        Wall(g, "CanonN", new Vector3((gx0 + far) / 2f, OuterY - wallH / 2f, gz + gorge), Vector3.back, far - gx0, wallH, mRock, 0.25f);
+        Wall(g, "CanonS", new Vector3((gx0 + far) / 2f, OuterY - wallH / 2f, gz - gorge), Vector3.forward, far - gx0, wallH, mRock, 0.25f);
+        Flat(g, "CanonFondo", new Vector3((gx0 + far) / 2f, -4.6f, gz), far - gx0, gorge * 2f, mDirt, 0.25f);
+        MeshObject(g, "RioCanon", RiverStrip(gx0, far, WaterLevel, gorge * 2f - 2f), mWater, false);
+        Flat(g, "MesetaSur", new Vector3((a + b) / 2f, OuterSouthY, (-far + s + 1f) / 2f), b - a, s + 1f + far, mGrass, 0.25f);
         // al norte las mesetas bajan al valle en escalones, como el risco del pueblo
         float[] stepZ = { north, north + 10f, north + 22f };
-        float[] stepY = { 7f, -6f, -18f, -ValleyDepth };
+        float[] stepY = { OuterY, -4f, -18f, -ValleyDepth };
         for (int k = 0; k < stepZ.Length; k++)
         {
             float z0 = stepZ[k], z1 = k + 1 < stepZ.Length ? stepZ[k + 1] : z0;
@@ -173,8 +203,8 @@ public partial class DioramaBuilder
         {
             var q = new Vector2(R(-230f, 230f), R(-220f, north - 3f));
             float y;
-            if (q.x < a - 1f || q.x > b + 1f) y = 7f;
-            else if (q.y < s - 1f) y = 3f;
+            if (q.x < a - 1f || q.x > b + 1f) y = OuterY;
+            else if (q.y < s - 1f) y = OuterSouthY;
             else continue;
             float sc = R(1.2f, 2f);
             if (rng.NextDouble() < 0.65) Pine(g, q, y, sc, false); else Tree(g, q, y, sc, false);
@@ -191,7 +221,7 @@ public partial class DioramaBuilder
         var strip = RiverStrip(RiverStartX - 0.2f, TerrainArea.xMax, WaterLevel, 10f);
         var river = MeshObject(g, "Rio", strip, mWater, false);
         // arroyo de arriba
-        MeshObject(g, "Arroyo", RiverStrip(TerrainArea.xMin, RiverStartX + 0.3f, StreamWater, 4.6f), mWater, false);
+        BuildStream(g);
 
         // cascada al oeste: el arroyo cae al cañón
         Waterfall(g, new Vector3(RiverStartX + 0.05f, (StreamWater + WaterLevel) / 2f, Meander(RiverStartX)), Vector3.right, 4.6f, StreamWater - WaterLevel);
@@ -209,6 +239,43 @@ public partial class DioramaBuilder
 
         // muro invisible en la orilla de la cascada (el arroyo se puede pisar, pero no caer al cañón)
         SolidBox(g, "Collider_Cascada", new Vector3(RiverStartX - 1.5f, 1f, 0f), new Vector3(0.6f, 6f, 2f * FenceZ));
+    }
+
+    /// <summary>Arroyo que sube por los bancales: tramos de agua a la altura de cada escalón, cascaditas entre ellos y el manantial.</summary>
+    void BuildStream(Transform g)
+    {
+        const float step = 0.35f, width = 4.6f;
+        float xa = SpringX, xb = RiverStartX + 0.3f;
+        float segStart = xa, level = StreamWaterAt(xa + 0.2f);
+        for (float x = xa + step; x <= xb + 0.001f; x += step)
+        {
+            float w = StreamWaterAt(x);
+            bool last = x + step > xb;
+            if (Mathf.Abs(w - level) > 0.3f || last)
+            {
+                MeshObject(g, "Arroyo", RiverStrip(segStart, x + 0.05f, level, width), mWater, false);
+                if (Mathf.Abs(w - level) > 0.3f)
+                {
+                    // cascadita: el agua de arriba (oeste) cae al tramo siguiente
+                    float hi = Mathf.Max(level, w), lo = Mathf.Min(level, w);
+                    Waterfall(g, new Vector3(x - step * 0.5f, (hi + lo) / 2f, Meander(x)), Vector3.right, width - 1.2f, hi - lo + 0.1f);
+                    Foam(g, new Vector3(x + 0.6f, lo + 0.05f, Meander(x)), 1.4f, 14f);
+                }
+                segStart = x - 0.05f; level = w;
+            }
+        }
+        // manantial: peñas apiladas y el agua que brota entre ellas
+        float sz = Meander(SpringX), top = Height(SpringX - 2f, sz);
+        float water0 = StreamWaterAt(SpringX + 0.2f);
+        for (int i = 0; i < 9; i++)
+        {
+            float s = R(1.4f, 2.6f);
+            var rock = Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(SpringX - R(1.2f, 3.2f), top + R(0f, 2.2f), sz + R(-3.4f, 3.4f) * (i % 3 == 0 ? 0.3f : 1f) + (i % 2 == 0 ? 2.6f : -2.6f)),
+                            new Vector3(s * 1.3f, s, s * 1.1f), mRock);
+            rock.transform.localRotation = Quaternion.Euler(R(0f, 30f), R(0f, 360f), R(0f, 30f));
+        }
+        Waterfall(g, new Vector3(SpringX - 0.35f, (top + 2.4f + water0) / 2f, sz), Vector3.right, 2.4f, top + 2.4f - water0);
+        Foam(g, new Vector3(SpringX + 0.7f, water0 + 0.05f, sz), 1.6f, 18f);
     }
 
     Mesh RiverStrip(float xa, float xb, float y, float width)

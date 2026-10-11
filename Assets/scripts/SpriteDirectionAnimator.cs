@@ -18,6 +18,7 @@ public class SpriteDirectionAnimator : MonoBehaviour
 
     void LateUpdate()
     {
+        if (cameraRig == null) { cameraRig = FindAnyObjectByType<CameraRig>(); if (cameraRig == null) return; }
         // x = derecha en pantalla, z = "hacia arriba" en pantalla (alejándose de la cámara)
         Vector3 local = cameraRig.transform.InverseTransformDirection(motor.WorldMoveDirection);
         float angle = Mathf.Atan2(local.x, -local.z) * Mathf.Rad2Deg; // 0 = abajo, 90 = derecha

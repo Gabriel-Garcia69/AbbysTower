@@ -54,6 +54,8 @@ public class PlayerMotor : MonoBehaviour
 
     void Start()
     {
+        // en el prefab no hay referencia a la cámara de la escena: se busca sola
+        if (cameraRig == null) cameraRig = FindAnyObjectByType<CameraRig>();
         // Mirando hacia la cámara (= "abajo" en pantalla)
         WorldMoveDirection = -cameraRig.transform.forward;
     }

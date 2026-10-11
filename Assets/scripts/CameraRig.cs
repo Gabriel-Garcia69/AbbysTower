@@ -31,6 +31,8 @@ public class CameraRig : MonoBehaviour
 
     void Awake()
     {
+        // en el prefab no hay referencia a Abby: se busca por la etiqueta Player
+        if (followTarget == null) { var p = GameObject.FindWithTag("Player"); if (p != null) followTarget = p.transform; }
         Camera = GetComponentInChildren<Camera>();
     }
 

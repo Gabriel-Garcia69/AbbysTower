@@ -101,11 +101,13 @@ public class MouseOrbitCamera : MonoBehaviour
     };
     [System.NonSerialized] CameraStyleProfile diorama = new CameraStyleProfile
     {
-        fov = 22f, distance = 36f, pivotHeight = 0.8f, startPitch = 24f, minPitch = 24f, maxPitch = 24f,
-        lookUp = 3f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true, allowShots = true
+        fov = 22f, distance = 36f, pivotHeight = 0.8f, startPitch = 20f, minPitch = 20f, maxPitch = 20f,
+        lookUp = 6f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true, allowShots = true
     };
     [Tooltip("Esta escena arranca con su propio estilo (p. ej. el diorama), sin cambiar el que se guardó para los pisos.")]
     [SerializeField] bool useSceneStyle = false;
+    [Tooltip("Escena al aire libre (diorama): con la cámara desde adentro (F3) solo choca con el terreno; barandales, postes, casas y árboles no la acercan.")]
+    [SerializeField] bool outdoorScene = false;
     [SerializeField] CameraStyle sceneStyle = CameraStyle.Diorama;
     bool sceneStyleActive;
     [Tooltip("Qué tan rápido pasa de un estilo a otro (s).")]
@@ -180,7 +182,9 @@ public class MouseOrbitCamera : MonoBehaviour
     CameraShot shot;
     float shotW, shotWVel, sYaw, sPitch, sDist, sFov, sLookUp, sYawVel, sPitchVel, sDistVel, sFovVel, sLookVel;
     Vector3 sOffset, sOffsetVel;
-    float moveYaw;   // yaw del rig (marco de los controles): no cambia mientras Abby camina
+    float moveYaw;   // yaw del rig (marco de los controles): no cambia mientras se sostiene la misma dirección
+    IMoveInput moveInput;
+    Vector2 heldInput;
     Vector2 fxzVel;
     AreaReveal currentArea;
     bool peeking;
@@ -211,7 +215,7 @@ public class MouseOrbitCamera : MonoBehaviour
         shownFov = original.fov; shownPivot = original.pivotHeight; shownLookUp = lookUp;
 
         var p = GameObject.FindWithTag("Player");
-        if (p != null) { player = p.transform; lastPlayerPos = player.position; }
+        if (p != null) { player = p.transform; lastPlayerPos = player.position; moveInput = p.GetComponent<IMoveInput>(); }
         sceneStyleActive = useSceneStyle;
         ApplyStyle(sceneStyleActive ? sceneStyle : Style, instant: true);
         labelUntil = Time.unscaledTime + 4f;   // recuerda las teclas al entrar a la escena
@@ -373,9 +377,11 @@ public class MouseOrbitCamera : MonoBehaviour
             if (!zoomEnabled) targetDistance = Mathf.Lerp(active.distance, sDist, w);
         }
         else if (!zoomEnabled && active.allowShots) targetDistance = active.distance;
-        // los controles siguen el marco que había mientras Abby camina; al detenerse se alinean con la vista
-        bool moving = playerVel.sqrMagnitude > 0.25f;
-        if (!active.allowShots || !moving) moveYaw = viewYaw;
+        // si una toma gira la cámara mientras sostienes una dirección, Abby sigue derecho (el marco de los
+        // controles se queda); en cuanto sueltas o cambias de dirección, los controles se alinean con la vista
+        Vector2 inp = moveInput != null ? moveInput.Move : Vector2.zero;
+        bool sameInput = inp.sqrMagnitude > 0.04f && heldInput.sqrMagnitude > 0.04f && Vector2.Angle(inp, heldInput) < 25f;
+        if (!active.allowShots || !sameInput) { moveYaw = viewYaw; heldInput = inp; }
 
         // mirada adelante: el pivote se adelanta hacia donde camina Abby
         Vector3 wantOffset = active.lookAhead > 0f ? Vector3.ClampMagnitude(playerVel / 5f, 1f) * active.lookAhead : Vector3.zero;
@@ -570,6 +576,13 @@ public class MouseOrbitCamera : MonoBehaviour
     bool Structural(Collider c)
     {
         if (structCache.TryGetValue(c, out bool b)) return b;
+        if (outdoorScene)
+        {
+            // al aire libre solo el terreno acerca la cámara: lo demás se ve de cerca sin pegarse a Abby
+            b = c is MeshCollider && c.name.StartsWith("Terreno");
+            structCache[c] = b;
+            return b;
+        }
         Vector3 s = c.bounds.size;
         b = c.attachedRigidbody == null && !(c is CharacterController) && c.GetComponentInParent<TowerEnemy>() == null
             && Mathf.Max(s.x, Mathf.Max(s.y, s.z)) >= 1.2f;

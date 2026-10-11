@@ -198,18 +198,18 @@ public partial class DioramaBuilder : MonoBehaviour
     {
         var g = Group("Tomas", root);
         // apertura: plano general del pueblo, el cañón y las ruinas; luego baja hasta Abby
-        Shot(g, "Apertura", Vector3.zero, Vector2.one, 30f, 30f, 95f, 28f, 0f, new Vector3(6f, 0f, 30f), 2.6f, 10, intro: 4.5f);
+        Shot(g, "Apertura", Vector3.zero, Vector2.one, 30f, 26f, 95f, 30f, 5f, new Vector3(6f, 0f, 30f), 2.6f, 10, intro: 4.5f);
         // el puente: de lado, río abajo hasta la cascada
-        Shot(g, "Puente", new Vector3(0f, 0f, 0f), new Vector2(4.4f, 2f * FenceZ + 1.2f), -68f, 20f, 24f, 30f, 2f, new Vector3(-5f, 0f, 0f), 1.6f, 2,
+        Shot(g, "Puente", new Vector3(0f, 0f, 0f), new Vector2(4.4f, 2f * FenceZ + 1.2f), -68f, 16f, 24f, 32f, 6f, new Vector3(-5f, 0f, 0f), 1.6f, 2,
              "EL PUENTE DEL CAÑÓN", "Río abajo, el arroyo cae al cañón");
         // la cascada vista desde el arroyo, cañón abajo
-        Shot(g, "Cascada", new Vector3(-29.5f, 0f, 0f), new Vector2(7f, 2f * FenceZ), -100f, 24f, 20f, 32f, 2f, new Vector3(3f, -1.5f, -2f), 1.6f, 2,
+        Shot(g, "Cascada", new Vector3(-29.5f, 0f, 0f), new Vector2(7f, 2f * FenceZ), -100f, 20f, 20f, 34f, 6f, new Vector3(3f, -1.5f, -2f), 1.6f, 2,
              "LA CAÍDA DEL ARROYO", "");
         // el muelle: desde el camino, la vista baja al río
         Shot(g, "Muelle", new Vector3(12.5f, 0f, -12.4f), new Vector2(9f, 3.4f), 15f, 40f, 18f, 32f, 0f, new Vector3(0f, -1.5f, 3.2f), 1.6f, 1,
              "EL MUELLE", "");
         // lo alto del patio: se voltea a ver todo el pueblo
-        Shot(g, "Patio", new Vector3(0f, TerraceY, Terrace.yMin + 2.2f), new Vector2(24f, 3.6f), 180f, 34f, 28f, 32f, 0f, new Vector3(0f, 0f, -9f), 1.8f, 2,
+        Shot(g, "Patio", new Vector3(0f, TerraceY, Terrace.yMin + 2.2f), new Vector2(24f, 3.6f), 180f, 28f, 28f, 34f, 5f, new Vector3(0f, 0f, -9f), 1.8f, 2,
              "LO ALTO DEL PATIO", "El pueblo del risco a tus pies");
         // el mirador: plano abierto y bajo hacia el valle, las montañas y la torre
         Shot(g, "Mirador", new Vector3(LookoutX, 0f, CliffFenceZ + 2.4f), new Vector2(3.6f, 6.4f), -22f, 12f, 10f, 44f, 6f, new Vector3(0f, 1.2f, 2.5f), 2.2f, 3,

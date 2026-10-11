@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 /// <summary>
 /// Efecto maqueta (tilt-shift) del diorama: el desenfoque de profundidad (Bokeh) del Volume enfoca siempre a Abby,
 /// así lo lejano (y lo que pasa pegado a la cámara) se suaviza como en Octopath, sin tocar lo que rodea a Abby.
-/// F7 lo apaga/prende para comparar. Va en la cámara principal.
+/// Arranca apagado (todo nítido); F7 lo prende/apaga para comparar. Va en la cámara principal.
 /// </summary>
 [DefaultExecutionOrder(3000)]
 public class TiltShiftFocus : MonoBehaviour
@@ -22,6 +22,8 @@ public class TiltShiftFocus : MonoBehaviour
     public float maxFocalLength = 220f;
     [Tooltip("Apertura (f/). Más alto = más zona nítida alrededor de Abby.")]
     public float aperture = 4f;
+    [Tooltip("Arranca con el desenfoque prendido. Apagado por defecto: el diorama se ve nítido; F7 lo prende para comparar.")]
+    public bool startOn = false;
 
     DepthOfField dof;
     Transform player;
@@ -34,7 +36,7 @@ public class TiltShiftFocus : MonoBehaviour
         if (volume != null && volume.profile != null) volume.profile.TryGet(out dof);
         var p = GameObject.FindWithTag("Player");
         if (p != null) player = p.transform;
-        if (dof != null) focus = dof.focusDistance.value;
+        if (dof != null) { focus = dof.focusDistance.value; dof.active = startOn; }
     }
 
     void LateUpdate()

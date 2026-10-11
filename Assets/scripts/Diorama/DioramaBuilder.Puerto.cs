@@ -10,8 +10,8 @@ using UnityEngine;
 public partial class DioramaBuilder
 {
     static readonly Rect PortArea = new Rect(-100f, -70f, 200f, 150f);
-    static readonly Rect PortWalk = new Rect(-30f, -38f, 64f, 84f);
-    static readonly Vector3 PortSpawn = new Vector3(0f, 0.1f, -22f);
+    static readonly Rect PortWalk = new Rect(-30f, -38f, 84f, 84f);
+    static readonly Vector3 PortSpawn = new Vector3(0f, 0.1f, -24f);
     const float SeaY = -1.4f, PierX = 3f, PierW = 6f, PierEnd = 44f;
     const float LighthouseX = 44f, LighthouseZ = 27f;
 
@@ -33,11 +33,13 @@ public partial class DioramaBuilder
         }
         float h = 0f;
         float ex = Mathf.Abs(x) - 34f + e * 2f;
-        if (ex > 0f) h = Mathf.Max(h, ex < 5f ? 1.5f : ex < 10f ? 3f : ex < 16f ? 4.8f : 7f);
+        if (ex > 0f && z < -2f) h = Mathf.Max(h, ex < 5f ? 1.5f : ex < 10f ? 3f : ex < 16f ? 4.8f : 7f);
         float es = -z - 36f + e * 2f;
         if (es > 0f) h = Mathf.Max(h, es < 6f ? 1.5f : es < 12f ? 3f : es < 18f ? 4.8f : 7f);
         // los cabos que cierran la bahía
-        if (z > 0f && x > 30f) h = Mathf.Max(h, Vector2.Distance(new Vector2(x, z), new Vector2(LighthouseX, LighthouseZ)) < 9f + e ? 4.5f : 2.5f);
+        if (z > 0f && x > 30f) h = Mathf.Max(h, Vector2.Distance(new Vector2(x, z), new Vector2(LighthouseX, LighthouseZ)) < 9f ? 4.5f : 2.5f);
+        // pasillo de la escalera del malecón al cabo
+        if (Mathf.Abs(x - 31.5f) < 2.4f && z > -8f && z <= 0f) h = 0f;
         if (z > 0f && x < -30f) h = Mathf.Max(h, 3f);
         // lomas arriba (no en los bordes: ahí empatan con las mesetas de afuera)
         if (h >= 4.8f && Mathf.Abs(x) < 85f && z > -62f && Noise(x * 0.09f + 5f, z * 0.09f) > 0.62f) h += 2.5f;
@@ -48,25 +50,13 @@ public partial class DioramaBuilder
 
     void BuildPort()
     {
-        mSand = Plain("Dio_Arena", new Color(0.86f, 0.78f, 0.58f), 0.1f);
-        mWhite = Plain("Dio_Blanco", new Color(0.95f, 0.93f, 0.88f), 0.15f);
-        mRedPaint = Plain("Dio_RojoFaro", new Color(0.72f, 0.16f, 0.14f), 0.2f);
-        mSail = Saved("Dio_Vela", () =>
-        {
-            var m = new Material(LitShader);
-            m.SetColor("_BaseColor", new Color(0.96f, 0.92f, 0.82f));
-            m.SetFloat("_Cull", 0f);   // se ve de los dos lados
-            return m;
-        });
-        mHull = Plain("Dio_Casco", new Color(0.32f, 0.2f, 0.12f), 0.15f);
-
         BuildTerrain();
         BuildSea();
         BuildQuay();
         BuildStonePier();
         BuildBoardwalk();
-        Ship(root, new Vector3(PierX + 11f, SeaY, 21f), 0f, 24f, 6f, true);
-        Ship(root, new Vector3(PierX - 11.5f, SeaY, 27f), 180f, 19f, 5f, true);
+        Ship(root, new Vector3(PierX + 11f, SeaY, 17f), 0f, 22f, 6f, true);
+        Ship(root, new Vector3(PierX - 11.5f, SeaY, 20f), 180f, 18f, 5f, true);
         BuildPortTown();
         BuildLighthouse();
         BuildTrees();
@@ -76,6 +66,7 @@ public partial class DioramaBuilder
         BuildAtmosphere();
         BuildGulls();
         BuildPortShots();
+        BuildPortLevel();
 #if UNITY_EDITOR
         if (!Application.isPlaying) UnityEditor.EditorUtility.SetDirty(gameObject);
 #endif
@@ -163,28 +154,28 @@ public partial class DioramaBuilder
         Box(g, "Cuerpo", new Vector3(PierX, -2.4f, len / 2f), new Vector3(PierW, 5f, len), mBrick, true);
         Flat(g, "Empedrado", new Vector3(PierX, 0.11f, len / 2f), PierW - 0.2f, len, mCobble, 0.5f);
         // plaza del final, más ancha
-        float pz = PierEnd - 4f;
-        Box(g, "Plaza", new Vector3(PierX, -2.4f, pz), new Vector3(12f, 5f, 8f), mBrick, true);
-        Flat(g, "EmpedradoPlaza", new Vector3(PierX, 0.115f, pz), 11.8f, 7.8f, mCobble, 0.5f);
+        float pz = PierEnd - 6f;
+        Box(g, "Plaza", new Vector3(PierX, -2.4f, pz), new Vector3(16f, 5f, 12f), mBrick, true);
+        Flat(g, "EmpedradoPlaza", new Vector3(PierX, 0.115f, pz), 15.8f, 11.8f, mCobble, 0.5f);
         // pretiles
         foreach (float sx in new[] { -1f, 1f })
         {
             PierWall(g, new Vector3(PierX + sx * (PierW / 2f - 0.25f), 0f, (1f + len) / 2f), new Vector3(0.5f, 0f, len - 1f));
-            PierWall(g, new Vector3(PierX + sx * 5.75f, 0f, pz), new Vector3(0.5f, 0f, 8f));
-            PierWall(g, new Vector3(PierX + sx * 4.4f, 0f, pz - 3.75f), new Vector3(2.7f, 0f, 0.5f));
+            PierWall(g, new Vector3(PierX + sx * 7.75f, 0f, pz), new Vector3(0.5f, 0f, 12f));
+            PierWall(g, new Vector3(PierX + sx * 5.4f, 0f, pz - 5.75f), new Vector3(4.7f, 0f, 0.5f));
         }
-        PierWall(g, new Vector3(PierX, 0f, PierEnd - 0.25f), new Vector3(12f, 0f, 0.5f));
+        PierWall(g, new Vector3(PierX, 0f, PierEnd - 0.25f), new Vector3(16f, 0f, 0.5f));
         // bolardos con cuerdas a los barcos, cajas y barriles, farol del final
         for (float z = 6f; z < len; z += 7f)
             foreach (float sx in new[] { -1f, 1f })
                 Prim(g, PrimitiveType.Cylinder, "Bolardo", new Vector3(PierX + sx * 2.1f, 0.4f, z), new Vector3(0.36f, 0.3f, 0.36f), mMetal);
-        Clutter(g, new Vector3(PierX - 4f, 0.1f, pz + 1.5f), true);
-        Clutter(g, new Vector3(PierX + 4f, 0.1f, pz - 1f), true);
+        Clutter(g, new Vector3(PierX - 6f, 0.1f, pz + 3.5f), true);
+        Clutter(g, new Vector3(PierX + 6f, 0.1f, pz - 3.5f), true);
         Clutter(g, new Vector3(PierX + 1.5f, 0.1f, 9f), true);
-        foreach (float sx in new[] { -1f, 1f }) PortLamp(g, new Vector3(PierX + sx * 4.8f, 0.1f, PierEnd - 1.2f));
+        foreach (float sx in new[] { -1f, 1f }) PortLamp(g, new Vector3(PierX + sx * 6.8f, 0.1f, PierEnd - 1.2f));
         PortLamp(g, new Vector3(PierX - 2.2f, 0.1f, 16f));
         PortLamp(g, new Vector3(PierX + 2.2f, 0.1f, 28f));
-        blocked.Add(new Rect(PierX - 7f, 0f, 14f, PierEnd + 1f));
+        blocked.Add(new Rect(PierX - 9f, 0f, 18f, PierEnd + 1f));
     }
 
     /// <summary>Pretil bajo de sillar con almenas (con colisión).</summary>
@@ -279,6 +270,11 @@ public partial class DioramaBuilder
         Box(t, "Base", new Vector3(0f, 0.15f, 0f), new Vector3(0.4f, 0.3f, 0.4f), mStone, false);
         Box(t, "Tapa", new Vector3(0f, 3.4f, 0f), new Vector3(0.5f, 0.1f, 0.5f), mMetal, false);
         Box(t, "Vidrio", new Vector3(0f, 3.1f, 0f), new Vector3(0.3f, 0.45f, 0.3f), mWindowLit, false);
+        if (LampsLit)
+        {
+            var l = AddLight(t, new Vector3(0f, 2.9f, 0f), new Color(1f, 0.72f, 0.42f), 8f, 3.2f);
+            l.gameObject.AddComponent<LightFlicker>().amount = 0.06f;
+        }
     }
 
     // ------------------------------------------------------------------ veleros
@@ -423,11 +419,13 @@ public partial class DioramaBuilder
         Flat(v, "Plaza", new Vector3(0f, 0.012f, -12f), 50f, 18f, mCobble, 0.5f);
         blocked.Add(new Rect(-25f, -21f, 50f, 18f));
         // almacenes y casas mirando al mar
-        House(v, new Vector3(-17f, 0f, -29.5f), 0f, 9f, 6f, 4.6f, true);
-        House(v, new Vector3(0f, 0f, -30.5f), 0f, 10f, 6.5f, 5.2f, false);
-        House(v, new Vector3(17f, 0f, -29.5f), 0f, 8.5f, 6f, 4.4f, true);
+        // casas y almacenes a los lados de la plaza (al sur va la cámara: nada alto ahí)
+        House(v, new Vector3(-27.5f, 0f, -26f), 90f, 8f, 6f, 4.6f, true);
         House(v, new Vector3(-27.5f, 0f, -14f), 90f, 6f, 5f, 3.6f, true);
+        House(v, new Vector3(28f, 0f, -24.5f), -90f, 8.5f, 6f, 4.4f, true);
         House(v, new Vector3(28f, 0f, -12f), -90f, 6.5f, 5f, 3.8f, false);
+        Garden(v, new Vector3(-12f, 0f, -32f), 8f, 3f);
+        Garden(v, new Vector3(12f, 0f, -32f), 8f, 3f);
         // mercado del muelle
         Stall(v, new Vector3(-9f, 0f, -9f), 0f);
         Stall(v, new Vector3(10f, 0f, -10f), 0f);
@@ -453,6 +451,8 @@ public partial class DioramaBuilder
         float baseY = PortHeight(LighthouseX, LighthouseZ);
         g.localPosition = new Vector3(LighthouseX, baseY, LighthouseZ);
         Box(g, "Zocalo", new Vector3(0f, 0.4f, 0f), new Vector3(5f, 0.8f, 5f), mStone, true);
+        Box(g, "Puerta", new Vector3(0f, 1.8f, -2.02f), new Vector3(1.2f, 2f, 0.1f), mDoor, false);
+        Box(g, "Dintel", new Vector3(0f, 2.9f, -2.08f), new Vector3(1.6f, 0.25f, 0.15f), mStone, false);
         float y = 0.8f;
         for (int i = 0; i < 5; i++)
         {
@@ -580,7 +580,7 @@ public partial class DioramaBuilder
         Shot(g, "Embarcadero", new Vector3(-18f, 0f, 17.5f), new Vector2(11f, 3.8f), 35f, 20f, 18f, 36f, 5f, new Vector3(5f, 0f, 6f), 1.8f, 2,
              "EL EMBARCADERO", "", still: true);
         // el extremo del malecón: el faro en su cabo
-        Shot(g, "Faro", new Vector3(28f, 0f, -3f), new Vector2(6f, 6f), 45f, 14f, 16f, 38f, 8f, new Vector3(6f, 2f, 10f), 1.8f, 2,
-             "EL FARO DEL CABO", "", still: true);
+        Shot(g, "Faro", new Vector3(LighthouseX, 4.5f, LighthouseZ - 6f), new Vector2(10f, 6f), 215f, 18f, 20f, 38f, 6f, new Vector3(-6f, 0f, -8f), 2f, 2,
+             "EL FARO DEL CABO", "Desde aquí se ve todo el puerto", still: true);
     }
 }

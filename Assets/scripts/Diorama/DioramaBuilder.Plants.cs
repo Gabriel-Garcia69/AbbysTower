@@ -21,6 +21,7 @@ public partial class DioramaBuilder
         {
             Vector2 q = new Vector2(R(Walk.xMin + 2f, Walk.xMax - 2f), R(Walk.yMin + 2f, Walk.yMax - 2f));
             if (!Free(q, 2.2f) || InWater(q) || !Flat(q, 1.6f, 0f)) continue;
+            if (q.y < Walk.yMin + 12f) continue;   // cerca del borde sur taparía la cámara
             if (rng.NextDouble() < 0.55) Tree(g, q, 0f, R(0.9f, 1.2f), true); else Pine(g, q, 0f, R(0.9f, 1.2f), true);
             blocked.Add(new Rect(q.x - 1.6f, q.y - 1.6f, 3.2f, 3.2f));
             placed++;
@@ -30,7 +31,7 @@ public partial class DioramaBuilder
         {
             Vector2 q = new Vector2(R(-85f, 85f), R(-58f, 95f));
             if (Walk.Contains(q) && q.y < 36f) continue;
-            if (q.y < Walk.yMin && q.y > Walk.yMin - 12f && Mathf.Abs(q.x) < 30f && rng.NextDouble() < 0.9) continue;   // al sur está la cámara
+            if (q.y < Walk.yMin && q.y > Walk.yMin - 30f && rng.NextDouble() < 0.9) continue;   // al sur está la cámara: no se le pone bosque enfrente
             float h = Height(q.x, q.y);
             if (Underwater(h) || InWater(q) || !Flat(q, 1.2f, h)) continue;
             if (!Free(q, 1f)) continue;
@@ -44,13 +45,24 @@ public partial class DioramaBuilder
             Vector2 q = new Vector2(R(-40f, 40f), R(-40f, 45f));
             float h = Height(q.x, q.y);
             if (Underwater(h) || InWater(q) || !Free(q, 0.3f) || !Flat(q, 0.8f, h)) continue;
+            if (q.y < Walk.yMin + 3f) continue;   // detrás del borde sur quedarían pegados a la cámara
             Bush(g, new Vector3(q.x, h, q.y), R(0.7f, 1.3f));
             i++;
         }
     }
 
     /// <summary>¿Esa altura queda bajo el agua? (en el puerto, todo lo que está bajo el nivel del mar)</summary>
-    bool Underwater(float h) => layout == Layout.Puerto ? h < -0.3f : h < -4.4f;
+    bool Underwater(float h)
+    {
+        switch (layout)
+        {
+            case Layout.Pueblo: return h < -4.4f;
+            case Layout.Cueva: return h < -0.6f || h > 8f;   // ni en el lago ni en lo alto de las paredes
+            case Layout.Cima: return h < -10f;
+            case Layout.Templo: return false;
+            default: return h < -0.3f;
+        }
+    }
 
     /// <summary>¿El suelo es parejo en un radio (todo al mismo nivel)?</summary>
     bool Flat(Vector2 q, float r, float h)
@@ -63,6 +75,7 @@ public partial class DioramaBuilder
     /// <summary>Árbol de hoja: tronco que se adelgaza con dos ramas y una copa de 5 a 8 bultos irregulares.</summary>
     void Tree(Transform parent, Vector2 q, float y, float s, bool collider)
     {
+        if (layout == Layout.Nevado) { Pine(parent, q, y, s, collider); return; }   // en la nieve solo pinos
         EnsurePlantMeshes();
         var t = Group("Arbol", parent);
         t.localPosition = new Vector3(q.x, y, q.y);

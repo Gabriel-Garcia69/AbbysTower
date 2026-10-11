@@ -14,7 +14,7 @@ using UnityEditor;
 /// </summary>
 public partial class DioramaBuilder : MonoBehaviour
 {
-    public enum Layout { Pueblo, Puerto }
+    public enum Layout { Pueblo, Puerto, Acantilado, Cueva, Templo, Nevado, Cima }
     [Tooltip("Qué mapa genera: el pueblo del risco o el muelle de puerto.")]
     public Layout layout = Layout.Pueblo;
     public int seed = 7;
@@ -24,7 +24,22 @@ public partial class DioramaBuilder : MonoBehaviour
     const string Prefix = "Dio_";
     const float TerraceY = 2.6f;
     static readonly Rect TownWalk = new Rect(-33f, -29f, 66f, 72.4f);    // zona jugable del pueblo (x, z); al norte llega a la orilla del risco
-    Rect Walk => layout == Layout.Puerto ? PortWalk : TownWalk;
+    Rect Walk
+    {
+        get
+        {
+            switch (layout)
+            {
+                case Layout.Puerto: return PortWalk;
+                case Layout.Acantilado: return CliffWalk;
+                case Layout.Cueva: return CaveWalk;
+                case Layout.Templo: return TempleWalk;
+                case Layout.Nevado: return SnowWalk;
+                case Layout.Cima: return SummitWalk;
+                default: return TownWalk;
+            }
+        }
+    }
     static readonly Rect Terrace = new Rect(-15f, 18f, 30f, 18f);     // patio en alto
     const float StairZ0 = 12.5f, StairW = 5f;
     const float CliffZ = 48f, ValleyDepth = 40f;
@@ -49,8 +64,17 @@ public partial class DioramaBuilder : MonoBehaviour
         rng = new System.Random(seed);
         blocked.Clear();
         LoadMaterials();
+        LoadWorldMaterials();
         root = Group(Prefix + "Mapa", transform);
-        if (layout == Layout.Puerto) { BuildPort(); return; }
+        switch (layout)
+        {
+            case Layout.Puerto: BuildPort(); return;
+            case Layout.Acantilado: BuildCliffs(); return;
+            case Layout.Cueva: BuildCave(); return;
+            case Layout.Templo: BuildTemple(); return;
+            case Layout.Nevado: BuildSnow(); return;
+            case Layout.Cima: BuildSummit(); return;
+        }
 
         BuildTerrain();
         BuildWater();
@@ -71,6 +95,7 @@ public partial class DioramaBuilder : MonoBehaviour
         BuildBoundary();
         BuildAtmosphere();
         BuildShots();
+        BuildTownLevel();
 #if UNITY_EDITOR
         if (!Application.isPlaying) EditorUtility.SetDirty(gameObject);
 #endif
@@ -90,7 +115,22 @@ public partial class DioramaBuilder : MonoBehaviour
     /// <summary>Dónde aparece Abby: al sur, mirando hacia el pueblo y la torre.</summary>
     public static Vector3 Spawn => new Vector3(0f, 0.1f, -21f);
     /// <summary>Dónde aparece Abby en el mapa que genera este componente.</summary>
-    public Vector3 SpawnPoint => layout == Layout.Puerto ? PortSpawn : Spawn;
+    public Vector3 SpawnPoint
+    {
+        get
+        {
+            switch (layout)
+            {
+                case Layout.Puerto: return PortSpawn;
+                case Layout.Acantilado: return CliffSpawn;
+                case Layout.Cueva: return CaveSpawn;
+                case Layout.Templo: return TempleSpawn;
+                case Layout.Nevado: return SnowSpawn;
+                case Layout.Cima: return SummitSpawn;
+                default: return Spawn;
+            }
+        }
+    }
 
     // ------------------------------------------------------------------ caminos
 
@@ -458,16 +498,16 @@ public partial class DioramaBuilder : MonoBehaviour
         enc.size = new Vector2(r.width - 4f, 9f);
         enc.triggerInset = 1.5f;
         enc.doors = new LevelDoor[0];
-        enc.displayName = "Patio en ruinas";
+        // el jefe de la sección: el Guardián de las Ruinas
+        enc.isBoss = true;
+        enc.bossName = Info.boss;
+        enc.displayName = Info.boss;
+        enc.healthMultiplier = Info.hp;
         enc.maxAlive = 4;
-        var sp = new List<Transform>();
-        foreach (var p in new[] { new Vector2(-8f, -2f), new Vector2(8f, -2f), new Vector2(0f, 2f), new Vector2(-8f, 2.2f), new Vector2(8f, 2.2f), new Vector2(0f, -1.5f) })
-        {
-            var t = Group("Aparicion", arena);
-            t.localPosition = new Vector3(p.x, 0.1f, p.y);
-            sp.Add(t);
-        }
-        enc.spawnPoints = sp.ToArray();
+        var t0 = Group("Aparicion", arena);
+        t0.localPosition = new Vector3(0f, 0.1f, 2.5f);
+        enc.spawnPoints = new[] { t0 };
+        townBoss = enc;
     }
 
     void Column(Transform parent, Vector3 basePos, float height, bool broken, bool square = false)
@@ -541,9 +581,10 @@ public partial class DioramaBuilder : MonoBehaviour
         House(v, new Vector3(-23f, 0f, 17f), 160f, 6f, 5f, 3.4f, true);
         House(v, new Vector3(24f, 0f, 17f), 200f, 6f, 4.6f, 3.2f, false);
         Stall(v, new Vector3(8.5f, 0f, -17.5f), -90f);
+        MerchantPost(v, new Vector3(-22.5f, 0f, -16.2f), 0f);
         Well(v, new Vector3(-7f, 0f, -23f));
         // barriles y cajas junto a casas y el mercado
-        foreach (var p in new[] { new Vector3(11.5f, 0f, -15.2f), new Vector3(-10.5f, 0f, -16.4f), new Vector3(-21.5f, 0f, -16.5f), new Vector3(22f, 0f, -16.2f), new Vector3(-5.5f, 0f, 14.5f), new Vector3(19f, 0f, 14f) })
+        foreach (var p in new[] { new Vector3(11.5f, 0f, -15.2f), new Vector3(-10.5f, 0f, -16.4f), new Vector3(22f, 0f, -16.2f), new Vector3(-5.5f, 0f, 14.5f), new Vector3(19f, 0f, 14f) })
             Clutter(v, p);
         // huerto con cerca junto a la primera casa
         Garden(v, new Vector3(-8f, 0f, -26.8f), 7f, 3f);
@@ -819,67 +860,170 @@ public partial class DioramaBuilder : MonoBehaviour
         SolidBox(g, "Limite_N", new Vector3((gx1 + r.xMax) / 2f, 3f, r.yMax + 0.5f), new Vector3(r.xMax - gx1, 8f, 1f));
     }
 
+    public enum Mood { Dia, Atardecer, Noche, Gruta, Crepusculo }
+
+    /// <summary>Hora y ambiente de cada piso.</summary>
+    public Mood CurrentMood
+    {
+        get
+        {
+            switch (layout)
+            {
+                case Layout.Puerto: case Layout.Acantilado: return Mood.Atardecer;
+                case Layout.Templo: case Layout.Nevado: return Mood.Noche;
+                case Layout.Cueva: return Mood.Gruta;
+                case Layout.Cima: return Mood.Crepusculo;
+                default: return Mood.Dia;
+            }
+        }
+    }
+
+    /// <summary>De noche (o en la gruta) los faroles alumbran de verdad.</summary>
+    bool LampsLit => CurrentMood != Mood.Dia;
+
     void BuildAtmosphere()
     {
         var g = Group("Ambiente", root);
-        // sol de media tarde, cálido, con sombras suaves
+        var mood = CurrentMood;
         var sun = new GameObject("Sol").AddComponent<Light>();
         sun.transform.SetParent(g, false);
-        sun.transform.localRotation = Quaternion.Euler(38f, 30f, 0f);
         sun.type = LightType.Directional;
-        sun.color = new Color(1f, 0.88f, 0.7f);
-        sun.intensity = 1.85f;
         sun.shadows = LightShadows.Soft;
         sun.shadowStrength = 0.8f;
         RenderSettings.sun = sun;
-
         var sky = g.gameObject.AddComponent<ExteriorSky>();
-        // tarde dorada de cuento: azul claro arriba, durazno en el horizonte, nubes cálidas
-        sky.zenith = new Color(0.42f, 0.62f, 0.9f);
-        sky.horizon = new Color(1f, 0.84f, 0.64f);
-        sky.ground = new Color(0.6f, 0.68f, 0.78f);
-        sky.sunColor = new Color(1f, 0.85f, 0.6f) * 1.7f;
-        sky.sunSize = 0.004f;
-        sky.cloudColor = new Color(1f, 0.93f, 0.86f);
-        sky.cloudCover = 0.55f;
-        // bruma azul clara (perspectiva aérea): lo lejano se aclara y se funde con el cielo sin apagar los colores
         sky.driveFog = false;
+        Color fog; float fogStart, fogEnd;
+        bool stars = false, fireflies = false;
+        switch (mood)
+        {
+            case Mood.Atardecer:
+                // sol bajo enfrente de la cámara: el mar y el agua brillan en naranja
+                sun.transform.localRotation = Quaternion.Euler(22f, 118f, 0f);   // de lado: se ven las caras iluminadas y el cielo naranja a la izquierda
+                sun.color = new Color(1f, 0.58f, 0.32f); sun.intensity = 1.7f;
+                sky.zenith = new Color(0.22f, 0.27f, 0.56f); sky.horizon = new Color(1f, 0.52f, 0.26f); sky.ground = new Color(0.45f, 0.32f, 0.38f);
+                sky.sunColor = new Color(1f, 0.6f, 0.3f) * 2.4f; sky.sunSize = 0.012f;
+                sky.cloudColor = new Color(1f, 0.62f, 0.48f); sky.cloudCover = 0.5f;
+                fog = new Color(0.86f, 0.56f, 0.46f); fogStart = 110f; fogEnd = 760f;
+                break;
+            case Mood.Noche:
+                // la luz principal es la luna (su disco se dibuja en el cielo), azul y suave
+                sun.transform.localRotation = Quaternion.Euler(38f, 205f, 0f);
+                sun.color = new Color(0.6f, 0.7f, 1f); sun.intensity = 0.95f;
+                sky.zenith = new Color(0.015f, 0.025f, 0.08f); sky.horizon = new Color(0.1f, 0.13f, 0.3f); sky.ground = new Color(0.04f, 0.05f, 0.1f);
+                sky.sunColor = new Color(0.75f, 0.82f, 1f) * 1.2f; sky.sunSize = 0.006f;
+                sky.cloudColor = new Color(0.22f, 0.25f, 0.4f); sky.cloudCover = 0.3f;
+                fog = new Color(0.06f, 0.09f, 0.18f); fogStart = 90f; fogEnd = 1100f;
+                stars = true; fireflies = layout != Layout.Nevado;
+                break;
+            case Mood.Gruta:
+                // casi sin luz de afuera: alumbran los cristales; la oscuridad esconde los bordes
+                sun.transform.localRotation = Quaternion.Euler(60f, 30f, 0f);
+                sun.color = new Color(0.4f, 0.55f, 0.95f); sun.intensity = 0.45f;
+                sky.zenith = new Color(0.005f, 0.01f, 0.02f); sky.horizon = new Color(0.02f, 0.04f, 0.07f); sky.ground = new Color(0.01f, 0.02f, 0.03f);
+                sky.sunColor = Color.black; sky.cloudCover = 0f;
+                fog = new Color(0.03f, 0.07f, 0.12f); fogStart = 40f; fogEnd = 220f;
+                fireflies = true;
+                break;
+            case Mood.Crepusculo:
+                sun.transform.localRotation = Quaternion.Euler(20f, 118f, 0f);
+                sun.color = new Color(1f, 0.62f, 0.55f); sun.intensity = 1.5f;
+                sky.zenith = new Color(0.06f, 0.06f, 0.22f); sky.horizon = new Color(0.98f, 0.45f, 0.42f); sky.ground = new Color(0.5f, 0.42f, 0.6f);
+                sky.sunColor = new Color(1f, 0.55f, 0.45f) * 2.2f; sky.sunSize = 0.01f;
+                sky.cloudColor = new Color(1f, 0.7f, 0.75f); sky.cloudCover = 0.35f;
+                fog = new Color(0.62f, 0.45f, 0.6f); fogStart = 120f; fogEnd = 1000f;
+                stars = true;
+                break;
+            default:
+                // tarde dorada de cuento: azul claro arriba, durazno en el horizonte, nubes cálidas
+                sun.transform.localRotation = Quaternion.Euler(38f, 30f, 0f);
+                sun.color = new Color(1f, 0.88f, 0.7f); sun.intensity = 1.85f;
+                sky.zenith = new Color(0.42f, 0.62f, 0.9f); sky.horizon = new Color(1f, 0.84f, 0.64f); sky.ground = new Color(0.6f, 0.68f, 0.78f);
+                sky.sunColor = new Color(1f, 0.85f, 0.6f) * 1.7f; sky.sunSize = 0.004f;
+                sky.cloudColor = new Color(1f, 0.93f, 0.86f); sky.cloudCover = 0.55f;
+                // bruma azul clara (perspectiva aérea): lo lejano se funde con el cielo sin apagar los colores
+                fog = new Color(0.74f, 0.83f, 0.93f); fogStart = 120f; fogEnd = 820f;
+                break;
+        }
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogColor = new Color(0.74f, 0.83f, 0.93f);
-        RenderSettings.fogStartDistance = 120f;
-        RenderSettings.fogEndDistance = 820f;
+        RenderSettings.fogColor = fog;
+        RenderSettings.fogStartDistance = fogStart;
+        RenderSettings.fogEndDistance = fogEnd;
 #if UNITY_EDITOR
         var skyMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Exterior/Sky.mat");
         if (skyMat != null) RenderSettings.skybox = skyMat;
 #endif
         sky.Apply();
+        // al atardecer, luz de ambiente cálida (lo que da la espalda al sol no queda negro)
+        if (mood == Mood.Atardecer || mood == Mood.Crepusculo)
+        {
+            sky.driveAmbient = false;
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.58f, 0.45f, 0.55f);
+            RenderSettings.ambientEquatorColor = new Color(0.5f, 0.36f, 0.34f);
+            RenderSettings.ambientGroundColor = new Color(0.18f, 0.14f, 0.16f);
+        }
+        // de noche y en la gruta, luz de ambiente azul (si no, todo lo que no alumbra un farol queda negro)
+        if (mood == Mood.Noche || mood == Mood.Gruta)
+        {
+            sky.driveAmbient = false;
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = mood == Mood.Gruta ? new Color(0.16f, 0.26f, 0.4f) : new Color(0.22f, 0.28f, 0.5f);
+            RenderSettings.ambientEquatorColor = mood == Mood.Gruta ? new Color(0.1f, 0.17f, 0.26f) : new Color(0.15f, 0.18f, 0.32f);
+            RenderSettings.ambientGroundColor = new Color(0.05f, 0.06f, 0.1f);
+        }
 
-        // polen y motas de luz flotando sobre el pueblo
-        var ps = new GameObject("Polen").AddComponent<ParticleSystem>();
+        // polen de día; luciérnagas de noche y en la gruta
+        var ps = new GameObject(fireflies ? "Luciernagas" : "Polen").AddComponent<ParticleSystem>();
         ps.transform.SetParent(g, false);
         ps.transform.localPosition = new Vector3(0f, 2.5f, 2f);
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
         main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 10f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.12f);
-        main.startColor = new Color(1f, 0.92f, 0.65f, 0.7f);
+        main.startSize = fireflies ? new ParticleSystem.MinMaxCurve(0.08f, 0.18f) : new ParticleSystem.MinMaxCurve(0.05f, 0.12f);
+        main.startColor = fireflies ? (mood == Mood.Gruta ? new Color(0.5f, 0.9f, 1f, 1f) : new Color(0.85f, 1f, 0.45f, 1f)) : new Color(1f, 0.92f, 0.65f, 0.7f);
         main.maxParticles = 400;
         main.prewarm = true;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        var em = ps.emission; em.rateOverTime = 45f;
-        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(60f, 5f, 60f);
-        var noise = ps.noise; noise.enabled = true; noise.strength = 0.25f; noise.frequency = 0.2f;
+        var em = ps.emission; em.rateOverTime = fireflies ? 30f : 45f;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(70f, 5f, 70f);
+        var noise = ps.noise; noise.enabled = true; noise.strength = fireflies ? 0.5f : 0.25f; noise.frequency = 0.2f;
         var col = ps.colorOverLifetime; col.enabled = true;
         var grad = new Gradient();
         grad.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
                      new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(1f, 0.7f), new GradientAlphaKey(0f, 1f) });
         col.color = grad;
-        ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = mDust;
+        ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = fireflies ? mSparkle : mDust;
         ps.Play();
 
-        if (layout == Layout.Puerto) SeaSparkles(g); else Sparkles(g);
+        if (stars) Stars(g);
+        if (layout == Layout.Puerto || layout == Layout.Acantilado) SeaSparkles(g);
+        else if (layout == Layout.Pueblo) Sparkles(g);
+    }
+
+    /// <summary>Cielo estrellado: puntos quietos en una cúpula lejana, algunos más grandes y azulados.</summary>
+    void Stars(Transform parent)
+    {
+        var ps = new GameObject("Estrellas").AddComponent<ParticleSystem>();
+        ps.transform.SetParent(parent, false);
+        ps.transform.localPosition = new Vector3(0f, 0f, 0f);
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.startLifetime = 100000f;
+        main.startSpeed = 0f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.7f, 2.2f);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.95f, 0.85f), new Color(0.7f, 0.82f, 1f));
+        main.maxParticles = 2500;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.loop = false;
+        var em = ps.emission; em.rateOverTime = 0f; em.SetBursts(new[] { new ParticleSystem.Burst(0f, 2200) });
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Hemisphere; sh.radius = 420f; sh.radiusThickness = 0f;
+        var r = ps.GetComponent<ParticleSystemRenderer>();
+        r.sharedMaterial = mSparkle;
+        r.maxParticleSize = 0.02f;
+        ps.Play();
     }
 
     /// <summary>Destellos del sol en el agua: puntitos que aparecen y se apagan sobre el río (el sello del HD-2D).</summary>

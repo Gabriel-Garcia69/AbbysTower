@@ -159,8 +159,14 @@ public class PauseMenu : MonoBehaviour
         if (page == Page.Options)
         {
             if (i == OptionsBack) OpenPage(Page.Main, 1);
-            else if (i == OptionsDiorama) { if (Application.CanStreamedLevelBeLoaded(dioramaScene)) Load(dioramaScene); }
-            else if (i == OptionsPort) { if (Application.CanStreamedLevelBeLoaded(portScene)) Load(portScene); }
+            else if (i == OptionsDiorama) { if (Application.CanStreamedLevelBeLoaded(DioramaBuilder.Route[0])) Load(DioramaBuilder.Route[0]); }
+            else if (i == OptionsPort)
+            {
+                // siguiente piso de la ruta (fuera de la ruta: el primero)
+                int k = System.Array.IndexOf(DioramaBuilder.Route, SceneManager.GetActiveScene().name);
+                string next = DioramaBuilder.Route[(k + 1) % DioramaBuilder.Route.Length];
+                if (Application.CanStreamedLevelBeLoaded(next)) Load(next);
+            }
             else Difficulty.Current = (Difficulty.Level)i;
             return;
         }
@@ -260,12 +266,15 @@ public class PauseMenu : MonoBehaviour
         if (Interact(diorama, OptionsDiorama)) return;
         if (Interact(port, OptionsPort)) return;
         if (Interact(back, OptionsBack)) return;
-        DrawButton(diorama, "Diorama: pueblo", sel == OptionsDiorama, u, t);
-        DrawButton(port, "Diorama: puerto", sel == OptionsPort, u, t);
+        DrawButton(diorama, "Ruta HD-2D", sel == OptionsDiorama, u, t);
+        DrawButton(port, "Piso siguiente", sel == OptionsPort, u, t);
         DrawButton(back, "Volver", sel == OptionsBack, u, t);
         if (sel == OptionsDiorama || sel == OptionsPort)
-            Text(new Rect(x, sy, w, 4f * u), "PRUEBA · mapa aparte con cámara de maqueta (Octopath): Q/E giran, clic derecho para asomarte, F1-F6 cambian la cámara",
-                 FitSize("PRUEBA · mapa aparte con cámara de maqueta (Octopath): Q/E giran, clic derecho para asomarte, F1-F6 cambian la cámara", 1.7f * u, w, false), false, TextAnchor.MiddleCenter, new Color(testColor.r, testColor.g, testColor.b, 0.85f));
+        {
+            string tip = sel == OptionsDiorama ? "RUTA HD-2D · 7 pisos con jefe, mercader y salida: Pueblo, Puerto, Acantilado, Gruta, Templo, Aldea nevada y la Cima"
+                                               : "Salta al siguiente piso de la ruta HD-2D (para probar) · Q/E giran la cámara, clic derecho para asomarte";
+            Text(new Rect(x, sy, w, 4f * u), tip, FitSize(tip, 1.7f * u, w, false), false, TextAnchor.MiddleCenter, new Color(testColor.r, testColor.g, testColor.b, 0.85f));
+        }
         Footer(panel, u);
     }
 
@@ -368,6 +377,8 @@ public class PauseMenu : MonoBehaviour
         if (n.StartsWith("Nivel")) return "PISO " + n.Substring(5);
         if (n == dioramaScene) return "DIORAMA HD-2D (PRUEBA)";
         if (n == portScene) return "EL PUERTO (PRUEBA)";
+        int k = System.Array.IndexOf(DioramaBuilder.Route, n);
+        if (k >= 0) return "RUTA HD-2D · PISO " + (k + 1);
         return n.ToUpperInvariant();
     }
 

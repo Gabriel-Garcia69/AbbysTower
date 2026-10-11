@@ -191,6 +191,72 @@ def bark(w=32, h=64, seed=6):
     return img
 
 
+SAND = [(150, 112, 70), (180, 140, 90), (206, 168, 112), (226, 192, 136), (240, 214, 162)]
+SNOW = [(150, 166, 196), (180, 196, 222), (206, 220, 238), (228, 236, 248), (246, 250, 255)]
+SANDSTONE = [(92, 62, 38), (122, 84, 50), (156, 112, 68), (186, 140, 88), (210, 168, 112)]
+ICE = [(70, 120, 160), (100, 156, 194), (140, 190, 220), (180, 218, 240), (222, 242, 252)]
+CAVE = [(38, 44, 66), (54, 64, 92), (74, 88, 120), (98, 114, 148), (128, 144, 176)]
+
+
+def sand(size=64, seed=11):
+    """Arena con ondas de viento."""
+    img = Image.new("RGB", (size, size))
+    px = img.load()
+    n = fbm(size, size, seed, (16, 8, 4))
+    for y in range(size):
+        for x in range(size):
+            ripple = 0.5 + 0.5 * math.sin((x * 0.35 + y * 0.9) + n(x, y) * 5)
+            px[x, y] = pick(SAND, 0.3 + n(x, y) * 0.4 + ripple * 0.25, x, y)
+    rnd = random.Random(seed)
+    for _ in range(30):
+        x, y = rnd.randrange(size), rnd.randrange(size)
+        px[x, y] = SAND[4]
+    return img
+
+
+def snow(size=64, seed=12):
+    img = Image.new("RGB", (size, size))
+    px = img.load()
+    n = fbm(size, size, seed, (16, 8, 4))
+    rnd = random.Random(seed)
+    for y in range(size):
+        for x in range(size):
+            px[x, y] = pick(SNOW, 0.45 + n(x, y) * 0.5, x, y)
+    for _ in range(50):   # destellos de hielo
+        x, y = rnd.randrange(size), rnd.randrange(size)
+        px[x, y] = (255, 255, 255)
+    return img
+
+
+def bricks(pal, w=64, h=64, seed=13, rows=8, cols=4):
+    """Sillares escalonados con junta oscura, luz arriba y sombra abajo (estilo Octopath)."""
+    img = Image.new("RGB", (w, h))
+    px = img.load()
+    n = fbm(w, h, seed, (8, 4, 2))
+    rh, cw = h // rows, w // cols
+    rnd = random.Random(seed)
+    tone = {}
+    for y in range(h):
+        row = y // rh
+        for x in range(w):
+            xo = (x + (row % 2) * cw // 2) % w
+            col = xo // cw
+            key = (row, col)
+            if key not in tone:
+                tone[key] = rnd.uniform(-0.12, 0.12)
+            u, v = xo % cw, y % rh
+            if u == 0 or v == 0:
+                px[x, y] = pal[0]
+                continue
+            val = 0.55 + tone[key] + (n(x, y) - 0.5) * 0.35
+            if v == 1:
+                val += 0.25
+            elif v == rh - 1 or u == cw - 1:
+                val -= 0.25
+            px[x, y] = pick(pal, val, x, y)
+    return img
+
+
 def ray(w=64, h=256):
     """Rayo de luz (god ray): blanco, suave a los lados y que se desvanece hacia abajo. Se usa aditivo."""
     img = Image.new("RGBA", (w, h))
@@ -214,6 +280,21 @@ def main():
     pine().save(os.path.join(OUT, "pix_pine.png"))
     bark().save(os.path.join(OUT, "pix_bark.png"))
     ray().save(os.path.join(OUT, "rayo.png"))
+    sand().save(os.path.join(OUT, "pix_sand.png"))
+    snow().save(os.path.join(OUT, "pix_snow.png"))
+    bricks(SANDSTONE).save(os.path.join(OUT, "pix_sandstone.png"))
+    bricks(CAVE, seed=21, rows=6, cols=3).save(os.path.join(OUT, "pix_cavebrick.png"))
+    bricks([(40, 40, 46), (62, 62, 70), (88, 88, 98), (118, 118, 128), (150, 150, 160)], seed=31).save(os.path.join(OUT, "pix_stonebrick.png"))
+    img = Image.new("RGB", (64, 64)); n = fbm(64, 64, 14, (16, 8)); px = img.load()
+    for y in range(64):
+        for x in range(64):
+            px[x, y] = pick(ICE, 0.45 + n(x, y) * 0.45 + (0.25 if (x + y * 2) % 23 == 0 else 0), x, y)
+    img.save(os.path.join(OUT, "pix_ice.png"))
+    img = Image.new("RGB", (64, 128)); n = fbm(64, 128, 15, (16, 8, 4)); px = img.load()
+    for y in range(128):
+        for x in range(64):
+            px[x, y] = pick(CAVE, 0.3 + n(x, y) * 0.55 + (0.2 if y % 14 < 2 else 0), x, y)
+    img.save(os.path.join(OUT, "pix_caverock.png"))
     print("ok ->", OUT)
 
 

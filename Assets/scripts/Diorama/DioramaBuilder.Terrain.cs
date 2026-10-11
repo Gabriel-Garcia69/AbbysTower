@@ -10,7 +10,39 @@ public partial class DioramaBuilder
 {
     const float Cell = 0.7f;
     static readonly Rect TownArea = new Rect(-90f, -62f, 180f, 162f);
-    Rect TerrainArea => layout == Layout.Puerto ? PortArea : TownArea;
+    Rect TerrainArea
+    {
+        get
+        {
+            switch (layout)
+            {
+                case Layout.Puerto: return PortArea;
+                case Layout.Acantilado: return CliffArea;
+                case Layout.Cueva: return CaveArea;
+                case Layout.Templo: return TempleArea;
+                case Layout.Nevado: return SnowArea;
+                case Layout.Cima: return SummitArea;
+                default: return TownArea;
+            }
+        }
+    }
+
+    const float VoidY = -50f;   // más abajo que esto no hay suelo (la Cima: islas sobre las nubes)
+
+    /// <summary>Debajo de esta altura el suelo es lecho (arena, roca del fondo) en vez de pasto.</summary>
+    float BedBelow
+    {
+        get
+        {
+            switch (layout)
+            {
+                case Layout.Pueblo: return -4.5f;
+                case Layout.Cueva: return -1.5f;
+                case Layout.Templo: case Layout.Cima: return -999f;
+                default: return -0.6f;
+            }
+        }
+    }
     const float RiverStartX = -24f, FenceZ = 10.8f, WaterLevel = -4.1f, StreamWater = -0.35f;
     const float SpringX = -66f;   // donde nace el arroyo (manantial entre rocas)
     const float OuterY = 12f, OuterSouthY = 4.8f;   // altura de las mesetas de afuera (= último bancal)
@@ -24,7 +56,15 @@ public partial class DioramaBuilder
     /// <summary>Altura del terreno (m) en (x, z): siempre uno de unos cuantos niveles, así salen bancales.</summary>
     public float Height(float x, float z)
     {
-        if (layout == Layout.Puerto) return PortHeight(x, z);
+        switch (layout)
+        {
+            case Layout.Puerto: return PortHeight(x, z);
+            case Layout.Acantilado: return CliffHeight(x, z);
+            case Layout.Cueva: return CaveHeight(x, z);
+            case Layout.Templo: return TempleHeight(x, z);
+            case Layout.Nevado: return SnowHeight(x, z);
+            case Layout.Cima: return SummitHeight(x, z);
+        }
         float e = (Noise(x * 0.18f, z * 0.18f) * 2f - 1f) + (Noise(x * 0.5f + 40f, z * 0.5f) * 2f - 1f) * 0.35f
                 + (Noise(x * 1.3f - 17f, z * 1.3f + 9f) * 2f - 1f) * 0.25f;   // orillas irregulares, nada de líneas rectas
         float h = 0f;
@@ -127,7 +167,7 @@ public partial class DioramaBuilder
                 float h = hgt[i, j];
                 float x0 = TerrainArea.xMin + i * Cell, z0 = TerrainArea.yMin + j * Cell, x1 = x0 + Cell, z1 = z0 + Cell;
                 // arriba
-                Quad(h <= (layout == Layout.Puerto ? -0.6f : -4.5f) ? beds : tops,
+                if (h > VoidY) Quad(h <= BedBelow ? beds : tops,
                      new Vector3(x0, h, z0), new Vector3(x1, h, z0), new Vector3(x0, h, z1), new Vector3(x1, h, z1), Vector3.up,
                      new Vector2(x0, z0) * tile, new Vector2(x1, z0) * tile, new Vector2(x0, z1) * tile, new Vector2(x1, z1) * tile);
                 // paredes hacia los vecinos más bajos (la cara mira hacia el vecino)
@@ -157,7 +197,7 @@ public partial class DioramaBuilder
         go.transform.SetParent(parent, false);
         go.AddComponent<MeshFilter>().sharedMesh = m;
         var mr = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterials = new[] { mGrass, mRock, layout == Layout.Puerto ? mSand : mDirt };
+        mr.sharedMaterials = new[] { TopMat, WallMat, BedMat };
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
         go.AddComponent<MeshCollider>().sharedMesh = m;
     }

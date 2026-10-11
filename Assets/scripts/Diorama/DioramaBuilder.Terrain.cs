@@ -192,7 +192,7 @@ public partial class DioramaBuilder
         m.vertices = new[] { new Vector3(-width / 2f, -height / 2f, 0f), new Vector3(width / 2f, -height / 2f, 0f), new Vector3(-width / 2f, height / 2f, 0f), new Vector3(width / 2f, height / 2f, 0f) };
         // uv: x = metros a lo ancho, y = metros de caída desde el labio (así lo espera el shader Abby/Waterfall)
         m.uv = new[] { new Vector2(0f, height), new Vector2(width, height), new Vector2(0f, 0f), new Vector2(width, 0f) };
-        m.triangles = new[] { 0, 2, 3, 0, 3, 1 };
+        m.triangles = new[] { 0, 2, 3, 0, 3, 1, 0, 3, 2, 0, 1, 3 };   // dos caras: se ve desde cualquier lado
         m.RecalculateNormals(); m.RecalculateBounds();
         var go = MeshObject(parent, "Cascada", m, mWaterfall, false);
         go.transform.localPosition = center;

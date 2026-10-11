@@ -36,6 +36,8 @@ public class CameraStyleProfile
     public bool interior = false;
     [Tooltip("Nada se oculta (casas, árboles, columnas): en la maqueta lo de enfrente solo se desenfoca.")]
     public bool keepOccluders = false;
+    [Tooltip("Usa las tomas de cámara del mapa (CameraShot): encuadres que lucen las vistas al pasar por ciertos lugares.")]
+    public bool allowShots = false;
 }
 
 /// <summary>
@@ -100,7 +102,7 @@ public class MouseOrbitCamera : MonoBehaviour
     [System.NonSerialized] CameraStyleProfile diorama = new CameraStyleProfile
     {
         fov = 22f, distance = 36f, pivotHeight = 0.8f, startPitch = 24f, minPitch = 24f, maxPitch = 24f,
-        lookUp = 3f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true
+        lookUp = 3f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true, allowShots = true
     };
     [Tooltip("Esta escena arranca con su propio estilo (p. ej. el diorama), sin cambiar el que se guardó para los pisos.")]
     [SerializeField] bool useSceneStyle = false;
@@ -174,6 +176,11 @@ public class MouseOrbitCamera : MonoBehaviour
     float shownFov, fovVel, shownPivot, pivotVel, shownLookUp, lookUpVel;
     Vector3 lastPlayerPos, playerVel, lookOffset, lookOffsetVel;
     Vector3 focus, focusVel;
+    // tomas de cámara (CameraShot): valores de la toma actual que se mezclan con la cámara normal
+    CameraShot shot;
+    float shotW, shotWVel, sYaw, sPitch, sDist, sFov, sLookUp, sYawVel, sPitchVel, sDistVel, sFovVel, sLookVel;
+    Vector3 sOffset, sOffsetVel;
+    float moveYaw;   // yaw del rig (marco de los controles): no cambia mientras Abby camina
     Vector2 fxzVel;
     AreaReveal currentArea;
     bool peeking;
@@ -257,7 +264,7 @@ public class MouseOrbitCamera : MonoBehaviour
 
         if (instant)
         {
-            shownYaw = yaw; shownPitch = pitch;
+            shownYaw = yaw; shownPitch = pitch; moveYaw = yaw;
             shownFov = active.fov; shownPivot = active.pivotHeight; shownLookUp = active.lookUp;
             zoomedDistance = currentDistance = targetDistance;
             if (cam != null) cam.fieldOfView = shownFov;
@@ -353,12 +360,29 @@ public class MouseOrbitCamera : MonoBehaviour
         shownPivot = Mathf.SmoothDamp(shownPivot, active.pivotHeight, ref pivotVel, styleBlendTime, Mathf.Infinity, dt);
         shownLookUp = Mathf.SmoothDamp(shownLookUp, active.lookUp, ref lookUpVel, styleBlendTime, Mathf.Infinity, dt);
 
+        // tomas del mapa: la vista se va a un encuadre armado y la cámara normal queda debajo
+        float viewYaw = shownYaw, viewPitch = shownPitch, viewFov = shownFov, viewLookUp = shownLookUp;
+        UpdateShot(dt);
+        float w = shotW * shotW * (3f - 2f * shotW);
+        if (w > 0.0001f)
+        {
+            viewYaw = Mathf.LerpAngle(shownYaw, sYaw, w);
+            viewPitch = Mathf.Lerp(shownPitch, sPitch, w);
+            viewFov = Mathf.Lerp(shownFov, sFov, w);
+            viewLookUp = Mathf.Lerp(shownLookUp, sLookUp, w);
+            if (!zoomEnabled) targetDistance = Mathf.Lerp(active.distance, sDist, w);
+        }
+        else if (!zoomEnabled && active.allowShots) targetDistance = active.distance;
+        // los controles siguen el marco que había mientras Abby camina; al detenerse se alinean con la vista
+        bool moving = playerVel.sqrMagnitude > 0.25f;
+        if (!active.allowShots || !moving) moveYaw = viewYaw;
+
         // mirada adelante: el pivote se adelanta hacia donde camina Abby
         Vector3 wantOffset = active.lookAhead > 0f ? Vector3.ClampMagnitude(playerVel / 5f, 1f) * active.lookAhead : Vector3.zero;
         lookOffset = Vector3.SmoothDamp(lookOffset, wantOffset, ref lookOffsetVel, lookAheadSmoothTime, Mathf.Infinity, gdt);
 
-        transform.rotation = Quaternion.Euler(0f, shownYaw, 0f);
-        arm.localRotation = Quaternion.Euler(shownPitch, 0f, 0f);
+        transform.rotation = Quaternion.Euler(0f, moveYaw, 0f);
+        arm.localRotation = Quaternion.Euler(0f, Mathf.DeltaAngle(moveYaw, viewYaw), 0f) * Quaternion.Euler(viewPitch, 0f, 0f);
         if (active.roomFraming && player != null)
         {
             // Sala: el pivote sigue a Abby pero sin dejar que la vista se salga de la sala/pasillo donde está
@@ -371,12 +395,12 @@ public class MouseOrbitCamera : MonoBehaviour
         }
         else
         {
-            arm.localPosition = new Vector3(originalArmPos.x, shownPivot, originalArmPos.z) + transform.InverseTransformDirection(lookOffset);
+            arm.localPosition = new Vector3(originalArmPos.x, shownPivot, originalArmPos.z) + transform.InverseTransformDirection(lookOffset + sOffset * w);
             focus = transform.TransformPoint(new Vector3(arm.localPosition.x, arm.localPosition.y - shownPivot, arm.localPosition.z));
             fxzVel = Vector2.zero; focusVel = Vector3.zero;
         }
-        cam.transform.localRotation = Quaternion.Euler(-shownLookUp, 0f, 0f);
-        cam.fieldOfView = shownFov;
+        cam.transform.localRotation = Quaternion.Euler(-viewLookUp, 0f, 0f);
+        cam.fieldOfView = viewFov;
 
         float smooth = zoomEnabled ? zoomSmoothTime : styleBlendTime;
         zoomedDistance = Mathf.SmoothDamp(zoomedDistance, targetDistance, ref zoomVel, smooth, Mathf.Infinity, dt);
@@ -415,6 +439,42 @@ public class MouseOrbitCamera : MonoBehaviour
         var lp = cam.transform.localPosition;
         cam.transform.localPosition = new Vector3(lp.x, lp.y, -currentDistance);
     }
+
+    /// <summary>Busca la toma del lugar donde está Abby y acerca suavemente los valores de la toma; shotW sube o baja.</summary>
+    void UpdateShot(float dt)
+    {
+        var next = active.allowShots && !peeking && player != null ? CameraShot.At(player.position) : null;
+        if (next != null && next != shot)
+        {
+            if (shot == null || shotW < 0.01f)
+            {
+                // entrando desde la cámara normal: la toma arranca en su encuadre y el peso hace la mezcla
+                sYaw = next.yaw; sPitch = next.pitch; sDist = next.distance; sFov = next.fov; sLookUp = next.lookUp; sOffset = next.offset;
+                sYawVel = sPitchVel = sDistVel = sFovVel = sLookVel = 0f; sOffsetVel = Vector3.zero;
+            }
+            if (!next.shown && !string.IsNullOrEmpty(next.title))
+            {
+                next.shown = true;
+                FloorDirector.Banner(next.title, next.subtitle, new Color(1f, 0.9f, 0.65f), 3.2f);
+            }
+            shot = next;
+        }
+        leaving = next == null;   // al salir, se queda la última toma mientras se desvanece
+        float blend = shot != null ? Mathf.Max(0.2f, shot.blendTime) : 1f;
+        float targetW = shot != null && !leaving ? 1f : 0f;
+        shotW = Mathf.SmoothDamp(shotW, targetW, ref shotWVel, blend * 0.45f, Mathf.Infinity, dt);
+        if (shotW < 0.002f && leaving) { shot = null; leaving = false; shotW = 0f; }
+        if (shot == null) return;
+        float t = blend * 0.45f;
+        sYaw = Mathf.SmoothDampAngle(sYaw, shot.yaw, ref sYawVel, t, Mathf.Infinity, dt);
+        sPitch = Mathf.SmoothDamp(sPitch, shot.pitch, ref sPitchVel, t, Mathf.Infinity, dt);
+        sDist = Mathf.SmoothDamp(sDist, shot.distance, ref sDistVel, t, Mathf.Infinity, dt);
+        sFov = Mathf.SmoothDamp(sFov, shot.fov, ref sFovVel, t, Mathf.Infinity, dt);
+        sLookUp = Mathf.SmoothDamp(sLookUp, shot.lookUp, ref sLookVel, t, Mathf.Infinity, dt);
+        sOffset = Vector3.SmoothDamp(sOffset, shot.offset, ref sOffsetVel, t, Mathf.Infinity, dt);
+    }
+
+    bool leaving;
 
     /// <summary>Mueve el punto que mira la cámara para que lo visible no se salga de la sala/pasillo donde está Abby.</summary>
     Vector3 FrameInRoom(Vector3 target, Vector3 playerPos)

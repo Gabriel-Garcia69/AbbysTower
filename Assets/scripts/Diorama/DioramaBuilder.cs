@@ -20,10 +20,11 @@ public partial class DioramaBuilder : MonoBehaviour
 
     const string Prefix = "Dio_";
     const float TerraceY = 2.6f;
-    static readonly Rect Walk = new Rect(-33f, -29f, 66f, 67f);      // zona jugable (x, z)
+    static readonly Rect Walk = new Rect(-33f, -29f, 66f, 72.4f);    // zona jugable (x, z); al norte llega a la orilla del risco
     static readonly Rect Terrace = new Rect(-15f, 18f, 30f, 18f);     // patio en alto
     const float StairZ0 = 12.5f, StairW = 5f;
     const float CliffZ = 48f, ValleyDepth = 40f;
+    const float LookoutX = 19f, CliffFenceZ = 43.3f;
 
     System.Random rng;
     float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
@@ -51,6 +52,7 @@ public partial class DioramaBuilder : MonoBehaviour
         BuildCanyonBridge(0f);
         BuildStreamBridge(-29f);
         BuildFences(0f);
+        BuildLookout(LookoutX);
         BuildPaths();
         BuildRiverside();
         BuildTerrace();
@@ -62,6 +64,7 @@ public partial class DioramaBuilder : MonoBehaviour
         BuildBackdrop();
         BuildBoundary();
         BuildAtmosphere();
+        BuildShots();
 #if UNITY_EDITOR
         if (!Application.isPlaying) EditorUtility.SetDirty(gameObject);
 #endif
@@ -92,6 +95,9 @@ public partial class DioramaBuilder : MonoBehaviour
         Strip(p, new Vector2(-29f, -13f), new Vector2(-29f, -3.4f), 2.4f);
         Strip(p, new Vector2(-29f, 3.4f), new Vector2(-29f, 12.5f), 2.4f);
         Strip(p, new Vector2(-29f, 12.5f), new Vector2(0f, 12.5f), 2.4f);
+        // al mirador: por el lado este del patio hasta la orilla del risco
+        Strip(p, new Vector2(2.5f, 12.5f), new Vector2(LookoutX, 12.5f), 2.4f);
+        Strip(p, new Vector2(LookoutX, 12.5f), new Vector2(LookoutX, CliffFenceZ), 2.4f);
         // plazuela del mercado
         Flat(p, "Plazuela", new Vector3(6f, 0.012f, -17.5f), 12f, 5f, mCobble, 0.5f);
         blocked.Add(new Rect(0f, -20.5f, 12f, 6f));
@@ -117,6 +123,108 @@ public partial class DioramaBuilder : MonoBehaviour
                 tuft.transform.localPosition = new Vector3(q.x, 0f, q.y);
                 tuft.transform.localScale = Vector3.one * R(0.8f, 1.3f);
             }
+    }
+
+    // ------------------------------------------------------------------ mirador y tomas de cámara
+
+    /// <summary>
+    /// Mirador del valle: plataforma de tablones que sale volando sobre el risco norte, con barandal, banca y catalejo.
+    /// Desde ahí se ve el valle, el río, las montañas y la torre. Cerca a lo largo de la orilla del risco.
+    /// </summary>
+    void BuildLookout(float x)
+    {
+        var g = Group("Mirador", root);
+        // cerca en la orilla del risco, con hueco para la plataforma
+        Fence(g, new Vector2(Walk.xMin, CliffFenceZ), new Vector2(x - 1.9f, CliffFenceZ));
+        Fence(g, new Vector2(x + 1.9f, CliffFenceZ), new Vector2(Walk.xMax, CliffFenceZ));
+
+        var d = Group("Plataforma", g);
+        d.localPosition = new Vector3(x, 0f, 0f);
+        float w = 3.6f, z0 = CliffFenceZ - 0.3f, z1 = CliffFenceZ + 5.6f;
+        for (float z = z0; z < z1; z += 0.42f)
+        {
+            var pl = Box(d, "Tablon", new Vector3(0f, 0.05f, z + 0.2f), new Vector3(w, 0.1f, 0.38f), mPlank, false);
+            pl.transform.localRotation = Quaternion.Euler(R(-1f, 1f), R(-1.5f, 1.5f), 0f);
+        }
+        foreach (float sx in new[] { -1f, 1f })
+        {
+            Box(d, "Larguero", new Vector3(sx * (w / 2f - 0.15f), -0.2f, (z0 + z1) / 2f), new Vector3(0.3f, 0.32f, z1 - z0), mTimber, false);
+            // patas hasta el risco con riostras
+            for (float z = z0 + 1.2f; z < z1; z += 1.8f)
+            {
+                float ground = Height(x + sx * (w / 2f - 0.3f), z);
+                if (ground > -0.4f) continue;
+                Box(d, "Pata", new Vector3(sx * (w / 2f - 0.3f), ground / 2f - 0.1f, z), new Vector3(0.24f, -ground, 0.24f), mTimber, false);
+                var br = Box(d, "Riostra", new Vector3(sx * (w / 2f - 0.3f), -0.9f, z - 0.7f), new Vector3(0.12f, 0.12f, 2f), mTimber, false);
+                br.transform.localRotation = Quaternion.Euler(-40f, 0f, 0f);
+            }
+            for (float z = z0 + 0.3f; z <= z1; z += 1.4f)
+                Box(d, "Poste", new Vector3(sx * w / 2f, 0.6f, z), new Vector3(0.14f, 1.2f, 0.14f), mTimber, false);
+            Box(d, "Pasamanos", new Vector3(sx * w / 2f, 1.15f, (z0 + z1) / 2f + 0.15f), new Vector3(0.12f, 0.1f, z1 - z0 - 0.3f), mTimber, false);
+            SolidBox(d, "Collider_Baranda", new Vector3(sx * (w / 2f + 0.1f), 1f, (z0 + z1) / 2f), new Vector3(0.2f, 2f, z1 - z0));
+        }
+        Box(d, "PasamanosFondo", new Vector3(0f, 1.15f, z1 - 0.1f), new Vector3(w, 0.1f, 0.12f), mTimber, false);
+        foreach (float px in new[] { -w / 2f, -w / 6f, w / 6f, w / 2f })
+            Box(d, "Poste", new Vector3(px, 0.6f, z1 - 0.1f), new Vector3(0.14f, 1.2f, 0.14f), mTimber, false);
+        SolidBox(d, "Collider_Fondo", new Vector3(0f, 1f, z1 + 0.05f), new Vector3(w, 2f, 0.2f));
+        SolidBox(d, "Collider_Tablero", new Vector3(0f, -0.1f, (z0 + z1) / 2f), new Vector3(w, 0.3f, z1 - z0 + 0.4f));
+        // banca mirando al valle
+        Box(d, "Asiento", new Vector3(-0.6f, 0.45f, z1 - 1.6f), new Vector3(1.6f, 0.08f, 0.45f), mPlank, false);
+        Box(d, "Respaldo", new Vector3(-0.6f, 0.75f, z1 - 1.85f), new Vector3(1.6f, 0.4f, 0.06f), mPlank, false);
+        foreach (float bx in new[] { -1.3f, 0.1f }) Box(d, "PataBanca", new Vector3(bx, 0.22f, z1 - 1.6f), new Vector3(0.08f, 0.44f, 0.4f), mTimber, false);
+        // catalejo en su trípode
+        var spy = Group("Catalejo", d);
+        spy.localPosition = new Vector3(1.1f, 0f, z1 - 0.7f);
+        for (int i = 0; i < 3; i++)
+        {
+            float a = i * 120f;
+            var leg = Box(spy, "Pata", new Vector3(Mathf.Sin(a * Mathf.Deg2Rad) * 0.18f, 0.5f, Mathf.Cos(a * Mathf.Deg2Rad) * 0.18f), new Vector3(0.05f, 1.05f, 0.05f), mTimber, false);
+            leg.transform.localRotation = Quaternion.Euler(Mathf.Cos(a * Mathf.Deg2Rad) * 12f, 0f, -Mathf.Sin(a * Mathf.Deg2Rad) * 12f);
+        }
+        var tube = Prim(spy, PrimitiveType.Cylinder, "Tubo", new Vector3(0f, 1.1f, 0.15f), new Vector3(0.1f, 0.35f, 0.1f), mMetal);
+        tube.transform.localRotation = Quaternion.Euler(75f, 0f, 0f);
+        // farol del mirador
+        var lamp = Group("Farol", d);
+        lamp.localPosition = new Vector3(-w / 2f + 0.1f, 0f, z0 + 0.6f);
+        Prim(lamp, PrimitiveType.Cylinder, "Poste", new Vector3(0f, 1.3f, 0f), new Vector3(0.12f, 1.3f, 0.12f), mTimber);
+        Box(lamp, "Vidrio", new Vector3(0f, 2.75f, 0f), new Vector3(0.3f, 0.4f, 0.3f), mWindowLit, false);
+        blocked.Add(new Rect(x - 3f, CliffFenceZ - 3f, 6f, 9f));
+    }
+
+    /// <summary>
+    /// Tomas de cámara: lugares donde la vista se acomoda para lucir el paisaje (y un letrero la primera vez).
+    /// </summary>
+    void BuildShots()
+    {
+        var g = Group("Tomas", root);
+        // apertura: plano general del pueblo, el cañón y las ruinas; luego baja hasta Abby
+        Shot(g, "Apertura", Vector3.zero, Vector2.one, 30f, 30f, 95f, 28f, 0f, new Vector3(6f, 0f, 30f), 2.6f, 10, intro: 4.5f);
+        // el puente: de lado, río abajo hasta la cascada
+        Shot(g, "Puente", new Vector3(0f, 0f, 0f), new Vector2(4.4f, 2f * FenceZ + 1.2f), -68f, 20f, 24f, 30f, 2f, new Vector3(-5f, 0f, 0f), 1.6f, 2,
+             "EL PUENTE DEL CAÑÓN", "Río abajo, el arroyo cae al cañón");
+        // la cascada vista desde el arroyo, cañón abajo
+        Shot(g, "Cascada", new Vector3(-29.5f, 0f, 0f), new Vector2(7f, 2f * FenceZ), -100f, 24f, 20f, 32f, 2f, new Vector3(3f, -1.5f, -2f), 1.6f, 2,
+             "LA CAÍDA DEL ARROYO", "");
+        // el muelle: desde el camino, la vista baja al río
+        Shot(g, "Muelle", new Vector3(12.5f, 0f, -12.4f), new Vector2(9f, 3.4f), 15f, 40f, 18f, 32f, 0f, new Vector3(0f, -1.5f, 3.2f), 1.6f, 1,
+             "EL MUELLE", "");
+        // lo alto del patio: se voltea a ver todo el pueblo
+        Shot(g, "Patio", new Vector3(0f, TerraceY, Terrace.yMin + 2.2f), new Vector2(24f, 3.6f), 180f, 34f, 28f, 32f, 0f, new Vector3(0f, 0f, -9f), 1.8f, 2,
+             "LO ALTO DEL PATIO", "El pueblo del risco a tus pies");
+        // el mirador: plano abierto y bajo hacia el valle, las montañas y la torre
+        Shot(g, "Mirador", new Vector3(LookoutX, 0f, CliffFenceZ + 2.4f), new Vector2(3.6f, 6.4f), -22f, 12f, 10f, 44f, 6f, new Vector3(0f, 1.2f, 2.5f), 2.2f, 3,
+             "MIRADOR DEL VALLE", "Allá arriba espera la torre");
+    }
+
+    void Shot(Transform parent, string name, Vector3 center, Vector2 size, float yaw, float pitch, float dist, float fov, float lookUp,
+              Vector3 offset, float blend, int priority, string title = "", string subtitle = "", float intro = 0f)
+    {
+        var t = Group("Toma_" + name, parent);
+        t.localPosition = center;
+        var s = t.gameObject.AddComponent<CameraShot>();
+        s.size = size; s.yMin = -3f; s.yMax = 6f;
+        s.yaw = yaw; s.pitch = pitch; s.distance = dist; s.fov = fov; s.lookUp = lookUp; s.offset = offset;
+        s.blendTime = blend; s.priority = priority; s.title = title; s.subtitle = subtitle; s.introSeconds = intro;
     }
 
     // ------------------------------------------------------------------ orilla del río: muelle, barca, lirios, enredaderas
@@ -650,7 +758,7 @@ public partial class DioramaBuilder : MonoBehaviour
         EnsurePlantMeshes();
         for (int i = 0; i < 18; i++)
         {
-            float x = -220f + i * 26f + R(-8f, 8f), z = R(230f, 320f), h = R(90f, 160f), r = R(45f, 75f);
+            float x = -260f + i * 30f + R(-10f, 10f), z = R(420f, 520f), h = R(110f, 190f), r = R(55f, 85f);   // lejos: se ven azules y dejan cielo
             var m = MeshObject(g, "Montana", blobMeshes[rng.Next(blobMeshes.Length)], mMountain, false);
             m.transform.localPosition = new Vector3(x, -ValleyDepth - h * 0.1f, z);
             m.transform.localScale = new Vector3(r * 2f, h * 2f, r * 1.6f);
@@ -680,7 +788,7 @@ public partial class DioramaBuilder : MonoBehaviour
         }
         // la torre, a lo lejos (con su faro arriba)
         var tower = Group("Torre", g);
-        tower.localPosition = new Vector3(-55f, -ValleyDepth, 170f);
+        tower.localPosition = new Vector3(-80f, -ValleyDepth, 340f);   // lejos: silueta detrás de las montañas
         Prim(tower, PrimitiveType.Cylinder, "Cuerpo", new Vector3(0f, 70f, 0f), new Vector3(16f, 70f, 16f), mBrick);
         for (int i = 1; i <= 6; i++)
             Prim(tower, PrimitiveType.Cylinder, "Anillo", new Vector3(0f, i * 22f, 0f), new Vector3(17.5f, 0.8f, 17.5f), mStone);
@@ -697,7 +805,9 @@ public partial class DioramaBuilder : MonoBehaviour
         SolidBox(g, "Limite_O", new Vector3(r.xMin - 0.5f, 3f, r.center.y), new Vector3(1f, 8f, r.height));
         SolidBox(g, "Limite_E", new Vector3(r.xMax + 0.5f, 3f, r.center.y), new Vector3(1f, 8f, r.height));
         SolidBox(g, "Limite_S", new Vector3(r.center.x, 3f, r.yMin - 0.5f), new Vector3(r.width, 8f, 1f));
-        SolidBox(g, "Limite_N", new Vector3(r.center.x, 3f, r.yMax + 0.5f), new Vector3(r.width, 8f, 1f));
+        float gx0 = LookoutX - 1.8f, gx1 = LookoutX + 1.8f;
+        SolidBox(g, "Limite_N", new Vector3((r.xMin + gx0) / 2f, 3f, r.yMax + 0.5f), new Vector3(gx0 - r.xMin, 8f, 1f));
+        SolidBox(g, "Limite_N", new Vector3((gx1 + r.xMax) / 2f, 3f, r.yMax + 0.5f), new Vector3(r.xMax - gx1, 8f, 1f));
     }
 
     void BuildAtmosphere()
@@ -859,7 +969,7 @@ public partial class DioramaBuilder : MonoBehaviour
         mLeavesAutumn = PixelMat("Dio_HojasOtonoPix", "pix_leaves_autumn", new Color(1.25f, 1.05f, 0.85f), 0.08f);
         mTuft = Saved("Dio_Mechon", () => { var m = new Material(Ext("GrassTuft")); m.SetColor("_BaseColor", new Color(0.78f, 0.9f, 0.55f)); return m; });
         mWaterfall = Saved("Dio_Cascada", () => { var m = new Material(Ext("Waterfall")); m.SetColor("_Color", new Color(0.35f, 0.82f, 0.92f, 0.85f)); return m; });
-        mMountain = Saved("Dio_Montana2", () => { var m = new Material(mRock); m.SetColor("_BaseColor", new Color(0.36f, 0.44f, 0.5f)); m.mainTextureScale = new Vector2(3f, 3f); return m; });
+        mMountain = Saved("Dio_Montana3", () => { var m = new Material(mRock); m.SetColor("_BaseColor", new Color(0.5f, 0.6f, 0.72f)); m.mainTextureScale = new Vector2(3f, 3f); return m; });
         mPlank = PixelMat("Dio_TablonPix", "pix_bark", new Color(1.55f, 1.4f, 1.25f), 0.05f);   // madera gastada, no naranja
         mLily = Plain("Dio_Nenufar", new Color(0.3f, 0.55f, 0.25f), 0.4f);
         mLilyFlower = Plain("Dio_Lirio", new Color(1f, 0.62f, 0.8f), 0.3f);

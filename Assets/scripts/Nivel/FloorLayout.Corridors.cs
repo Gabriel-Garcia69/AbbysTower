@@ -92,6 +92,7 @@ public partial class FloorLayout
             AddCap(root, new Vector3(sx * width / 2f, h, 0f), inward, len);
             CreateCollider(root, "Collider_Muro", new Vector3(sx * (width / 2f + t / 2f), h / 2f, 0f), new Vector3(t, h + 2f, len));
         }
+        if (ceilings) CorridorCeiling(root, width, len, h);
         float drop = elevation - LowestElevation;
         if (drop > 0.3f) Support(root, width + 2f * t, len, drop);
         if (torches) CorridorLights(root, true, width, len, 0f, 0f);
@@ -132,6 +133,7 @@ public partial class FloorLayout
             AddCap(root, new Vector3(sx * width / 2f, lo + wh, 0f), inward, len);
             CreateCollider(root, "Collider_Muro", new Vector3(sx * (width / 2f + t / 2f), wy + 1f, 0f), new Vector3(t, wh + 2f, len));
         }
+        if (ceilings) CorridorCeiling(root, width, len, lo + wh);
         if (lo - floorLo > 0.3f) { var s = NewChild(root, "Base"); s.localPosition = new Vector3(0f, lo, 0f); Support(s, width + 2f * t, len, lo - floorLo); }
         if (torches) CorridorLights(root, true, width, len, 0f, rise);
         var reveal = root.gameObject.AddComponent<AreaReveal>();

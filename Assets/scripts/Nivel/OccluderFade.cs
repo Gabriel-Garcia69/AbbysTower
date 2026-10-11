@@ -9,6 +9,8 @@ using UnityEngine;
 public class OccluderFade : MonoBehaviour
 {
     static readonly List<OccluderFade> all = new List<OccluderFade>();
+    /// <summary>true = no se oculta nada (cámara "desde adentro": choca con las cosas en vez de atravesarlas).</summary>
+    public static bool Suspended;
     static int lastFrame = -1;
 
     Renderer[] rends;
@@ -34,6 +36,11 @@ public class OccluderFade : MonoBehaviour
     {
         if (Time.frameCount == lastFrame) return;   // un solo objeto hace el trabajo de todos cada cuadro
         lastFrame = Time.frameCount;
+        if (Suspended)
+        {
+            foreach (var o in all) if (o.hidden) o.Show(true);
+            return;
+        }
         var cam = Camera.main; var p = Hazards.Player;
         if (cam == null || p == null) return;
         Vector3 from = cam.transform.position;

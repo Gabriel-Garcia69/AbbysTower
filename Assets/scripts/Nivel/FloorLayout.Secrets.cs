@@ -74,6 +74,7 @@ public partial class FloorLayout
         CreateCollider(root, "Collider_N", new Vector3(0f, h / 2f, depth / 2f + t / 2f), new Vector3(w + 2f * t, h + 2f, t));
         CreateCollider(root, "Collider_E", new Vector3(w / 2f + t / 2f, h / 2f, 0f), new Vector3(t, h + 2f, depth));
         CreateCollider(root, "Collider_O", new Vector3(-w / 2f - t / 2f, h / 2f, 0f), new Vector3(t, h + 2f, depth));
+        if (ceilings) PlainCeiling(root, w, depth, h);
 
         Color c = theme == FloorTheme.Base ? new Color(1f, 0.7f, 0.4f) : palette.torch;
         Candles(root, new Vector3(-w / 2f + 0.4f, 0f, depth / 2f - 0.4f), 3, c, 0.15f);

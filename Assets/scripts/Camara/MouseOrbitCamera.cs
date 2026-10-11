@@ -32,6 +32,8 @@ public class CameraStyleProfile
     public bool peekHold = false;
     [Tooltip("Encuadra la sala o pasillo donde está Abby: la cámara no se sale de sus bordes (no se ve el vacío de afuera).")]
     public bool roomFraming = false;
+    [Tooltip("Cámara desde adentro: choca con muros, techo y objetos grandes (se acerca) en vez de que se vuelvan invisibles.")]
+    public bool interior = false;
 }
 
 /// <summary>
@@ -41,7 +43,8 @@ public class CameraStyleProfile
 /// Estilos (F1–F4 en juego, se recuerda entre escenas):
 ///  - Original: los valores de la escena, tal cual.
 ///  - Pulido: mismo estilo con FOV más abierto, pivote a media altura y algo de mirada adelante.
-///  - Tercera persona: más cerca y baja, mira hacia donde caminas.
+///  - Tercera persona: más cerca y baja, mira hacia donde caminas; desde adentro de la sala (choca con muros y techo,
+///    nada se vuelve invisible).
 ///  - Isométrica: alta y fija en diagonal; Q/E (LB/RB) la giran 45°.
 ///  - Sala (HD-2D): ángulo fijo que encuadra la sala/pasillo actual (AreaReveal) sin salirse de sus bordes;
 ///    Q/E giran 90° y con clic derecho sostenido (o el stick derecho) te asomas para buscar secretos.
@@ -72,19 +75,20 @@ public class MouseOrbitCamera : MonoBehaviour
     [Tooltip("Grados que la cámara levanta la vista sobre Abby: ella queda más abajo en pantalla y se ve más de lo que hay adelante. 0 = centrada.")]
     public float lookUp = 0f;
 
-    [Header("Estilos (F1 Original, F2 Pulido, F3 Tercera persona, F4 Isométrica, F5 Sala)")]
-    [SerializeField] CameraStyleProfile pulido = new CameraStyleProfile();
-    [SerializeField] CameraStyleProfile terceraPersona = new CameraStyleProfile
+    // Estilos (F1 Original, F2 Pulido, F3 Tercera persona, F4 Isométrica, F5 Sala): valores en código, no en la escena,
+    // para que un cambio aquí llegue a todos los pisos sin volver a guardarlos.
+    [System.NonSerialized] CameraStyleProfile pulido = new CameraStyleProfile();
+    [System.NonSerialized] CameraStyleProfile terceraPersona = new CameraStyleProfile
     {
-        fov = 48f, distance = 6.5f, pivotHeight = 1f, startPitch = 16f, minPitch = 2f, maxPitch = 42f,
-        lookUp = 4f, lookAhead = 1.6f, freeOrbit = true, rotationSmoothTime = 0.04f
+        fov = 48f, distance = 6.5f, pivotHeight = 1f, startPitch = 14f, minPitch = -18f, maxPitch = 42f,
+        lookUp = 4f, lookAhead = 1.6f, freeOrbit = true, rotationSmoothTime = 0.04f, interior = true
     };
-    [SerializeField] CameraStyleProfile isometrica = new CameraStyleProfile
+    [System.NonSerialized] CameraStyleProfile isometrica = new CameraStyleProfile
     {
         fov = 32f, distance = 17f, pivotHeight = 0.5f, startPitch = 52f, minPitch = 52f, maxPitch = 52f,
         lookUp = 0f, lookAhead = 1.2f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.22f, peekHold = true
     };
-    [SerializeField] CameraStyleProfile sala = new CameraStyleProfile
+    [System.NonSerialized] CameraStyleProfile sala = new CameraStyleProfile
     {
         fov = 32f, distance = 19f, pivotHeight = 0.6f, startPitch = 48f, minPitch = 48f, maxPitch = 48f,
         lookUp = 2f, lookAhead = 1.4f, freeOrbit = false, yawStep = 90f, rotationSmoothTime = 0.25f,
@@ -147,6 +151,7 @@ public class MouseOrbitCamera : MonoBehaviour
 
     float yaw, pitch, shownYaw, shownPitch, yawVel, pitchVel;
     Camera cam;
+    WallCutaway cutaway;
     float targetDistance, zoomedDistance, zoomVel, currentDistance, distVel, clearTimer;
     Transform player;
     readonly RaycastHit[] hits = new RaycastHit[16];
@@ -170,7 +175,7 @@ public class MouseOrbitCamera : MonoBehaviour
         if (arm != null && pivotHeight > 0f) arm.localPosition = new Vector3(0f, pivotHeight, 0f);
         if (arm != null) originalArmPos = arm.localPosition;
         cam = GetComponentInChildren<Camera>();
-        if (cam != null && cam.GetComponent<WallCutaway>() == null) cam.gameObject.AddComponent<WallCutaway>();
+        if (cam != null) cutaway = cam.GetComponent<WallCutaway>() ?? cam.gameObject.AddComponent<WallCutaway>();
         if (cam != null)
         {
             targetDistance = zoomedDistance = currentDistance = Mathf.Max(0.1f, -cam.transform.localPosition.z);
@@ -201,7 +206,11 @@ public class MouseOrbitCamera : MonoBehaviour
         if (player != null) lastPlayerPos = player.position;
     }
 
-    void OnDisable() => Lock(false);
+    void OnDisable()
+    {
+        Lock(false);
+        OccluderFade.Suspended = false;
+    }
 
     CameraStyleProfile ProfileFor(CameraStyle s) =>
         s == CameraStyle.Pulido ? pulido :
@@ -220,6 +229,9 @@ public class MouseOrbitCamera : MonoBehaviour
         if (!active.freeOrbit && active.yawStep > 0f) yaw = Mathf.Round(yaw / active.yawStep) * active.yawStep;
         peeking = false;
         targetDistance = zoomEnabled ? Mathf.Clamp(active.distance, minDistance, maxDistance) : active.distance;
+        // desde adentro nada se oculta: la cámara se acerca al chocar
+        OccluderFade.Suspended = active.interior;
+        if (cutaway != null) cutaway.enabled = !active.interior;
         labelUntil = Time.unscaledTime + 2.5f;
 
         if (instant)
@@ -348,7 +360,7 @@ public class MouseOrbitCamera : MonoBehaviour
         zoomedDistance = Mathf.SmoothDamp(zoomedDistance, targetDistance, ref zoomVel, smooth, Mathf.Infinity, dt);
         float allowed = zoomedDistance;
 
-        if (collisionEnabled)
+        if (collisionEnabled || active.interior)
         {
             Vector3 pivot = arm.position, dir = -arm.forward;
             int n = Physics.SphereCastNonAlloc(pivot, collisionRadius, dir, hits, zoomedDistance, collisionMask, QueryTriggerInteraction.Ignore);
@@ -358,6 +370,7 @@ public class MouseOrbitCamera : MonoBehaviour
                 if (h.distance <= 0f && h.point == Vector3.zero) continue;   // empezó dentro del collider: no sirve para medir
                 if (player != null && h.collider.transform.IsChildOf(player)) continue;
                 if (!Blocks(h.collider)) continue;
+                if (!collisionEnabled && !Structural(h.collider)) continue;   // estilo interior en los pisos: solo muros, techos y cosas grandes
                 allowed = Mathf.Min(allowed, Mathf.Max(minCollisionDistance, h.distance));
             }
         }
@@ -467,6 +480,19 @@ public class MouseOrbitCamera : MonoBehaviour
         GUI.color = new Color(1f, 1f, 1f, a);
         GUI.Label(r, text, labelStyle);
         GUI.color = Color.white;
+    }
+
+    readonly System.Collections.Generic.Dictionary<Collider, bool> structCache = new System.Collections.Generic.Dictionary<Collider, bool>();
+
+    /// <summary>¿Es parte del edificio (muro, techo, suelo, pilar, librero…)? Enemigos, objetos que se mueven y cosas chicas no acercan la cámara.</summary>
+    bool Structural(Collider c)
+    {
+        if (structCache.TryGetValue(c, out bool b)) return b;
+        Vector3 s = c.bounds.size;
+        b = c.attachedRigidbody == null && !(c is CharacterController) && c.GetComponentInParent<TowerEnemy>() == null
+            && Mathf.Max(s.x, Mathf.Max(s.y, s.z)) >= 1.2f;
+        structCache[c] = b;
+        return b;
     }
 
     readonly System.Collections.Generic.Dictionary<Collider, bool> blockCache = new System.Collections.Generic.Dictionary<Collider, bool>();

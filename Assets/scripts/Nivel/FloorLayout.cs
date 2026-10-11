@@ -181,7 +181,7 @@ public partial class FloorLayout : MonoBehaviour
     float curWall;      // alto "de diseño" de la sala actual (RoomSpec.height o wallHeight)
 
     // Súbelo cada vez que cambie lo que genera Build(): las escenas con un piso de una versión anterior se regeneran solas.
-    const int LayoutVersion = 6;
+    const int LayoutVersion = 8;
     [SerializeField, HideInInspector] int builtVersion;
 
     void Awake()
@@ -217,6 +217,7 @@ public partial class FloorLayout : MonoBehaviour
 #endif
         palette = FloorThemes.Get(theme);
         ApplyThemeMaterials();
+        if (ceilings) wallHeight = Mathf.Max(wallHeight, minDoorHeight);   // con techo, que la cámara baja quepa en puertas y pasillos
         if (theme != FloorTheme.Base && !Application.isPlaying) FloorThemes.ApplyAtmosphere(theme);   // queda guardado en la escena
         var roomsRoot = NewChild(transform, Prefix + "Rooms");
         var corrRoot = NewChild(transform, Prefix + "Corridors");
@@ -251,6 +252,7 @@ public partial class FloorLayout : MonoBehaviour
 
             // los muros suben lo necesario para que quepa la puerta más alta
             curWall = r.height > 0.5f ? r.height : wallHeight;
+            if (ceilings) curWall = Mathf.Max(curWall * roomHeightScale, minRoomHeight);   // techos altos
             roomHeight = curWall;
             foreach (var g in gaps[i]) roomHeight = Mathf.Max(roomHeight, g.elevation + wallHeight);
 
@@ -265,6 +267,7 @@ public partial class FloorLayout : MonoBehaviour
             foreach (var g in gaps[i]) if (!g.secret) doors.Add(CreateDoor(root, r.size, g));
 
             encounters[i] = SetupRoomContent(root, r, doors);
+            ceilingY = ceilings ? roomHeight : float.NaN;
             if (torches) AddRoomLighting(root, r, gaps[i]);
             if (decorations) AddDecor(root, r, gaps[i], i);
             if (r.feature == RoomFeature.Foso) BuildPit(root, r, gaps[i]);
@@ -273,6 +276,8 @@ public partial class FloorLayout : MonoBehaviour
             BuildStructureFeature(root, r, gaps[i], i, encounters[i]);
             BuildThemeFeature(root, r, gaps[i], i, encounters[i]);
             if (r.elevation > LowestElevation + 0.3f) Foundation(root, r);
+            if (ceilings) RoomCeiling(root, r.size.x, r.size.y, roomHeight);
+            ceilingY = float.NaN;
 
             var reveal = root.gameObject.AddComponent<AreaReveal>();
             reveal.size = r.size + Vector2.one * (colliderThickness * 2f);

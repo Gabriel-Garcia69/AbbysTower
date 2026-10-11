@@ -257,6 +257,7 @@ public partial class FloorLayout
             var chain = Prim(t, PrimitiveType.Cube, "Cadena", dir * 0.5f + Vector3.up * 1.2f, new Vector3(0.025f, 2.5f, 0.025f), metal, false);
             chain.transform.localRotation = Quaternion.FromToRotation(Vector3.up, (Vector3.up * 2.4f - dir).normalized);
         }
+        ChainToCeiling(t, pos, 2.4f, metal, 0.05f);
         for (int i = 0; i < candles; i++)
         {
             float a = (i + 0.5f) / candles * Mathf.PI * 2f;
@@ -287,6 +288,7 @@ public partial class FloorLayout
         t.localPosition = pos;
         t.gameObject.AddComponent<OccluderFade>();   // si tapa a Abby se deja de dibujar (la luz sigue)
         Prim(t, PrimitiveType.Cube, "Cadena", new Vector3(0f, 1.3f, 0f), new Vector3(0.03f, 2.6f, 0.03f), BrassMaterial(), false);
+        ChainToCeiling(t, pos, 2.6f, BrassMaterial(), 0.04f);
         for (int i = 0; i < 7; i++)
         {
             float a = i / 7f * Mathf.PI * 2f;
@@ -309,6 +311,7 @@ public partial class FloorLayout
         t.gameObject.AddComponent<OccluderFade>();   // si tapa a Abby se deja de dibujar (la luz sigue)
         var iron = MetalMaterial();
         Prim(t, PrimitiveType.Cube, "Cadena", new Vector3(0f, 1.4f, 0f), new Vector3(0.05f, 2.6f, 0.05f), iron, false);
+        ChainToCeiling(t, pos, 2.7f, iron, 0.06f);
         for (int i = 0; i < 8; i++)
         {
             float a = i / 8f * Mathf.PI * 2f;

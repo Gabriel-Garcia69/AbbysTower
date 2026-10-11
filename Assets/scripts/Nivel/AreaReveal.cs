@@ -32,9 +32,10 @@ public class AreaReveal : MonoBehaviour
     Light[] lights;
     float[] lightBase;
     ParticleSystem[] particles;
+    Renderer[] glows;   // llamas, halos y cristales: brillan solos aunque la luz esté apagada
     readonly HashSet<ParticleSystem> pausedByMe = new HashSet<ParticleSystem>();
     float level = 1f;
-    bool scanned, lightsOn = true, particlesOn = true;
+    bool scanned, lightsOn = true, particlesOn = true, glowsOn = true;
     static Transform player;
 
     void OnEnable() => All.Add(this);
@@ -48,6 +49,14 @@ public class AreaReveal : MonoBehaviour
         lightBase = new float[lights.Length];
         for (int i = 0; i < lights.Length; i++) lightBase[i] = lights[i].intensity;
         particles = GetComponentsInChildren<ParticleSystem>(true);
+        var g = new List<Renderer>();
+        foreach (var r in GetComponentsInChildren<Renderer>(true))
+        {
+            if (r is ParticleSystemRenderer) { g.Add(r); continue; }
+            var m = r.sharedMaterial;
+            if (m != null && m.shader != null && (m.shader.name.Contains("Unlit") || m.shader.name.Contains("Particle"))) g.Add(r);
+        }
+        glows = g.ToArray();
         scanned = true;
         level = Target();
         ApplyState(true);
@@ -110,7 +119,7 @@ public class AreaReveal : MonoBehaviour
                 lights[i].enabled = wantLights;
             }
         }
-        // partículas: las de áreas lejanas se pausan (se siguen viendo quietas, en penumbra)
+        // partículas: las de áreas lejanas se pausan
         bool wantParticles = level > 0.001f || Distance(PlayerPos()) < margin + falloff * 1.5f;
         if (wantParticles != particlesOn || force)
         {
@@ -121,6 +130,13 @@ public class AreaReveal : MonoBehaviour
                 if (!wantParticles) { if (p.isPlaying) { p.Pause(false); pausedByMe.Add(p); } }
                 else if (pausedByMe.Remove(p)) p.Play(false);
             }
+        }
+        // con la luz apagada tampoco brillan llamas ni halos: nada de fuegos flotando a lo lejos en la negrura
+        bool wantGlow = level > 0.05f;
+        if (wantGlow != glowsOn || force)
+        {
+            glowsOn = wantGlow;
+            foreach (var r in glows) if (r != null) r.forceRenderingOff = !wantGlow;
         }
     }
 }

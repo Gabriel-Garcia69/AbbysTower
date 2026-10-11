@@ -50,7 +50,7 @@ public partial class DioramaBuilder : MonoBehaviour
 
     Material mGrass, mCobble, mPlaza, mStone, mBrick, mPlaster, mTimber, mRoof, mDoor, mPlank, mBark, mPine, mTuft,
              mMetal, mWindow, mWindowLit, mWater, mCliff, mSnow, mCloth, mClothB, mFruitR, mFruitG, mFruitY, mGlow, mDust, mSmoke,
-             mMountain, mRock, mDirt, mWaterfall, mBarkPix, mPinePix, mLeavesPix, mLeavesAutumn, mRay, mSparkle, mLily, mLilyFlower;
+             mRiver, mMountain, mRock, mDirt, mWaterfall, mBarkPix, mPinePix, mLeavesPix, mLeavesAutumn, mRay, mSparkle, mLily, mLilyFlower;
     Material[] mLeaves, mFlowers;
     readonly List<Rect> blocked = new List<Rect>();   // donde no van árboles ni pasto
     Transform root;
@@ -1146,6 +1146,8 @@ public partial class DioramaBuilder : MonoBehaviour
             m.SetFloat("_FoamDistance", 0.45f);
             return m;
         });
+        // ríos y arroyos: la misma agua, pero con corriente hacia +X (río abajo)
+        mRiver = Saved("Dio_AguaRio", () => { var m = new Material(mWater); m.SetVector("_Flow", new Vector4(1.3f, 0f, 0f, 0f)); m.SetFloat("_FoamDistance", 0.6f); return m; });
         // rayos de luz y destellos (aditivos, shader Abby/Particle)
         mRay = Saved("Dio_Rayo", () =>
         {

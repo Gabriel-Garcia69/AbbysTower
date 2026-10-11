@@ -222,7 +222,7 @@ public partial class DioramaBuilder
         Wall(g, "CanonN", new Vector3((gx0 + far) / 2f, OuterY - wallH / 2f, gz + gorge), Vector3.back, far - gx0, wallH, mRock, 0.25f);
         Wall(g, "CanonS", new Vector3((gx0 + far) / 2f, OuterY - wallH / 2f, gz - gorge), Vector3.forward, far - gx0, wallH, mRock, 0.25f);
         Flat(g, "CanonFondo", new Vector3((gx0 + far) / 2f, -4.6f, gz), far - gx0, gorge * 2f, mDirt, 0.25f);
-        MeshObject(g, "RioCanon", RiverStrip(gx0, far, WaterLevel, gorge * 2f - 2f), mWater, false);
+        MeshObject(g, "RioCanon", RiverStrip(gx0, far, WaterLevel, gorge * 2f - 2f), mRiver, false);
         Flat(g, "MesetaSur", new Vector3((a + b) / 2f, OuterSouthY, (-far + s + 1f) / 2f), b - a, s + 1f + far, mGrass, 0.25f);
         // al norte las mesetas bajan al valle en escalones, como el risco del pueblo
         float[] stepZ = { north, north + 10f, north + 22f };
@@ -261,7 +261,7 @@ public partial class DioramaBuilder
         var g = Group("Agua", root);
         // río del cañón: tira que sigue la curva
         var strip = RiverStrip(RiverStartX - 0.2f, TerrainArea.xMax, WaterLevel, 10f);
-        var river = MeshObject(g, "Rio", strip, mWater, false);
+        var river = MeshObject(g, "Rio", strip, mRiver, false);
         // arroyo de arriba
         BuildStream(g);
 
@@ -295,7 +295,7 @@ public partial class DioramaBuilder
             bool last = x + step > xb;
             if (Mathf.Abs(w - level) > 0.3f || last)
             {
-                MeshObject(g, "Arroyo", RiverStrip(segStart, x + 0.05f, level, width), mWater, false);
+                MeshObject(g, "Arroyo", RiverStrip(segStart, x + 0.05f, level, width), mRiver, false);
                 if (Mathf.Abs(w - level) > 0.3f)
                 {
                     // cascadita: el agua de arriba (oeste) cae al tramo siguiente
@@ -337,31 +337,115 @@ public partial class DioramaBuilder
         return m;
     }
 
+    /// <summary>
+    /// Cascada: el agua sale del borde en una curva (no un letrero plano), con orillas deshilachadas, dos capas
+    /// (la de atrás más oscura), labio de espuma arriba, peñas con musgo que tapan las esquinas, y al pie espuma,
+    /// bruma y ondas. center = mitad de la caída; facing = hacia dónde cae.
+    /// </summary>
     void Waterfall(Transform parent, Vector3 center, Vector3 facing, float width, float height)
     {
-        var m = new Mesh { name = "Cascada" };
-        m.vertices = new[] { new Vector3(-width / 2f, -height / 2f, 0f), new Vector3(width / 2f, -height / 2f, 0f), new Vector3(-width / 2f, height / 2f, 0f), new Vector3(width / 2f, height / 2f, 0f) };
-        // uv: x = metros a lo ancho, y = metros de caída desde el labio (así lo espera el shader Abby/Waterfall)
-        m.uv = new[] { new Vector2(0f, height), new Vector2(width, height), new Vector2(0f, 0f), new Vector2(width, 0f) };
-        m.triangles = new[] { 0, 2, 3, 0, 3, 1, 0, 3, 2, 0, 1, 3 };   // dos caras: se ve desde cualquier lado
-        m.RecalculateNormals(); m.RecalculateBounds();
-        var go = MeshObject(parent, "Cascada", m, mWaterfall, false);
-        go.transform.localPosition = center;
-        go.transform.localRotation = Quaternion.LookRotation(-facing, Vector3.up);
+        var root2 = Group("Cascada", parent);
+        root2.localPosition = center + Vector3.up * height / 2f;   // origen en el labio
+        root2.localRotation = Quaternion.LookRotation(facing, Vector3.up);   // +Z = hacia donde cae
+        for (int layer = 0; layer < 2; layer++)
+        {
+            var m = WaterfallMesh(width - layer * 0.5f, height, layer == 0 ? 0f : -0.18f);
+            var go = MeshObject(root2, layer == 0 ? "Chorro" : "Fondo", m, mWaterfall, false);
+            var r = go.GetComponent<MeshRenderer>();
+            var mpb = new MaterialPropertyBlock();
+            mpb.SetFloat("_Width", width - layer * 0.5f);
+            if (layer == 1) mpb.SetColor("_Color", new Color(0.12f, 0.4f, 0.55f, 0.9f));
+            r.SetPropertyBlock(mpb);
+            if (layer == 1) go.transform.localPosition = new Vector3(0f, 0f, -0.05f);
+        }
+        // peñas en las esquinas del labio y del pie (esconden el corte entre agua, cascada y roca)
+        foreach (float sx in new[] { -1f, 1f })
+        {
+            float s0 = R(0.8f, 1.2f);
+            var top = Prim(root2, PrimitiveType.Sphere, "PenaLabio", new Vector3(sx * (width / 2f + 0.15f), 0.05f, -0.25f), new Vector3(s0 * 1.2f, s0 * 0.7f, s0), mRock);
+            top.transform.localRotation = Quaternion.Euler(R(0f, 20f), R(0f, 360f), 0f);
+            Ivy(root2, new Vector3(sx * (width / 2f + 0.2f), 0.35f, -0.2f), new Vector3(0.8f, 0.4f, 0.7f));
+            float s1 = R(1f, 1.6f);
+            var bot = Prim(root2, PrimitiveType.Sphere, "PenaPie", new Vector3(sx * (width / 2f + 0.3f), -height + 0.1f, 0.9f), new Vector3(s1 * 1.3f, s1 * 0.8f, s1), mRock);
+            bot.transform.localRotation = Quaternion.Euler(R(0f, 20f), R(0f, 360f), 0f);
+            for (float y = -0.8f; y > -height + 0.8f; y -= R(1.2f, 2f))   // musgo y hierbas en la pared junto al chorro
+                Ivy(root2, new Vector3(sx * (width / 2f + 0.15f), y, 0.05f), new Vector3(R(0.4f, 0.7f), R(0.5f, 0.9f), 0.3f));
+        }
+        // labio: espuma blanca donde el agua dobla el borde
+        Foam(root2, new Vector3(0f, 0.05f, 0.1f), width * 0.45f, 10f + width * 3f);
+        // pie: espuma, bruma que sube y un anillo de ondas
+        Vector3 basePos = new Vector3(0f, -height + 0.05f, OutAt(height) + 0.4f);
+        Foam(root2, basePos, width * 0.6f, 20f + width * 6f);
         var spray = new GameObject("Bruma").AddComponent<ParticleSystem>();
-        spray.transform.SetParent(parent, false);
-        spray.transform.localPosition = center - Vector3.up * height / 2f + facing * 0.4f;
+        spray.transform.SetParent(root2, false);
+        spray.transform.localPosition = basePos;
         spray.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = spray.main;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(1.2f, 2.2f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.8f, 1.6f);
-        main.startColor = new Color(0.95f, 0.97f, 1f, 0.22f);
-        main.maxParticles = 80; main.prewarm = true;
-        var em = spray.emission; em.rateOverTime = 22f;
-        var sh = spray.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(width, 0.2f, 0.4f);
+        main.startLifetime = new ParticleSystem.MinMaxCurve(1.5f, 2.8f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 1.4f);
+        main.startSize = new ParticleSystem.MinMaxCurve(width * 0.3f, width * 0.6f);
+        main.startColor = new Color(0.95f, 0.97f, 1f, 0.2f);
+        main.maxParticles = 120; main.prewarm = true;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        var em = spray.emission; em.rateOverTime = 14f + width * 4f;
+        var sh = spray.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(width, 0.2f, 0.8f);
+        var sz = spray.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.7f, 1f, 1.8f));
+        var vel = spray.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.Local;
+        vel.x = new ParticleSystem.MinMaxCurve(-0.2f, 0.2f); vel.y = new ParticleSystem.MinMaxCurve(0.6f, 1.2f); vel.z = new ParticleSystem.MinMaxCurve(0.4f, 1f);
         spray.GetComponent<ParticleSystemRenderer>().sharedMaterial = mSmoke;
         spray.Play();
+        var ripple = new GameObject("Ondas").AddComponent<ParticleSystem>();
+        ripple.transform.SetParent(root2, false);
+        ripple.transform.localPosition = basePos + Vector3.up * 0.03f;
+        ripple.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        ripple.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var rm = ripple.main;
+        rm.startLifetime = 1.6f; rm.startSpeed = 0f; rm.startSize = width * 0.8f;
+        rm.startColor = new Color(1f, 1f, 1f, 0.25f); rm.maxParticles = 10; rm.prewarm = true;
+        rm.simulationSpace = ParticleSystemSimulationSpace.Local;
+        var rem = ripple.emission; rem.rateOverTime = 3f;
+        var rsh = ripple.shape; rsh.enabled = false;
+        var rsz = ripple.sizeOverLifetime; rsz.enabled = true; rsz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.5f, 1f, 2.2f));
+        var rcol = ripple.colorOverLifetime; rcol.enabled = true;
+        var rg = new Gradient();
+        rg.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) }, new[] { new GradientAlphaKey(0.6f, 0f), new GradientAlphaKey(0f, 1f) });
+        rcol.color = rg;
+        var rr = ripple.GetComponent<ParticleSystemRenderer>();
+        rr.sharedMaterial = mSmoke; rr.renderMode = ParticleSystemRenderMode.HorizontalBillboard;
+        ripple.Play();
+    }
+
+    /// <summary>Cuánto se separa el agua de la pared a 'drop' metros bajo el labio (arco de caída).</summary>
+    static float OutAt(float drop) => 0.15f + Mathf.Sqrt(drop) * 0.35f;
+
+    /// <summary>Rejilla curva de la cascada en local: x a lo ancho, y hacia abajo, z hacia afuera. Arranca un poco atrás del labio.</summary>
+    Mesh WaterfallMesh(float width, float height, float zOffset)
+    {
+        var drops = new List<float> { -0.6f, 0f, 0.15f, 0.4f, 0.8f, 1.4f };
+        for (float d = 2.2f; d < height; d += 1.2f) drops.Add(d);
+        drops.Add(height);
+        int cols = Mathf.Max(2, Mathf.CeilToInt(width / 0.6f));
+        var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>();
+        foreach (float d in drops)
+            for (int c = 0; c <= cols; c++)
+            {
+                float x = -width / 2f + width * c / cols;
+                // arriba (d < 0) el agua viene acostada sobre el arroyo; al caer se separa en arco
+                float y = d < 0f ? 0.02f : -d, z = d < 0f ? d : OutAt(d) + zOffset;
+                v.Add(new Vector3(x, y, z));
+                uv.Add(new Vector2(x + width / 2f, Mathf.Max(0f, d)));
+            }
+        int row = cols + 1;
+        for (int r = 0; r < drops.Count - 1; r++)
+            for (int c = 0; c < cols; c++)
+            {
+                int a = r * row + c, b = a + 1, cc = a + row, dd = cc + 1;
+                t.AddRange(new[] { a, cc, b, b, cc, dd, a, b, cc, b, dd, cc });   // dos caras
+            }
+        var m = new Mesh { name = "Cascada" };
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
+        m.RecalculateNormals(); m.RecalculateBounds();
+        return m;
     }
 
     void Foam(Transform parent, Vector3 pos, float size, float rate)

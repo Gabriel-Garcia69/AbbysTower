@@ -11,6 +11,7 @@ Shader "Abby/Waterfall"
         _StreakWidth ("Ancho de chorros", Float) = 1.2
         _FadeStart ("Empieza a desvanecerse (m)", Float) = 40
         _FadeEnd ("Desaparece (m)", Float) = 120
+        _Width ("Ancho (m) para suavizar las orillas; 0 = sin suavizar", Float) = 0
     }
 
     SubShader
@@ -33,7 +34,7 @@ Shader "Abby/Waterfall"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _Color, _FoamColor;
-                float _Speed, _StreakWidth, _FadeStart, _FadeEnd;
+                float _Speed, _StreakWidth, _FadeStart, _FadeEnd, _Width;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
@@ -67,7 +68,15 @@ Shader "Abby/Waterfall"
 
                 float fade = 1.0 - smoothstep(_FadeStart, _FadeEnd, i.uv.y);
                 float alpha = _Color.a * (0.55 + 0.45 * n) * fade;
+
                 alpha = max(alpha, foam * fade * 0.9);
+                // orillas del chorro deshilachadas (no un rectángulo de corte recto)
+                if (_Width > 0.0)
+                {
+                    float edge = min(i.uv.x, _Width - i.uv.x);
+                    float ragged = 0.35 + (AbbyNoise(float2(i.uv.y * 0.8 - t * 0.12, i.uv.x * 3.0)) - 0.5) * 0.4;
+                    alpha *= smoothstep(0.0, ragged, edge);
+                }
 
                 col = MixFog(col, i.fog);
                 return half4(col, saturate(alpha));

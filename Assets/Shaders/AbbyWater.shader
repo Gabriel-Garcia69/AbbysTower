@@ -16,6 +16,7 @@ Shader "Abby/Water"
         _FoamColor ("Espuma", Color) = (0.9, 0.97, 1, 1)
         _FoamDistance ("Ancho de espuma", Float) = 0.3
         _Reflection ("Reflejo", Range(0, 1)) = 0.85
+        _Flow ("Corriente (x, z en m/s)", Vector) = (0, 0, 0, 0)
     }
 
     SubShader
@@ -47,6 +48,7 @@ Shader "Abby/Water"
             CBUFFER_START(UnityPerMaterial)
                 float4 _ShallowColor, _DeepColor, _FoamColor;
                 float _DepthDistance, _WaveScale, _WaveSpeed, _WaveHeight, _NormalStrength, _Refraction, _FoamDistance, _Reflection;
+                float4 _Flow;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; };
@@ -80,7 +82,8 @@ Shader "Abby/Water"
             half4 frag(Varyings i) : SV_Target
             {
                 float t = _Time.y * _WaveSpeed;
-                float2 p = i.positionWS.xz * _WaveScale;
+                // la corriente arrastra las olas río abajo
+                float2 p = (i.positionWS.xz - _Flow.xy * _Time.y) * _WaveScale;
 
                 // normal a partir de la altura de las olas (diferencias finitas)
                 const float e = 0.05;
@@ -134,7 +137,7 @@ Shader "Abby/Water"
 
                 // espuma en las orillas
                 float foam = 1.0 - saturate(depth / _FoamDistance);
-                foam = smoothstep(0.35, 0.9, foam + (AbbyNoise(i.positionWS.xz * 7.0 + t * 0.8) - 0.5) * 0.5);
+                foam = smoothstep(0.35, 0.9, foam + (AbbyNoise((i.positionWS.xz - _Flow.xy * _Time.y) * 7.0 + t * 0.8) - 0.5) * 0.5);
                 col = lerp(col, _FoamColor.rgb * sunShadow, foam * 0.85);
 
                 col = MixFog(col, i.fogFactor);

@@ -7,14 +7,14 @@ using UnityEngine;
 /// </summary>
 public partial class DioramaBuilder
 {
-    static readonly Rect SummitArea = new Rect(-80f, -75f, 160f, 150f);
-    static readonly Rect SummitWalk = new Rect(-60f, -62f, 120f, 124f);
-    static readonly Vector3 SummitSpawn = new Vector3(0f, 0.1f, -50f);
+    static readonly Rect SummitArea = new Rect(-90f, -85f, 180f, 175f);
+    static readonly Rect SummitWalk = new Rect(-70f, -72f, 140f, 148f);
+    static readonly Vector3 SummitSpawn = new Vector3(0f, 0.1f, -60f);
     // islas: x, z, radio, alto
     static readonly Vector4[] Isles =
     {
-        new Vector4(0f, -48f, 9f, 0f), new Vector4(-24f, -24f, 10f, 2f), new Vector4(18f, -14f, 8f, 3.5f),
-        new Vector4(-10f, 12f, 10f, 5f), new Vector4(12f, 42f, 15f, 7f),
+        new Vector4(0f, -56f, 11f, 0f), new Vector4(-30f, -26f, 14f, 2f), new Vector4(24f, -14f, 10f, 3.5f),
+        new Vector4(-12f, 16f, 14f, 5f), new Vector4(14f, 52f, 18f, 7f),
     };
     const float CloudY = -16f;
 
@@ -61,7 +61,7 @@ public partial class DioramaBuilder
         IsleBridge(lvl, 0, 1); IsleBridge(lvl, 1, 2); IsleBridge(lvl, 1, 3); IsleBridge(lvl, 3, 4);
 
         // rocas que flotan y lejanas islas
-        for (int i = 0; i < 24; i++)
+        for (int i = 0; i < 30; i++)
         {
             var q = new Vector2(R(-120f, 120f), R(-110f, 140f));
             bool near = false;
@@ -88,11 +88,11 @@ public partial class DioramaBuilder
         var top0 = Isles[4];
         var roof = Group("Azotea", g);
         roof.localPosition = new Vector3(top0.x, top0.w, top0.y);
-        Flat(roof, "Losas", new Vector3(0f, 0.02f, 2f), 18f, 18f, mStoneBrick, 0.3f);
-        for (int i = 0; i < 24; i++)
+        Flat(roof, "Losas", new Vector3(0f, 0.02f, 2f), 28f, 28f, mStoneBrick, 0.3f);
+        for (int i = 0; i < 30; i++)
         {
-            float a = i / 24f * Mathf.PI * 2f;
-            var p = new Vector3(Mathf.Cos(a) * 12.5f, 0f, Mathf.Sin(a) * 12.5f + 2f);
+            float a = i / 30f * Mathf.PI * 2f;
+            var p = new Vector3(Mathf.Cos(a) * 15.5f, 0f, Mathf.Sin(a) * 15.5f + 2f);
             if (Vector3.Angle(p.normalized, new Vector3(-0.1f, 0f, -1f)) < 22f) continue;   // entrada desde el puente
             Box(roof, "Almena", p + Vector3.up * 0.6f, new Vector3(1.4f, 1.2f, 1f), mStoneBrick, true);
             Box(roof, "Diente", p + Vector3.up * 1.5f, new Vector3(0.7f, 0.6f, 0.7f), mStoneBrick, false);
@@ -100,7 +100,7 @@ public partial class DioramaBuilder
         for (int i = 0; i < 6; i++)
         {
             float a = i / 6f * Mathf.PI * 2f + 0.5f;
-            var p = new Vector3(Mathf.Cos(a) * 7.5f, 0f, Mathf.Sin(a) * 7.5f + 4f);
+            var p = new Vector3(Mathf.Cos(a) * 9.5f, 0f, Mathf.Sin(a) * 9.5f + 4f);
             Prim(roof, PrimitiveType.Cylinder, "Columna", p + Vector3.up * 3f, new Vector3(1.1f, 3f, 1.1f), mWhite, true);
             Box(roof, "Capitel", p + Vector3.up * 6.1f, new Vector3(1.6f, 0.3f, 1.6f), mWhite, false);
             if (i % 2 == 0) Crystals(roof, p + Vector3.up * 6.3f, 0.6f, true, false);
@@ -121,9 +121,9 @@ public partial class DioramaBuilder
         Campfire(lvl, new Vector3(m0.x + 2.5f, m0.w, m0.y - 2.5f));
         foreach (var s in Isles) PortLamp(lvl, new Vector3(s.x + s.z * 0.55f, s.w, s.y - s.z * 0.45f));
 
-        Arena(lvl, "La isla de los vientos", new Vector3(Isles[1].x, Isles[1].w, Isles[1].y), new Vector2(12f, 12f), 6);
-        Arena(lvl, "El jardín colgante", new Vector3(Isles[3].x, Isles[3].w, Isles[3].y), new Vector2(12f, 12f), 6);
-        var boss = Arena(lvl, "Jefe", new Vector3(top0.x, top0.w, top0.y + 1f), new Vector2(16f, 14f), 1, true);
+        Arena(lvl, "La isla de los vientos", new Vector3(Isles[1].x, Isles[1].w, Isles[1].y), new Vector2(18f, 18f), 6);
+        Arena(lvl, "El jardín colgante", new Vector3(Isles[3].x, Isles[3].w, Isles[3].y), new Vector2(18f, 18f), 6);
+        var boss = Arena(lvl, "Jefe", new Vector3(top0.x, top0.w, top0.y + 1f), new Vector2(20f, 18f), 1, true);
         Exit(lvl, new Vector3(top0.x, top0.w, top0.y + 12f), boss);
         Chest(lvl, new Vector3(Isles[0].x + 5f, 0f, Isles[0].y - 3f), 30, 0f);
         Chest(lvl, new Vector3(Isles[3].x - 6f, Isles[3].w, Isles[3].y + 4f), 40, 90f);

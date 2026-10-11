@@ -14,13 +14,17 @@ using UnityEditor;
 /// </summary>
 public partial class DioramaBuilder : MonoBehaviour
 {
+    public enum Layout { Pueblo, Puerto }
+    [Tooltip("Qué mapa genera: el pueblo del risco o el muelle de puerto.")]
+    public Layout layout = Layout.Pueblo;
     public int seed = 7;
     [Tooltip("Mechones de pasto (malla combinada).")]
     public int grassTufts = 2600;
 
     const string Prefix = "Dio_";
     const float TerraceY = 2.6f;
-    static readonly Rect Walk = new Rect(-33f, -29f, 66f, 72.4f);    // zona jugable (x, z); al norte llega a la orilla del risco
+    static readonly Rect TownWalk = new Rect(-33f, -29f, 66f, 72.4f);    // zona jugable del pueblo (x, z); al norte llega a la orilla del risco
+    Rect Walk => layout == Layout.Puerto ? PortWalk : TownWalk;
     static readonly Rect Terrace = new Rect(-15f, 18f, 30f, 18f);     // patio en alto
     const float StairZ0 = 12.5f, StairW = 5f;
     const float CliffZ = 48f, ValleyDepth = 40f;
@@ -46,6 +50,7 @@ public partial class DioramaBuilder : MonoBehaviour
         blocked.Clear();
         LoadMaterials();
         root = Group(Prefix + "Mapa", transform);
+        if (layout == Layout.Puerto) { BuildPort(); return; }
 
         BuildTerrain();
         BuildWater();
@@ -84,6 +89,8 @@ public partial class DioramaBuilder : MonoBehaviour
 
     /// <summary>Dónde aparece Abby: al sur, mirando hacia el pueblo y la torre.</summary>
     public static Vector3 Spawn => new Vector3(0f, 0.1f, -21f);
+    /// <summary>Dónde aparece Abby en el mapa que genera este componente.</summary>
+    public Vector3 SpawnPoint => layout == Layout.Puerto ? PortSpawn : Spawn;
 
     // ------------------------------------------------------------------ caminos
 
@@ -872,7 +879,7 @@ public partial class DioramaBuilder : MonoBehaviour
         ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = mDust;
         ps.Play();
 
-        Sparkles(g);
+        if (layout == Layout.Puerto) SeaSparkles(g); else Sparkles(g);
     }
 
     /// <summary>Destellos del sol en el agua: puntitos que aparecen y se apagan sobre el río (el sello del HD-2D).</summary>

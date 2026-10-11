@@ -41,6 +41,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Diorama.unity
     guid: 54a59cdf7c8147c42b61d9204cdbf1b2
+  - enabled: 1
+    path: Assets/Scenes/Puerto.unity
+    guid: cf4836c05ea726b47b3c51bbb6896b51
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

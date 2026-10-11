@@ -34,6 +34,8 @@ public class CameraStyleProfile
     public bool roomFraming = false;
     [Tooltip("Cámara desde adentro: choca con muros, techo y objetos grandes (se acerca) en vez de que se vuelvan invisibles.")]
     public bool interior = false;
+    [Tooltip("Nada se oculta (casas, árboles, columnas): en la maqueta lo de enfrente solo se desenfoca.")]
+    public bool keepOccluders = false;
 }
 
 /// <summary>
@@ -98,7 +100,7 @@ public class MouseOrbitCamera : MonoBehaviour
     [System.NonSerialized] CameraStyleProfile diorama = new CameraStyleProfile
     {
         fov = 22f, distance = 36f, pivotHeight = 0.8f, startPitch = 24f, minPitch = 24f, maxPitch = 24f,
-        lookUp = 3f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true
+        lookUp = 3f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true
     };
     [Tooltip("Esta escena arranca con su propio estilo (p. ej. el diorama), sin cambiar el que se guardó para los pisos.")]
     [SerializeField] bool useSceneStyle = false;
@@ -249,7 +251,7 @@ public class MouseOrbitCamera : MonoBehaviour
         peeking = false;
         targetDistance = zoomEnabled ? Mathf.Clamp(active.distance, minDistance, maxDistance) : active.distance;
         // desde adentro nada se oculta: la cámara se acerca al chocar
-        OccluderFade.Suspended = active.interior;
+        OccluderFade.Suspended = active.interior || active.keepOccluders;
         if (cutaway != null) cutaway.enabled = !active.interior;
         labelUntil = Time.unscaledTime + 2.5f;
 

@@ -1,10 +1,12 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
 /// Efecto maqueta (tilt-shift) del diorama: el desenfoque de profundidad (Bokeh) del Volume enfoca siempre a Abby,
-/// así lo cercano y lo lejano se ven borrosos como en Octopath. Va en la cámara principal.
+/// así lo lejano (y lo que pasa pegado a la cámara) se suaviza como en Octopath, sin tocar lo que rodea a Abby.
+/// F7 lo apaga/prende para comparar. Va en la cámara principal.
 /// </summary>
 [DefaultExecutionOrder(3000)]
 public class TiltShiftFocus : MonoBehaviour
@@ -15,6 +17,11 @@ public class TiltShiftFocus : MonoBehaviour
     public float focusHeight = 0.7f;
     [Tooltip("Suavizado del enfoque (s).")]
     public float smoothTime = 0.15f;
+    [Tooltip("Milímetros de lente por metro de distancia al foco: a 34 m da ~290 mm (maqueta); a 3 m, ~25 mm (casi nada borroso).")]
+    public float focalPerMeter = 6f;
+    public float maxFocalLength = 220f;
+    [Tooltip("Apertura (f/). Más alto = más zona nítida alrededor de Abby.")]
+    public float aperture = 4f;
 
     DepthOfField dof;
     Transform player;
@@ -33,8 +40,13 @@ public class TiltShiftFocus : MonoBehaviour
     void LateUpdate()
     {
         if (dof == null || player == null) return;
+        var kb = Keyboard.current;
+        if (kb != null && kb.f7Key.wasPressedThisFrame) dof.active = !dof.active;
+        dof.aperture.value = aperture;
         float want = Vector3.Distance(transform.position, player.position + Vector3.up * focusHeight);
         focus = Mathf.SmoothDamp(focus, want, ref vel, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
         dof.focusDistance.value = focus;
+        // efecto maqueta solo de lejos: con la cámara cerca (F3) una lente larga dejaría todo borroso
+        dof.focalLength.value = Mathf.Clamp(focus * focalPerMeter, 18f, maxFocalLength);
     }
 }

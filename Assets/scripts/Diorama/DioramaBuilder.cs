@@ -5,30 +5,32 @@ using UnityEditor;
 #endif
 
 /// <summary>
-/// Mapa de prueba "Diorama HD-2D": un pueblito al pie de la torre visto como maqueta (estilo Octopath / Triangle Strategy).
-/// Canal con puente de piedra y puente de madera, casas de entramado con techo de tejas, mercado, pozo, faroles,
-/// árboles y pinos, y al norte una escalinata que sube a un patio en ruinas (pelea con oleadas). Al fondo montañas
-/// y la torre. Todo lo genera este script: clic derecho en el componente → "Generar diorama".
+/// Mapa de prueba "Diorama HD-2D": un pueblito al pie de la torre visto como maqueta (estilo Octopath / DQ3 HD-2D).
+/// Terrazas de roca con musgo, cañón con río turquesa, cascadas, puente de madera con caballetes, muelle con barca,
+/// casas de entramado con techo de tejas, mercado, pozo, árboles y pinos pixel-art, y al norte una escalinata que sube
+/// a un patio en ruinas (pelea con oleadas). Al fondo el valle, montañas y la torre. Partes: .Terrain (suelo y agua),
+/// .Plants (vegetación). Todo lo genera este script: clic derecho en el componente → "Generar diorama".
 /// Se entra desde Pausa → Opciones → "Probar diorama HD-2D".
 /// </summary>
-public class DioramaBuilder : MonoBehaviour
+public partial class DioramaBuilder : MonoBehaviour
 {
     public int seed = 7;
     [Tooltip("Mechones de pasto (malla combinada).")]
     public int grassTufts = 2600;
 
     const string Prefix = "Dio_";
-    const float TerraceY = 2.6f, CanalHalf = 2.5f, CanalFloor = -1.6f, WaterY = -0.75f;
+    const float TerraceY = 2.6f;
     static readonly Rect Walk = new Rect(-33f, -29f, 66f, 67f);      // zona jugable (x, z)
-    static readonly Rect Terrace = new Rect(-15f, 16f, 30f, 18f);     // patio en alto
-    const float StairZ0 = 10f, StairW = 5f;
+    static readonly Rect Terrace = new Rect(-15f, 18f, 30f, 18f);     // patio en alto
+    const float StairZ0 = 12.5f, StairW = 5f;
     const float CliffZ = 48f, ValleyDepth = 40f;
 
     System.Random rng;
     float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
 
     Material mGrass, mCobble, mPlaza, mStone, mBrick, mPlaster, mTimber, mRoof, mDoor, mPlank, mBark, mPine, mTuft,
-             mMetal, mWindow, mWindowLit, mWater, mCliff, mSnow, mCloth, mClothB, mFruitR, mFruitG, mFruitY, mGlow, mDust, mSmoke;
+             mMetal, mWindow, mWindowLit, mWater, mCliff, mSnow, mCloth, mClothB, mFruitR, mFruitG, mFruitY, mGlow, mDust, mSmoke,
+             mMountain, mRock, mDirt, mWaterfall, mBarkPix, mPinePix, mLeavesPix, mLeavesAutumn, mRay, mSparkle, mLily, mLilyFlower;
     Material[] mLeaves, mFlowers;
     readonly List<Rect> blocked = new List<Rect>();   // donde no van árboles ni pasto
     Transform root;
@@ -44,11 +46,13 @@ public class DioramaBuilder : MonoBehaviour
         LoadMaterials();
         root = Group(Prefix + "Mapa", transform);
 
-        BuildGround();
-        BuildCanal();
-        BuildMainBridge(0f);
-        BuildWoodBridge(-20f);
+        BuildTerrain();
+        BuildWater();
+        BuildCanyonBridge(0f);
+        BuildStreamBridge(-29f);
+        BuildFences(0f);
         BuildPaths();
+        BuildRiverside();
         BuildTerrace();
         BuildRuins();
         BuildVillage();
@@ -77,170 +81,138 @@ public class DioramaBuilder : MonoBehaviour
     /// <summary>Dónde aparece Abby: al sur, mirando hacia el pueblo y la torre.</summary>
     public static Vector3 Spawn => new Vector3(0f, 0.1f, -21f);
 
-    // ------------------------------------------------------------------ suelo y agua
-
-    void BuildGround()
-    {
-        var g = Group("Suelo", root);
-        // pasto (más grande que la zona jugable: al girar la cámara no se ve el borde)
-        Flat(g, "PastoSur", new Vector3(0f, 0f, -36.25f), 140f, 67.5f, mGrass, 0.25f);
-        Flat(g, "PastoNorte", new Vector3(0f, 0f, (CanalHalf + CliffZ) / 2f), 140f, CliffZ - CanalHalf, mGrass, 0.25f);
-        SolidBox(g, "Collider_Sur", new Vector3(0f, -0.5f, -36.25f), new Vector3(140f, 1f, 67.5f));
-        SolidBox(g, "Collider_Norte", new Vector3(0f, -0.5f, (CanalHalf + CliffZ) / 2f), new Vector3(140f, 1f, CliffZ - CanalHalf));
-        // el pueblo está en lo alto de un risco: al norte el terreno cae al valle (así la cámara ve el paisaje a lo lejos)
-        Wall(g, "Risco", new Vector3(0f, -ValleyDepth / 2f, CliffZ), Vector3.forward, 140f, ValleyDepth, mCliff, 0.08f);
-        for (int i = 0; i < 40; i++)
-        {
-            var rock = Prim(g, PrimitiveType.Sphere, "Peña", new Vector3(R(-70f, 70f), R(-ValleyDepth, -2f), CliffZ + R(0.5f, 4f)), new Vector3(R(4f, 9f), R(3f, 7f), R(3f, 6f)), mCliff);
-            rock.transform.localRotation = Quaternion.Euler(R(0f, 40f), R(0f, 360f), R(0f, 40f));
-            rock.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        }
-        Flat(g, "Valle", new Vector3(0f, -ValleyDepth, 200f), 700f, 320f, mGrass, 0.05f);
-        var river = Flat(g, "Rio", new Vector3(0f, -ValleyDepth + 0.3f, 105f), 700f, 14f, mWater, 0.05f);
-        river.transform.localRotation = Quaternion.Euler(0f, 8f, 0f);
-    }
-
-    void BuildCanal()
-    {
-        var c = Group("Canal", root);
-        float len = 140f;
-        Flat(c, "Fondo", new Vector3(0f, CanalFloor, 0f), len, CanalHalf * 2f, mCliff, 0.3f);
-        SolidBox(c, "Collider_Fondo", new Vector3(0f, CanalFloor - 0.5f, 0f), new Vector3(len, 1f, CanalHalf * 2f));
-        float h = -CanalFloor;
-        Wall(c, "OrillaSur", new Vector3(0f, CanalFloor + h / 2f, -CanalHalf), Vector3.forward, len, h, mBrick, 0.5f);
-        Wall(c, "OrillaNorte", new Vector3(0f, CanalFloor + h / 2f, CanalHalf), Vector3.back, len, h, mBrick, 0.5f);
-        var water = Flat(c, "Agua", new Vector3(0f, WaterY, 0f), len, CanalHalf * 2f, mWater, 0.2f);
-        water.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        // bordillo de piedra sobre las orillas
-        foreach (float sz in new[] { -1f, 1f })
-            Box(c, "Bordillo", new Vector3(0f, 0.06f, sz * (CanalHalf + 0.25f)), new Vector3(len, 0.12f, 0.5f), mStone, false);
-
-        // parapeto almenado a los dos lados, con huecos para los puentes
-        var gaps = new[] { new Vector2(-1.9f, 1.9f), new Vector2(-21.5f, -18.5f) };
-        foreach (float sz in new[] { -1f, 1f })
-        {
-            float z = sz * (CanalHalf + 0.25f);
-            float x = Walk.xMin;
-            foreach (var gap in gaps.OrderedByX())
-            {
-                Parapet(c, x, gap.x, z);
-                x = gap.y;
-            }
-            Parapet(c, x, Walk.xMax, z);
-        }
-        blocked.Add(new Rect(-70f, -CanalHalf - 1f, 140f, CanalHalf * 2f + 2f));
-    }
-
-    /// <summary>Murete de 0.7 m con almenas, de x0 a x1, centrado en z. Bloquea el paso.</summary>
-    void Parapet(Transform parent, float x0, float x1, float z)
-    {
-        float len = x1 - x0;
-        if (len < 0.3f) return;
-        float cx = (x0 + x1) / 2f;
-        Box(parent, "Parapeto", new Vector3(cx, 0.35f, z), new Vector3(len, 0.7f, 0.5f), mStone, true);
-        for (float x = x0 + 0.45f; x < x1 - 0.3f; x += 1.3f)
-            Box(parent, "Almena", new Vector3(x, 0.85f, z), new Vector3(0.6f, 0.3f, 0.55f), mStone, false);
-        SolidBox(parent, "Collider_Parapeto", new Vector3(cx, 1f, z), new Vector3(len, 2f, 0.5f));
-    }
-
-    /// <summary>Puente de piedra con arco (se ve el agua por debajo) y pretiles.</summary>
-    void BuildMainBridge(float x)
-    {
-        var b = Group("PuentePiedra", root);
-        b.localPosition = new Vector3(x, 0f, 0f);
-        float w = 4.4f, half = CanalHalf + 0.6f, r = 2.25f, cy = -2.9f;   // el arco nace bajo el agua y su clave queda bajo el tablero
-        Box(b, "Tablero", new Vector3(0f, -0.15f, 0f), new Vector3(w, 0.34f, half * 2f), mCobble, false);
-        SolidBox(b, "Collider_Tablero", new Vector3(0f, -0.2f, 0f), new Vector3(w, 0.4f, half * 2f + 0.4f));
-        // pretiles con remate
-        foreach (float sx in new[] { -1f, 1f })
-        {
-            Box(b, "Pretil", new Vector3(sx * (w / 2f - 0.2f), 0.45f, 0f), new Vector3(0.4f, 0.9f, half * 2f), mStone, false);
-            Box(b, "Remate", new Vector3(sx * (w / 2f - 0.2f), 0.95f, 0f), new Vector3(0.55f, 0.12f, half * 2f + 0.1f), mPlaster, false);
-            SolidBox(b, "Collider_Pretil", new Vector3(sx * (w / 2f - 0.2f), 1f, 0f), new Vector3(0.4f, 2f, half * 2f));
-            foreach (float sz in new[] { -1f, 1f })   // pilares en las puntas con bola
-            {
-                Box(b, "Pilar", new Vector3(sx * (w / 2f - 0.2f), 0.6f, sz * half), new Vector3(0.6f, 1.2f, 0.6f), mStone, false);
-                Prim(b, PrimitiveType.Sphere, "Bola", new Vector3(sx * (w / 2f - 0.2f), 1.42f, sz * half), Vector3.one * 0.42f, mStone);
-            }
-        }
-        // arco: dovelas en las dos caras y bóveda por debajo
-        int n = 11;
-        for (int i = 0; i <= n; i++)
-        {
-            float a = Mathf.PI * i / n;
-            float z = Mathf.Cos(a) * r, y = cy + Mathf.Sin(a) * r;
-            var rot = Quaternion.Euler(-Mathf.Rad2Deg * a + 90f, 0f, 0f);
-            foreach (float sx in new[] { -1f, 1f })
-            {
-                var v = Box(b, "Dovela", new Vector3(sx * (w / 2f - 0.1f), y, z), new Vector3(0.25f, 0.55f, Mathf.PI * r / n + 0.04f), mStone, false);
-                v.transform.localRotation = rot;
-            }
-            var vault = Box(b, "Boveda", new Vector3(0f, y + 0.12f, z), new Vector3(w - 0.3f, 0.12f, 0.6f), mBrick, false);
-            vault.transform.localRotation = rot;
-            // tímpano: relleno de sillar entre el lomo del arco y el tablero, en las dos caras
-            float top = -0.32f, bottom = Mathf.Max(y + 0.27f, CanalFloor);
-            if (top - bottom > 0.05f && Mathf.Abs(z) < CanalHalf + 0.3f)
-                foreach (float sx in new[] { -1f, 1f })
-                    Box(b, "Timpano", new Vector3(sx * (w / 2f - 0.12f), (top + bottom) / 2f, z), new Vector3(0.24f, top - bottom, r * Mathf.PI / n + 0.05f), mStone, false);
-        }
-        blocked.Add(new Rect(x - w / 2f - 0.5f, -half - 0.5f, w + 1f, half * 2f + 1f));
-    }
-
-    /// <summary>Puente de tablones con postes y cuerda.</summary>
-    void BuildWoodBridge(float x)
-    {
-        var b = Group("PuenteMadera", root);
-        b.localPosition = new Vector3(x, 0f, 0f);
-        float w = 3f, half = CanalHalf + 0.6f;
-        for (float z = -half; z < half - 0.1f; z += 0.42f)
-        {
-            var p = Box(b, "Tablon", new Vector3(R(-0.05f, 0.05f), 0.04f, z + 0.2f), new Vector3(w, 0.1f, 0.38f), mPlank, false);
-            p.transform.localRotation = Quaternion.Euler(R(-1.5f, 1.5f), R(-2f, 2f), 0f);
-        }
-        foreach (float sx in new[] { -1f, 1f })
-        {
-            Box(b, "Larguero", new Vector3(sx * (w / 2f - 0.2f), -0.2f, 0f), new Vector3(0.25f, 0.3f, half * 2f), mBark, false);
-            for (float z = -half; z <= half + 0.01f; z += half)
-                Box(b, "Poste", new Vector3(sx * (w / 2f), 0.55f, z), new Vector3(0.18f, 1.2f, 0.18f), mBark, false);
-            Box(b, "Cuerda", new Vector3(sx * (w / 2f), 1f, 0f), new Vector3(0.05f, 0.05f, half * 2f), mPlank, false);
-            SolidBox(b, "Collider_Baranda", new Vector3(sx * (w / 2f + 0.1f), 1f, 0f), new Vector3(0.2f, 2f, half * 2f));
-            Box(b, "Pilote", new Vector3(sx * (w / 2f - 0.2f), (CanalFloor - 0.2f) / 2f, 0f), new Vector3(0.3f, -CanalFloor, 0.3f), mBark, false);
-        }
-        SolidBox(b, "Collider_Tablero", new Vector3(0f, -0.1f, 0f), new Vector3(w, 0.3f, half * 2f + 0.4f));
-        blocked.Add(new Rect(x - w / 2f - 0.5f, -half - 0.5f, w + 1f, half * 2f + 1f));
-    }
+    // ------------------------------------------------------------------ caminos
 
     void BuildPaths()
     {
         var p = Group("Caminos", root);
-        Strip(p, new Vector2(0f, -29f), new Vector2(0f, -CanalHalf - 0.6f), 3.6f);
-        Strip(p, new Vector2(0f, CanalHalf + 0.6f), new Vector2(0f, StairZ0), 3.6f);
-        Strip(p, new Vector2(-27f, -12f), new Vector2(27f, -12f), 3f);
-        Strip(p, new Vector2(-20f, -12f), new Vector2(-20f, -CanalHalf - 0.6f), 2.4f);
-        Strip(p, new Vector2(-20f, CanalHalf + 0.6f), new Vector2(-20f, 7.5f), 2.4f);
-        Strip(p, new Vector2(-20f, 7.5f), new Vector2(0f, 7.5f), 2.4f);
+        Strip(p, new Vector2(0f, -29f), new Vector2(0f, -FenceZ - 0.6f), 3.4f);
+        Strip(p, new Vector2(0f, FenceZ + 0.6f), new Vector2(0f, StairZ0), 3.4f);
+        Strip(p, new Vector2(-31f, -13f), new Vector2(27f, -13f), 2.8f);
+        Strip(p, new Vector2(-29f, -13f), new Vector2(-29f, -3.4f), 2.4f);
+        Strip(p, new Vector2(-29f, 3.4f), new Vector2(-29f, 12.5f), 2.4f);
+        Strip(p, new Vector2(-29f, 12.5f), new Vector2(0f, 12.5f), 2.4f);
         // plazuela del mercado
-        Flat(p, "Plazuela", new Vector3(5f, 0.012f, -12f), 12f, 8f, mCobble, 0.5f);
-        blocked.Add(new Rect(-1f, -16f, 12f, 8f));
+        Flat(p, "Plazuela", new Vector3(6f, 0.012f, -17.5f), 12f, 5f, mCobble, 0.5f);
+        blocked.Add(new Rect(0f, -20.5f, 12f, 6f));
     }
 
-    /// <summary>Tira de empedrado entre dos puntos (eje X o Z).</summary>
+    /// <summary>Camino de tierra entre dos puntos (eje X o Z).</summary>
     void Strip(Transform parent, Vector2 a, Vector2 b, float width)
     {
         Vector2 d = b - a;
         float len = d.magnitude;
         bool alongZ = Mathf.Abs(d.y) > Mathf.Abs(d.x);
         Vector2 c = (a + b) / 2f;
-        Flat(parent, "Camino", new Vector3(c.x, 0.01f, c.y), alongZ ? width : len, alongZ ? len : width, mCobble, 0.5f);
+        Flat(parent, "Camino", new Vector3(c.x, 0.01f, c.y), alongZ ? width : len, alongZ ? len : width, mDirt, 0.5f);
         var rect = alongZ ? new Rect(c.x - width / 2f - 0.4f, Mathf.Min(a.y, b.y), width + 0.8f, len) : new Rect(Mathf.Min(a.x, b.x), c.y - width / 2f - 0.4f, len, width + 0.8f);
         blocked.Add(rect);
-        // bordillo de piedra a los lados del camino
-        foreach (float sgn in new[] { -1f, 1f })
+        // matas de pasto que se comen el borde del camino
+        for (float t = 0.6f; t < len; t += R(0.8f, 1.5f))
+            foreach (float sg in new[] { -1f, 1f })
+            {
+                if (rng.NextDouble() < 0.5) continue;
+                Vector2 q = a + d.normalized * t + (alongZ ? new Vector2(sg * (width / 2f - R(0f, 0.3f)), 0f) : new Vector2(0f, sg * (width / 2f - R(0f, 0.3f))));
+                var tuft = MeshObject(parent, "Mata", TuftMesh(), mTuft, false);
+                tuft.transform.localPosition = new Vector3(q.x, 0f, q.y);
+                tuft.transform.localScale = Vector3.one * R(0.8f, 1.3f);
+            }
+    }
+
+    // ------------------------------------------------------------------ orilla del río: muelle, barca, lirios, enredaderas
+
+    void BuildRiverside()
+    {
+        var g = Group("Orilla", root);
+        // muelle de tablones sobre pilotes en el bancal sur del río, con barca amarrada
+        float x0 = 8f, x1 = 17f;
+        float zr = Meander((x0 + x1) / 2f);
+        float deckY = WaterLevel + 0.45f;
+        for (float x = x0; x < x1; x += 0.42f)
         {
-            Vector3 off = alongZ ? new Vector3(sgn * (width / 2f + 0.12f), 0.05f, 0f) : new Vector3(0f, 0.05f, sgn * (width / 2f + 0.12f));
-            var curb = Box(parent, "Bordillo", new Vector3(c.x, 0f, c.y) + off, alongZ ? new Vector3(0.25f, 0.12f, len) : new Vector3(len, 0.12f, 0.25f), mStone, false);
-            curb.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            var p = Box(g, "Tablon", new Vector3(x + 0.2f, deckY, zr - 2.4f), new Vector3(0.38f, 0.1f, 2.6f), mPlank, false);
+            p.transform.localRotation = Quaternion.Euler(0f, R(-2f, 2f), R(-1.5f, 1.5f));
         }
+        for (float x = x0; x <= x1 + 0.01f; x += 1.5f)
+            foreach (float dz in new[] { -3.6f, -1.2f })
+                Prim(g, PrimitiveType.Cylinder, "Pilote", new Vector3(x, deckY - 0.5f, zr + dz), new Vector3(0.22f, 0.8f, 0.22f), mTimber);
+        Boat(g, new Vector3((x0 + x1) / 2f, WaterLevel + 0.05f, zr + 0.2f), 4f);
+        // canastas y barriles sobre el muelle
+        for (int i = 0; i < 4; i++)
+            Prim(g, PrimitiveType.Cylinder, "Canasta", new Vector3(R(x0 + 0.5f, x1 - 0.5f), deckY + 0.25f, zr - R(2.6f, 3.4f)), new Vector3(0.55f, 0.22f, 0.55f), mPlank);
+
+        // lirios y nenúfares en los remansos
+        for (int i = 0; i < 70; i++)
+        {
+            float x = R(RiverStartX + 3f, 60f), z = Meander(x) + R(-3.2f, 3.2f) * (rng.NextDouble() < 0.5 ? 1f : -1f);
+            if (Mathf.Abs(z - Meander(x)) < 1.6f) continue;   // al centro corre el agua
+            var pad = Prim(g, PrimitiveType.Cylinder, "Nenufar", new Vector3(x, WaterLevel + 0.02f, z), new Vector3(R(0.5f, 0.9f), 0.01f, R(0.5f, 0.9f)), mLily);
+            pad.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            if (rng.NextDouble() < 0.35)
+                Prim(g, PrimitiveType.Sphere, "Flor", new Vector3(x, WaterLevel + 0.12f, z), new Vector3(0.22f, 0.14f, 0.22f), mLilyFlower);
+        }
+
+        // enredaderas colgando de las orillas del cañón
+        for (int i = 0, tries = 0; i < 40 && tries < 2000; tries++)
+        {
+            float x = R(RiverStartX + 1f, 45f), sz = rng.NextDouble() < 0.5 ? 1f : -1f;
+            for (float dz = 0f; dz < 9f; dz += 0.35f)
+            {
+                float z = Meander(x) + sz * (9.2f - dz);
+                float hi = Height(x, z), lo = Height(x, z - sz * 0.6f);
+                if (hi - lo < 0.8f) continue;
+                Vine(g, new Vector3(x, hi, z - sz * 0.32f), Mathf.Min(hi - lo, 3.5f));
+                i++;
+                break;
+            }
+        }
+    }
+
+    void Boat(Transform parent, Vector3 pos, float len)
+    {
+        var b = Group("Barca", parent);
+        b.localPosition = pos;
+        b.localRotation = Quaternion.Euler(0f, R(-8f, 8f), 0f);
+        Box(b, "Fondo", new Vector3(0f, 0.05f, 0f), new Vector3(len - 0.6f, 0.12f, 1.1f), mPlank, false);
+        foreach (float sz in new[] { -1f, 1f })
+        {
+            var side = Box(b, "Costado", new Vector3(0f, 0.3f, sz * 0.62f), new Vector3(len - 0.3f, 0.45f, 0.1f), mDoor, false);
+            side.transform.localRotation = Quaternion.Euler(sz * 14f, 0f, 0f);
+        }
+        foreach (float sx in new[] { -1f, 1f })
+        {
+            var bow = Box(b, "Proa", new Vector3(sx * (len / 2f - 0.25f), 0.3f, 0f), new Vector3(0.1f, 0.45f, 1.1f), mDoor, false);
+            bow.transform.localRotation = Quaternion.Euler(0f, 0f, sx * -20f);
+        }
+        Box(b, "Banco", new Vector3(0f, 0.32f, 0f), new Vector3(0.35f, 0.08f, 1.15f), mPlank, false);
+        var oar = Box(b, "Remo", new Vector3(0.6f, 0.4f, 0.3f), new Vector3(2.2f, 0.06f, 0.1f), mTimber, false);
+        oar.transform.localRotation = Quaternion.Euler(0f, 20f, 8f);
+    }
+
+    /// <summary>Enredadera que cuelga de una orilla: bultos de hojas que se van haciendo chicos hacia abajo.</summary>
+    void Vine(Transform parent, Vector3 top, float drop)
+    {
+        EnsurePlantMeshes();
+        var v = Group("Enredadera", parent);
+        v.localPosition = top;
+        int n = Mathf.Max(2, Mathf.RoundToInt(drop / 0.45f));
+        for (int i = 0; i < n; i++)
+        {
+            float s = Mathf.Lerp(0.9f, 0.35f, i / (float)n);
+            var c = MeshObject(v, "Hojas", blobMeshes[rng.Next(blobMeshes.Length)], mLeavesPix, false);
+            c.transform.localPosition = new Vector3(R(-0.25f, 0.25f), -i * 0.45f, R(-0.1f, 0.1f));
+            c.transform.localScale = new Vector3(s * R(0.9f, 1.4f), s, s * 0.6f);
+        }
+    }
+
+    /// <summary>Hiedra pegada a un muro o columna (bulto de hojas pixel).</summary>
+    GameObject Ivy(Transform parent, Vector3 pos, Vector3 scale)
+    {
+        EnsurePlantMeshes();
+        var go = MeshObject(parent, "Hiedra", blobMeshes[rng.Next(blobMeshes.Length)], mLeavesPix, false);
+        go.transform.localPosition = pos;
+        go.transform.localScale = scale;
+        return go;
     }
 
     // ------------------------------------------------------------------ terraza y ruinas
@@ -274,7 +246,7 @@ public class DioramaBuilder : MonoBehaviour
         {
             float x = R(r.xMin + 0.5f, r.xMax - 0.5f);
             if (Mathf.Abs(x) < StairW / 2f + 0.3f) continue;
-            var v = Prim(t, PrimitiveType.Sphere, "Hiedra", new Vector3(x, R(0.8f, TerraceY), r.yMin - 0.12f), new Vector3(R(0.6f, 1.3f), R(0.6f, 1.6f), 0.35f), mLeaves[rng.Next(mLeaves.Length)]);
+            var v = Ivy(t, new Vector3(x, R(0.8f, TerraceY), r.yMin - 0.12f), new Vector3(R(0.6f, 1.3f), R(0.6f, 1.6f), 0.35f));
             v.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
@@ -322,7 +294,7 @@ public class DioramaBuilder : MonoBehaviour
         float y = TerraceY;
         // columnas: unas enteras con capitel, otras rotas
         float[] xs = { -11f, 11f };
-        float[] zs = { 19.5f, 25f, 30.5f };
+        float[] zs = { 21.5f, 27f, 32.5f };
         int k = 0;
         foreach (float x in xs)
             foreach (float z in zs)
@@ -346,10 +318,10 @@ public class DioramaBuilder : MonoBehaviour
             b.transform.localRotation = Quaternion.Euler(R(-8f, 8f), R(0f, 90f), R(-8f, 8f));
         }
         // columna caída
-        var fallen = Prim(g, PrimitiveType.Cylinder, "ColumnaCaida", new Vector3(-6f, y + 0.45f, 21f), new Vector3(0.9f, 1.8f, 0.9f), mStone, true);
+        var fallen = Prim(g, PrimitiveType.Cylinder, "ColumnaCaida", new Vector3(-6f, y + 0.45f, 23f), new Vector3(0.9f, 1.8f, 0.9f), mStone, true);
         fallen.transform.localRotation = Quaternion.Euler(0f, 30f, 90f);
         // braseros en las esquinas del patio
-        foreach (var c in new[] { new Vector2(-12.5f, 17.8f), new Vector2(12.5f, 17.8f), new Vector2(-12.5f, 31.5f), new Vector2(12.5f, 31.5f) })
+        foreach (var c in new[] { new Vector2(-12.5f, 19.8f), new Vector2(12.5f, 19.8f), new Vector2(-12.5f, 33.5f), new Vector2(12.5f, 33.5f) })
             Brazier(g, new Vector3(c.x, y, c.y));
         // estatua al centro del fondo (pedestal + figura)
         Box(g, "Pedestal", new Vector3(0f, y + 0.6f, zb - 0.2f), new Vector3(1.6f, 1.2f, 1.6f), mStone, true);
@@ -358,7 +330,7 @@ public class DioramaBuilder : MonoBehaviour
         // hiedra en ruinas
         for (int i = 0; i < 30; i++)
         {
-            var v = Prim(g, PrimitiveType.Sphere, "Hiedra", new Vector3(R(r.xMin + 1f, r.xMax - 1f), y + R(0.1f, 0.5f), R(r.yMax - 3f, r.yMax - 0.6f)), new Vector3(R(0.5f, 1.2f), R(0.3f, 0.7f), R(0.5f, 1.2f)), mLeaves[rng.Next(mLeaves.Length)]);
+            var v = Ivy(g, new Vector3(R(r.xMin + 1f, r.xMax - 1f), y + R(0.1f, 0.5f), R(r.yMax - 3f, r.yMax - 0.6f)), new Vector3(R(0.5f, 1.2f), R(0.3f, 0.7f), R(0.5f, 1.2f)));
             v.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
@@ -404,12 +376,11 @@ public class DioramaBuilder : MonoBehaviour
         // hiedra trepando
         for (int i = 0; i < 4; i++)
         {
-            var v = Prim(c, PrimitiveType.Sphere, "Hiedra", new Vector3(R(-0.45f, 0.45f), R(0.5f, height * 0.8f), R(-0.45f, 0.45f)), new Vector3(R(0.4f, 0.7f), R(0.5f, 1f), R(0.4f, 0.7f)), mLeaves[rng.Next(mLeaves.Length)]);
+            var v = Ivy(c, new Vector3(R(-0.45f, 0.45f), R(0.5f, height * 0.8f), R(-0.45f, 0.45f)), new Vector3(R(0.4f, 0.7f), R(0.5f, 1f), R(0.4f, 0.7f)));
             v.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
         var col = c.gameObject.AddComponent<BoxCollider>();
         col.center = new Vector3(0f, height / 2f, 0f); col.size = new Vector3(1.1f, height, 1.1f);
-        c.gameObject.AddComponent<OccluderFade>();
     }
 
     /// <summary>Arco de medio punto de dovelas, con su arranque a la altura 'top' (centro del arco en x).</summary>
@@ -446,24 +417,24 @@ public class DioramaBuilder : MonoBehaviour
     void BuildVillage()
     {
         var v = Group("Pueblo", root);
-        House(v, new Vector3(-15f, 0f, -18f), 12f, 6.5f, 5f, 3.4f, true);
-        House(v, new Vector3(16f, 0f, -19f), -8f, 7.5f, 5.5f, 3.6f, true);
-        House(v, new Vector3(-26f, 0f, -6.5f), 90f, 5f, 4.2f, 3f, false);
-        House(v, new Vector3(24f, 0f, -6.5f), -90f, 5.5f, 4.5f, 3.2f, false);
-        House(v, new Vector3(-24f, 0f, 14f), 160f, 6f, 5f, 3.4f, true);
-        House(v, new Vector3(24f, 0f, 13f), 200f, 6f, 4.6f, 3.2f, false);
-        Stall(v, new Vector3(7.5f, 0f, -10f), -90f);
-        Well(v, new Vector3(-7f, 0f, -21f));
+        House(v, new Vector3(-15f, 0f, -19.5f), 12f, 6.5f, 5f, 3.4f, true);
+        House(v, new Vector3(17f, 0f, -21f), -8f, 7.5f, 5.5f, 3.6f, true);
+        House(v, new Vector3(-26.5f, 0f, -21.5f), 90f, 5f, 4.2f, 3f, false);
+        House(v, new Vector3(27f, 0f, -18f), -90f, 5.5f, 4.5f, 3.2f, false);
+        House(v, new Vector3(-23f, 0f, 17f), 160f, 6f, 5f, 3.4f, true);
+        House(v, new Vector3(24f, 0f, 17f), 200f, 6f, 4.6f, 3.2f, false);
+        Stall(v, new Vector3(8.5f, 0f, -17.5f), -90f);
+        Well(v, new Vector3(-7f, 0f, -23f));
         // barriles y cajas junto a casas y el mercado
-        foreach (var p in new[] { new Vector3(10.5f, 0f, -8.6f), new Vector3(-11f, 0f, -15f), new Vector3(12f, 0f, -16.5f), new Vector3(-21f, 0f, -9f), new Vector3(20.5f, 0f, -9.5f), new Vector3(-4f, 0f, 9f) })
+        foreach (var p in new[] { new Vector3(11.5f, 0f, -15.2f), new Vector3(-10.5f, 0f, -16.4f), new Vector3(-21.5f, 0f, -16.5f), new Vector3(22f, 0f, -16.2f), new Vector3(-5.5f, 0f, 14.5f), new Vector3(19f, 0f, 14f) })
             Clutter(v, p);
         // huerto con cerca junto a la primera casa
-        Garden(v, new Vector3(-8f, 0f, -26f), 7f, 4f);
+        Garden(v, new Vector3(-8f, 0f, -26.8f), 7f, 3f);
         // flores
         for (int i = 0; i < 140; i++)
         {
-            Vector2 q = new Vector2(R(Walk.xMin + 2f, Walk.xMax - 2f), R(Walk.yMin + 2f, 9f));
-            if (!Free(q, 0.3f)) continue;
+            Vector2 q = new Vector2(R(Walk.xMin + 2f, Walk.xMax - 2f), R(Walk.yMin + 2f, Walk.yMax - 2f));
+            if (!Free(q, 0.3f) || Mathf.Abs(Height(q.x, q.y)) > 0.01f || Terrace.Contains(q)) continue;
             var f = Prim(v, PrimitiveType.Sphere, "Flor", new Vector3(q.x, 0.12f, q.y), Vector3.one * R(0.12f, 0.22f), mFlowers[rng.Next(mFlowers.Length)]);
             f.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
@@ -520,7 +491,6 @@ public class DioramaBuilder : MonoBehaviour
         }
         var col = h.gameObject.AddComponent<BoxCollider>();
         col.center = new Vector3(0f, (top + roofH) / 2f, 0f); col.size = new Vector3(w + 0.3f, top + roofH, d + 0.3f);
-        h.gameObject.AddComponent<OccluderFade>();
         float rad = Mathf.Max(w, d) / 2f + 1.2f;
         blocked.Add(new Rect(pos.x - rad, pos.z - rad, rad * 2f, rad * 2f));
     }
@@ -646,7 +616,7 @@ public class DioramaBuilder : MonoBehaviour
     void BuildLamps()
     {
         var g = Group("Faroles", root);
-        foreach (var p in new[] { new Vector2(2.6f, -25f), new Vector2(-2.6f, -17f), new Vector2(2.6f, -6f), new Vector2(-2.6f, 5f), new Vector2(3f, 9f), new Vector2(-3f, 9f), new Vector2(-17.5f, -13.8f), new Vector2(17f, -13.8f) })
+        foreach (var p in new[] { new Vector2(2.5f, -26f), new Vector2(-2.5f, -18f), new Vector2(-2.6f, -11.6f), new Vector2(2.6f, 11.6f), new Vector2(-17.5f, -15.2f), new Vector2(17f, -15.2f), new Vector2(-27.4f, 11f), new Vector2(-14f, 14.2f) })
         {
             var t = Group("Farol", g);
             t.localPosition = new Vector3(p.x, 0f, p.y);
@@ -658,95 +628,7 @@ public class DioramaBuilder : MonoBehaviour
         }
     }
 
-    void BuildTrees()
-    {
-        var g = Group("Arboles", root);
-        // unos cuantos dentro del pueblo
-        int placed = 0;
-        for (int tries = 0; placed < 16 && tries < 3000; tries++)
-        {
-            Vector2 q = new Vector2(R(Walk.xMin + 2f, Walk.xMax - 2f), R(Walk.yMin + 2f, Walk.yMax - 2f));
-            if (!Free(q, 2f)) continue;
-            if (rng.NextDouble() < 0.5) Tree(g, q, R(0.9f, 1.25f)); else Pine(g, q, R(0.9f, 1.3f));
-            blocked.Add(new Rect(q.x - 1.5f, q.y - 1.5f, 3f, 3f));
-            placed++;
-        }
-        // bosque alrededor (fuera de la zona jugable), más denso al norte detrás de las ruinas
-        for (int i = 0, tries = 0; i < 150 && tries < 6000; tries++)
-        {
-            Vector2 q = new Vector2(R(-62f, 62f), R(-62f, CliffZ - 2.5f));
-            bool outside = !Walk.Contains(q) || q.y > 34f;
-            if (!outside || Mathf.Abs(q.y) < CanalHalf + 2f) continue;
-            if (q.y < Walk.yMin && q.y > Walk.yMin - 14f && rng.NextDouble() < 0.85) continue;   // al sur, despejado: ahí está la cámara
-            if (q.y > 34f && Mathf.Abs(q.x) < 12f && q.y < 42f) continue;   // claro detrás del patio
-            if (rng.NextDouble() < 0.65) Pine(g, q, R(1f, 1.7f), collider: false); else Tree(g, q, R(1f, 1.5f), collider: false);
-            i++;
-        }
-    }
-
-    Mesh coneMesh, trunkMesh;
-
-    void Pine(Transform parent, Vector2 q, float s, bool collider = true)
-    {
-        if (coneMesh == null) coneMesh = Cone(1f, 1f, 9);
-        var t = Group("Pino", parent);
-        t.localPosition = new Vector3(q.x, 0f, q.y);
-        t.localRotation = Quaternion.Euler(0f, R(0f, 360f), 0f);
-        t.localScale = Vector3.one * s;
-        Prim(t, PrimitiveType.Cylinder, "Tronco", new Vector3(0f, 0.7f, 0f), new Vector3(0.3f, 0.7f, 0.3f), mBark);
-        for (int i = 0; i < 4; i++)
-        {
-            var c = MeshObject(t, "Copa", coneMesh, mPine, true);
-            float r = 1.6f - i * 0.33f;
-            c.transform.localPosition = new Vector3(0f, 1.1f + i * 0.95f, 0f);
-            c.transform.localScale = new Vector3(r, 1.6f, r);
-        }
-        if (collider) { var cap = t.gameObject.AddComponent<CapsuleCollider>(); cap.radius = 0.4f; cap.height = 3f; cap.center = new Vector3(0f, 1.5f, 0f); }
-        t.gameObject.AddComponent<OccluderFade>();   // si queda entre la cámara y Abby se deja de dibujar
-    }
-
-    void Tree(Transform parent, Vector2 q, float s, bool collider = true)
-    {
-        var t = Group("Arbol", parent);
-        t.localPosition = new Vector3(q.x, 0f, q.y);
-        t.localRotation = Quaternion.Euler(0f, R(0f, 360f), 0f);
-        t.localScale = Vector3.one * s;
-        Prim(t, PrimitiveType.Cylinder, "Tronco", new Vector3(0f, 1.2f, 0f), new Vector3(0.38f, 1.2f, 0.38f), mBark);
-        var leaf = mLeaves[rng.Next(mLeaves.Length)];
-        int blobs = rng.Next(3, 5);
-        for (int b = 0; b < blobs; b++)
-        {
-            float w = R(1.8f, 2.6f) - b * 0.25f;
-            Prim(t, PrimitiveType.Sphere, "Copa", new Vector3(R(-0.7f, 0.7f), 2.7f + b * 0.55f + R(0f, 0.3f), R(-0.7f, 0.7f)), new Vector3(w, w * R(0.75f, 0.9f), w), leaf);
-        }
-        if (collider) { var cap = t.gameObject.AddComponent<CapsuleCollider>(); cap.radius = 0.45f; cap.height = 3f; cap.center = new Vector3(0f, 1.5f, 0f); }
-        t.gameObject.AddComponent<OccluderFade>();
-    }
-
-    void BuildGrass()
-    {
-        var g = Group("Pasto", root);
-        var tuft = TuftMesh();
-        var batch = new List<CombineInstance>();
-        int chunk = 0;
-        for (int i = 0, tries = 0; i < grassTufts && tries < grassTufts * 6; tries++)
-        {
-            Vector2 q = new Vector2(R(-45f, 45f), R(-45f, CliffZ - 1f));
-            if (!Free(q, 0f) || Terrace.Contains(q)) continue;
-            float s = R(0.7f, 1.5f);
-            batch.Add(new CombineInstance { mesh = tuft, transform = Matrix4x4.TRS(new Vector3(q.x, 0f, q.y), Quaternion.Euler(0f, R(0f, 360f), 0f), Vector3.one * s) });
-            i++;
-            if (batch.Count == 1500) { FlushGrass(g, batch, chunk++); batch.Clear(); }
-        }
-        if (batch.Count > 0) FlushGrass(g, batch, chunk);
-    }
-
-    void FlushGrass(Transform parent, List<CombineInstance> batch, int index)
-    {
-        var m = new Mesh { name = "Pasto_" + index, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
-        m.CombineMeshes(batch.ToArray(), true, true);
-        MeshObject(parent, "Pasto_" + index, m, mTuft, false);
-    }
+    [System.NonSerialized] Mesh coneMesh;
 
     bool Free(Vector2 q, float margin)
     {
@@ -761,17 +643,18 @@ public class DioramaBuilder : MonoBehaviour
     {
         var g = Group("Fondo", root);
         if (coneMesh == null) coneMesh = Cone(1f, 1f, 9);
-        // cordillera al norte (la niebla la azula)
-        for (int i = 0; i < 16; i++)
+        Flat(g, "Valle", new Vector3(0f, -ValleyDepth, 260f), 700f, 320f, mGrass, 0.05f);
+        var river = Flat(g, "RioValle", new Vector3(0f, -ValleyDepth + 0.3f, 125f), 700f, 14f, mWater, 0.05f);
+        river.transform.localRotation = Quaternion.Euler(0f, 8f, 0f);
+        // cordillera al norte: bultos de roca facetados (la niebla los azula)
+        EnsurePlantMeshes();
+        for (int i = 0; i < 18; i++)
         {
-            float x = -200f + i * 27f + R(-8f, 8f), z = R(220f, 300f), h = R(80f, 140f), r = R(50f, 80f);
-            var m = MeshObject(g, "Montana", coneMesh, mCliff, false);
-            m.transform.localPosition = new Vector3(x, -ValleyDepth, z);
-            m.transform.localScale = new Vector3(r, h, r * R(0.7f, 1f));
+            float x = -220f + i * 26f + R(-8f, 8f), z = R(230f, 320f), h = R(90f, 160f), r = R(45f, 75f);
+            var m = MeshObject(g, "Montana", blobMeshes[rng.Next(blobMeshes.Length)], mMountain, false);
+            m.transform.localPosition = new Vector3(x, -ValleyDepth - h * 0.1f, z);
+            m.transform.localScale = new Vector3(r * 2f, h * 2f, r * 1.6f);
             m.transform.localRotation = Quaternion.Euler(0f, R(0f, 360f), 0f);
-            var snow = MeshObject(g, "Nieve", coneMesh, mSnow, false);
-            snow.transform.localPosition = new Vector3(x, -ValleyDepth + h * 0.62f, z);
-            snow.transform.localScale = new Vector3(r * 0.4f, h * 0.38f + 0.5f, r * 0.4f * 0.9f);
         }
         // colinas y bosque en el valle
         for (int i = 0; i < 12; i++)
@@ -781,14 +664,16 @@ public class DioramaBuilder : MonoBehaviour
         }
         for (int i = 0; i < 140; i++)
         {
-            var q = new Vector2(R(-160f, 160f), R(70f, 190f));
-            if (Mathf.Abs(q.y - (105f + q.x * Mathf.Tan(8f * Mathf.Deg2Rad))) < 10f) continue;   // el río
+            var q = new Vector2(R(-160f, 160f), R(85f, 200f));
+            if (Mathf.Abs(q.y - (125f + q.x * Mathf.Tan(8f * Mathf.Deg2Rad))) < 10f) continue;   // el río
+            float gy = TerrainArea.Contains(q) ? Height(q.x, q.y) : -ValleyDepth;
+            if (gy > -ValleyDepth + 0.5f) continue;
             var t = Group("PinoValle", g);
-            t.localPosition = new Vector3(q.x, -ValleyDepth, q.y);
+            t.localPosition = new Vector3(q.x, gy, q.y);
             float s = R(2.5f, 4.5f);
             for (int k = 0; k < 3; k++)
             {
-                var c = MeshObject(t, "Copa", coneMesh, mPine, false);
+                var c = MeshObject(t, "Copa", coneMesh, mPinePix, false);
                 c.transform.localPosition = new Vector3(0f, s * (0.8f + k * 0.9f), 0f);
                 c.transform.localScale = new Vector3(s * (1.5f - k * 0.35f), s * 1.6f, s * (1.5f - k * 0.35f));
             }
@@ -821,23 +706,23 @@ public class DioramaBuilder : MonoBehaviour
         // sol de media tarde, cálido, con sombras suaves
         var sun = new GameObject("Sol").AddComponent<Light>();
         sun.transform.SetParent(g, false);
-        sun.transform.localRotation = Quaternion.Euler(42f, 32f, 0f);
+        sun.transform.localRotation = Quaternion.Euler(46f, 34f, 0f);
         sun.type = LightType.Directional;
-        sun.color = new Color(1f, 0.92f, 0.8f);
-        sun.intensity = 1.7f;
+        sun.color = new Color(1f, 0.93f, 0.8f);
+        sun.intensity = 1.9f;
         sun.shadows = LightShadows.Soft;
         sun.shadowStrength = 0.8f;
         RenderSettings.sun = sun;
 
         var sky = g.gameObject.AddComponent<ExteriorSky>();
-        sky.zenith = new Color(0.3f, 0.52f, 0.86f);
-        sky.horizon = new Color(0.98f, 0.86f, 0.7f);
+        sky.zenith = new Color(0.33f, 0.58f, 0.95f);
+        sky.horizon = new Color(1f, 0.9f, 0.76f);
         sky.ground = new Color(0.36f, 0.34f, 0.3f);
         sky.sunColor = new Color(1f, 0.88f, 0.7f) * 1.5f;
         sky.cloudColor = new Color(1f, 0.97f, 0.94f);
         sky.cloudCover = 0.42f;
-        sky.fogStart = 70f;
-        sky.fogEnd = 320f;
+        sky.fogStart = 90f;
+        sky.fogEnd = 650f;
 #if UNITY_EDITOR
         var skyMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Exterior/Sky.mat");
         if (skyMat != null) RenderSettings.skybox = skyMat;
@@ -867,6 +752,55 @@ public class DioramaBuilder : MonoBehaviour
         col.color = grad;
         ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = mDust;
         ps.Play();
+
+        Sparkles(g);
+        GodRays(g);
+    }
+
+    /// <summary>Destellos del sol en el agua: puntitos que aparecen y se apagan sobre el río (el sello del HD-2D).</summary>
+    void Sparkles(Transform parent)
+    {
+        float len = 90f;
+        int n = 6;
+        for (int i = 0; i < n; i++)
+        {
+            float x = RiverStartX + (i + 0.5f) * len / n;
+            var ps = new GameObject("Destellos").AddComponent<ParticleSystem>();
+            ps.transform.SetParent(parent, false);
+            ps.transform.localPosition = new Vector3(x, WaterLevel + 0.06f, Meander(x));
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.25f, 0.7f);
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.16f);
+            main.startColor = new Color(1f, 1f, 1f, 1f);
+            main.maxParticles = 200; main.prewarm = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var em = ps.emission; em.rateOverTime = 140f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(len / n, 0.02f, 6.4f);
+            var sz = ps.sizeOverLifetime; sz.enabled = true;
+            sz.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.3f, 1f), new Keyframe(1f, 0f)));
+            ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = mSparkle;
+            ps.Play();
+        }
+    }
+
+    /// <summary>Rayos de sol inclinados que cruzan el aire (planos aditivos que miran a la cámara en Y).</summary>
+    void GodRays(Transform parent)
+    {
+        var g = Group("Rayos", parent);
+        foreach (var p in new[] { new Vector3(-14f, 9f, -4f), new Vector3(6f, 10f, 6f), new Vector3(20f, 9f, -10f), new Vector3(-4f, 11f, 26f), new Vector3(-24f, 8f, 8f) })
+        {
+            var m = new Mesh { name = "Rayo" };
+            float w = R(4f, 7f), h = 22f;
+            m.vertices = new[] { new Vector3(-w / 2f, -h, 0f), new Vector3(w / 2f, -h, 0f), new Vector3(-w / 2f, 0f, 0f), new Vector3(w / 2f, 0f, 0f) };
+            m.uv = new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f) };
+            m.triangles = new[] { 0, 2, 3, 0, 3, 1, 0, 3, 2, 0, 1, 3 };   // dos caras
+            m.RecalculateNormals(); m.RecalculateBounds();
+            var go = MeshObject(g, "Rayo", m, mRay, false);
+            go.transform.localPosition = p + Vector3.up * 8f;
+            go.transform.localRotation = Quaternion.Euler(-28f, 34f + R(-10f, 10f), 0f);   // inclinados como el sol
+        }
     }
 
     void Smoke(Transform parent, Vector3 pos, Color color, bool embers)
@@ -914,6 +848,69 @@ public class DioramaBuilder : MonoBehaviour
         mFlowers = new[] { Plain("Dio_FlorRoja", new Color(0.9f, 0.2f, 0.25f), 0.2f), Plain("Dio_FlorAmarilla", new Color(1f, 0.85f, 0.25f), 0.2f),
                            Plain("Dio_FlorBlanca", new Color(1f, 0.97f, 0.95f), 0.2f), Plain("Dio_FlorLila", new Color(0.65f, 0.45f, 0.9f), 0.2f) };
         mRoof = TexMat("Dio_Tejas", RoofTexture(), null, Color.white, 0.1f);
+
+        // pixel-art (Tools/texgen/pixel_diorama.py): filtro Point para que se vea el pixel de cerca
+        mGrass = PixelMat("Dio_PastoPix", "pix_grass", new Color(1.05f, 1.08f, 0.95f), 0.05f);
+        mRock = PixelMat("Dio_RocaPix", "pix_rock", Color.white, 0.12f);
+        mDirt = PixelMat("Dio_TierraPix", "pix_dirt", Color.white, 0.05f);
+        mBarkPix = PixelMat("Dio_CortezaPix", "pix_bark", Color.white, 0.05f);
+        mPinePix = PixelMat("Dio_PinoPix", "pix_pine", new Color(1.1f, 1.15f, 1.05f), 0.05f);
+        mLeavesPix = PixelMat("Dio_HojasPix", "pix_leaves", new Color(1.15f, 1.2f, 1.05f), 0.08f);
+        mLeavesAutumn = PixelMat("Dio_HojasOtonoPix", "pix_leaves_autumn", new Color(1.25f, 1.05f, 0.85f), 0.08f);
+        mTuft = Saved("Dio_Mechon", () => { var m = new Material(Ext("GrassTuft")); m.SetColor("_BaseColor", new Color(0.78f, 0.9f, 0.55f)); return m; });
+        mWaterfall = Saved("Dio_Cascada", () => { var m = new Material(Ext("Waterfall")); m.SetColor("_Color", new Color(0.35f, 0.82f, 0.92f, 0.85f)); return m; });
+        mMountain = Saved("Dio_Montana2", () => { var m = new Material(mRock); m.SetColor("_BaseColor", new Color(0.36f, 0.44f, 0.5f)); m.mainTextureScale = new Vector2(3f, 3f); return m; });
+        mPlank = PixelMat("Dio_TablonPix", "pix_bark", new Color(1.55f, 1.4f, 1.25f), 0.05f);   // madera gastada, no naranja
+        mLily = Plain("Dio_Nenufar", new Color(0.3f, 0.55f, 0.25f), 0.4f);
+        mLilyFlower = Plain("Dio_Lirio", new Color(1f, 0.62f, 0.8f), 0.3f);
+        // agua turquesa brillante (DQ3 HD-2D)
+        mWater = Saved("Dio_Agua", () =>
+        {
+            var m = new Material(Ext("LakeWater"));
+            m.SetColor("_ShallowColor", new Color(0.25f, 0.85f, 0.92f, 0.55f));
+            m.SetColor("_DeepColor", new Color(0.03f, 0.35f, 0.6f, 0.92f));
+            m.SetFloat("_DepthDistance", 1.4f);
+            m.SetFloat("_Reflection", 0.6f);
+            m.SetFloat("_WaveHeight", 0.03f);
+            m.SetFloat("_WaveSpeed", 0.9f);
+            m.SetFloat("_FoamDistance", 0.45f);
+            return m;
+        });
+        // rayos de luz y destellos (aditivos, shader Abby/Particle)
+        mRay = Saved("Dio_Rayo", () =>
+        {
+            var m = new Material(Shader.Find("Abby/Particle"));
+#if UNITY_EDITOR
+            m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Diorama/rayo.png"));
+#endif
+            m.SetColor("_BaseColor", new Color(1f, 0.9f, 0.7f, 0.18f));
+            m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            m.renderQueue = 3100;
+            return m;
+        });
+        mSparkle = Saved("Dio_Destello", () =>
+        {
+            var m = new Material(mDust);
+            m.SetColor("_BaseColor", new Color(1.6f, 1.8f, 2f, 1f));
+            return m;
+        });
+    }
+
+    Material PixelMat(string name, string tex, Color tint, float smooth)
+    {
+        string path = "Assets/Textures/Diorama/" + tex + ".png";
+#if UNITY_EDITOR
+        var imp = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (imp != null && (imp.filterMode != FilterMode.Point || imp.textureCompression != TextureImporterCompression.Uncompressed))
+        {
+            imp.filterMode = FilterMode.Point;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.wrapMode = TextureWrapMode.Repeat;
+            imp.SaveAndReimport();
+        }
+#endif
+        return TexMat(name, path, null, tint, smooth);
     }
 
     static Shader LitShader => Shader.Find("Universal Render Pipeline/Lit");
@@ -1119,7 +1116,7 @@ public class DioramaBuilder : MonoBehaviour
         return l;
     }
 
-    Mesh tuftCache;
+    [System.NonSerialized] Mesh tuftCache;
     Mesh TuftMesh()
     {
         if (tuftCache != null) return tuftCache;

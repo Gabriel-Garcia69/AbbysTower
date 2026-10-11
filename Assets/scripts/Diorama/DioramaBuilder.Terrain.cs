@@ -140,6 +140,48 @@ public partial class DioramaBuilder
         go.AddComponent<MeshCollider>().sharedMesh = m;
     }
 
+    /// <summary>
+    /// Alrededores: mesetas con bosque más allá del terreno (este, oeste y sur) a la altura de sus bordes, risco al
+    /// norte de esas mesetas y cordilleras a los lados. Así, hasta donde llega la vista hay terreno y luego cielo.
+    /// </summary>
+    void BuildOuterWorld()
+    {
+        var g = Group("Alrededores", root);
+        float a = TerrainArea.xMin, b = TerrainArea.xMax, s = TerrainArea.yMin, north = CliffZ - 2f;
+        const float far = 700f;
+        Flat(g, "MesetaOeste", new Vector3((-far + a) / 2f, 7f, (-far + north) / 2f), a + far, north + far, mGrass, 0.25f);
+        Flat(g, "MesetaEste", new Vector3((b + far) / 2f, 7f, (-far + north) / 2f), far - b, north + far, mGrass, 0.25f);
+        Flat(g, "MesetaSur", new Vector3((a + b) / 2f, 3f, (-far + s) / 2f), b - a, s + far, mGrass, 0.25f);
+        // al norte las mesetas bajan al valle en escalones, como el risco del pueblo
+        float[] stepZ = { north, north + 10f, north + 22f };
+        float[] stepY = { 7f, -6f, -18f, -ValleyDepth };
+        for (int k = 0; k < stepZ.Length; k++)
+        {
+            float z0 = stepZ[k], z1 = k + 1 < stepZ.Length ? stepZ[k + 1] : z0;
+            if (k + 1 < stepZ.Length)
+            {
+                Flat(g, "EscalonOeste", new Vector3((-far + a) / 2f, stepY[k + 1], (z0 + z1) / 2f), a + far, z1 - z0, mGrass, 0.25f);
+                Flat(g, "EscalonEste", new Vector3((b + far) / 2f, stepY[k + 1], (z0 + z1) / 2f), far - b, z1 - z0, mGrass, 0.25f);
+            }
+            float h = stepY[k] - stepY[k + 1];
+            Wall(g, "RiscoOeste", new Vector3((-far + a) / 2f, (stepY[k] + stepY[k + 1]) / 2f, z0), Vector3.forward, a + far, h, mRock, 0.25f);
+            Wall(g, "RiscoEste", new Vector3((b + far) / 2f, (stepY[k] + stepY[k + 1]) / 2f, z0), Vector3.forward, far - b, h, mRock, 0.25f);
+        }
+
+        // bosque en las mesetas
+        for (int i = 0, tries = 0; i < 190 && tries < 4000; tries++)
+        {
+            var q = new Vector2(R(-230f, 230f), R(-220f, north - 3f));
+            float y;
+            if (q.x < a - 1f || q.x > b + 1f) y = 7f;
+            else if (q.y < s - 1f) y = 3f;
+            else continue;
+            float sc = R(1.2f, 2f);
+            if (rng.NextDouble() < 0.65) Pine(g, q, y, sc, false); else Tree(g, q, y, sc, false);
+            i++;
+        }
+    }
+
     // ------------------------------------------------------------------ agua
 
     void BuildWater()

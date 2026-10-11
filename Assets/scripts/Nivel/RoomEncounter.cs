@@ -48,6 +48,8 @@ public class RoomEncounter : MonoBehaviour
     public Transform player;   // vacío = busca el tag "Player"
 
     public State Current { get; private set; } = State.Esperando;
+    /// <summary>Peleas en curso en la escena (las tomas de cámara no interrumpen una pelea).</summary>
+    public static int ActiveCombats { get; private set; }
     public bool IsCleared => Current == State.Limpia;
     /// <summary>Enemigos vivos + los que faltan por llegar.</summary>
     public int Remaining => alive.Count + queue.Count;
@@ -105,6 +107,7 @@ public class RoomEncounter : MonoBehaviour
         }
 
         Current = State.Combate;
+        ActiveCombats++;
         foreach (var d in doors) if (d != null) d.SetClosed(true);
         for (int i = 0; i < spawnPoints.Length; i++) if (spawnPoints[i] != null) queue.Enqueue(i);
         Total = queue.Count;
@@ -136,9 +139,15 @@ public class RoomEncounter : MonoBehaviour
 
     void Finish()
     {
+        if (Current == State.Combate) ActiveCombats = Mathf.Max(0, ActiveCombats - 1);
         Current = State.Limpia;
         foreach (var d in doors) if (d != null) d.SetClosed(false);
         Cleared?.Invoke();
+    }
+
+    void OnDestroy()
+    {
+        if (Current == State.Combate) ActiveCombats = Mathf.Max(0, ActiveCombats - 1);
     }
 
     /// <summary>Para pruebas: mata a todos los enemigos vivos de la sala.</summary>

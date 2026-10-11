@@ -25,6 +25,8 @@ public class CameraShot : MonoBehaviour
     public float lookUp;
     [Tooltip("Cuánto se corre el centro del cuadro desde Abby (mundo): pone la vista a un lado y a Abby en un tercio.")]
     public Vector3 offset;
+    [Tooltip("Toma de vista: solo entra si Abby se detiene un momento en el área (no interrumpe al ir de paso).")]
+    public bool whenStill;
     [Tooltip("Segundos que tarda en llegar al encuadre.")]
     public float blendTime = 1.4f;
     public int priority;

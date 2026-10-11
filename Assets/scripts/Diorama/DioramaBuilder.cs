@@ -62,6 +62,7 @@ public partial class DioramaBuilder : MonoBehaviour
         BuildTrees();
         BuildGrass();
         BuildBackdrop();
+        BuildOuterWorld();
         BuildBoundary();
         BuildAtmosphere();
         BuildShots();
@@ -204,27 +205,27 @@ public partial class DioramaBuilder : MonoBehaviour
              "EL PUENTE DEL CAÑÓN", "Río abajo, el arroyo cae al cañón");
         // la cascada vista desde el arroyo, cañón abajo
         Shot(g, "Cascada", new Vector3(-29.5f, 0f, 0f), new Vector2(7f, 2f * FenceZ), -100f, 20f, 20f, 34f, 6f, new Vector3(3f, -1.5f, -2f), 1.6f, 2,
-             "LA CAÍDA DEL ARROYO", "");
+             "LA CAÍDA DEL ARROYO", "", still: true);
         // el muelle: desde el camino, la vista baja al río
         Shot(g, "Muelle", new Vector3(12.5f, 0f, -12.4f), new Vector2(9f, 3.4f), 15f, 40f, 18f, 32f, 0f, new Vector3(0f, -1.5f, 3.2f), 1.6f, 1,
-             "EL MUELLE", "");
+             "EL MUELLE", "", still: true);
         // lo alto del patio: se voltea a ver todo el pueblo
         Shot(g, "Patio", new Vector3(0f, TerraceY, Terrace.yMin + 2.2f), new Vector2(24f, 3.6f), 180f, 28f, 28f, 34f, 5f, new Vector3(0f, 0f, -9f), 1.8f, 2,
-             "LO ALTO DEL PATIO", "El pueblo del risco a tus pies");
+             "LO ALTO DEL PATIO", "El pueblo del risco a tus pies", still: true);
         // el mirador: plano abierto y bajo hacia el valle, las montañas y la torre
         Shot(g, "Mirador", new Vector3(LookoutX, 0f, CliffFenceZ + 2.4f), new Vector2(3.6f, 6.4f), -22f, 12f, 10f, 44f, 6f, new Vector3(0f, 1.2f, 2.5f), 2.2f, 3,
-             "MIRADOR DEL VALLE", "Allá arriba espera la torre");
+             "MIRADOR DEL VALLE", "Allá arriba espera la torre", still: true);
     }
 
     void Shot(Transform parent, string name, Vector3 center, Vector2 size, float yaw, float pitch, float dist, float fov, float lookUp,
-              Vector3 offset, float blend, int priority, string title = "", string subtitle = "", float intro = 0f)
+              Vector3 offset, float blend, int priority, string title = "", string subtitle = "", float intro = 0f, bool still = false)
     {
         var t = Group("Toma_" + name, parent);
         t.localPosition = center;
         var s = t.gameObject.AddComponent<CameraShot>();
         s.size = size; s.yMin = -3f; s.yMax = 6f;
         s.yaw = yaw; s.pitch = pitch; s.distance = dist; s.fov = fov; s.lookUp = lookUp; s.offset = offset;
-        s.blendTime = blend; s.priority = priority; s.title = title; s.subtitle = subtitle; s.introSeconds = intro;
+        s.blendTime = blend; s.priority = priority; s.title = title; s.subtitle = subtitle; s.introSeconds = intro; s.whenStill = still;
     }
 
     // ------------------------------------------------------------------ orilla del río: muelle, barca, lirios, enredaderas
@@ -444,15 +445,16 @@ public partial class DioramaBuilder : MonoBehaviour
 
         // la pelea: oleadas de sombras y brutos al entrar al patio
         var arena = Group("PatioRuinas", g);
-        arena.localPosition = new Vector3(0f, y, r.center.y);
+        // al fondo del patio: subir la escalinata y asomarse no inicia la pelea
+        arena.localPosition = new Vector3(0f, y, r.center.y + 3.5f);
         var enc = arena.gameObject.AddComponent<RoomEncounter>();
-        enc.size = new Vector2(r.width - 2f, r.height - 2f);
-        enc.triggerInset = 3f;
+        enc.size = new Vector2(r.width - 4f, 9f);
+        enc.triggerInset = 1.5f;
         enc.doors = new LevelDoor[0];
         enc.displayName = "Patio en ruinas";
         enc.maxAlive = 4;
         var sp = new List<Transform>();
-        foreach (var p in new[] { new Vector2(-8f, -4f), new Vector2(8f, -4f), new Vector2(0f, 4f), new Vector2(-8f, 4f), new Vector2(8f, 4f), new Vector2(0f, -3f) })
+        foreach (var p in new[] { new Vector2(-8f, -2f), new Vector2(8f, -2f), new Vector2(0f, 2f), new Vector2(-8f, 2.2f), new Vector2(8f, 2.2f), new Vector2(0f, -1.5f) })
         {
             var t = Group("Aparicion", arena);
             t.localPosition = new Vector3(p.x, 0.1f, p.y);
@@ -751,7 +753,7 @@ public partial class DioramaBuilder : MonoBehaviour
     {
         var g = Group("Fondo", root);
         if (coneMesh == null) coneMesh = Cone(1f, 1f, 9);
-        Flat(g, "Valle", new Vector3(0f, -ValleyDepth, 260f), 700f, 320f, mGrass, 0.05f);
+        Flat(g, "Valle", new Vector3(0f, -ValleyDepth - 0.3f, 230f), 1400f, 380f, mGrass, 0.05f);
         var river = Flat(g, "RioValle", new Vector3(0f, -ValleyDepth + 0.3f, 125f), 700f, 14f, mWater, 0.05f);
         river.transform.localRotation = Quaternion.Euler(0f, 8f, 0f);
         // cordillera al norte: bultos de roca facetados (la niebla los azula)
@@ -761,7 +763,7 @@ public partial class DioramaBuilder : MonoBehaviour
             float x = -260f + i * 30f + R(-10f, 10f), z = R(420f, 520f), h = R(110f, 190f), r = R(55f, 85f);   // lejos: se ven azules y dejan cielo
             var m = MeshObject(g, "Montana", blobMeshes[rng.Next(blobMeshes.Length)], mMountain, false);
             m.transform.localPosition = new Vector3(x, -ValleyDepth - h * 0.1f, z);
-            m.transform.localScale = new Vector3(r * 2f, h * 2f, r * 1.6f);
+            m.transform.localScale = new Vector3(r * 2.4f, h * 0.9f, r * 1.6f);   // cordillera baja y ancha: deja ver el cielo
             m.transform.localRotation = Quaternion.Euler(0f, R(0f, 360f), 0f);
         }
         // colinas y bosque en el valle
@@ -816,23 +818,30 @@ public partial class DioramaBuilder : MonoBehaviour
         // sol de media tarde, cálido, con sombras suaves
         var sun = new GameObject("Sol").AddComponent<Light>();
         sun.transform.SetParent(g, false);
-        sun.transform.localRotation = Quaternion.Euler(46f, 34f, 0f);
+        sun.transform.localRotation = Quaternion.Euler(38f, 30f, 0f);
         sun.type = LightType.Directional;
-        sun.color = new Color(1f, 0.93f, 0.8f);
-        sun.intensity = 1.9f;
+        sun.color = new Color(1f, 0.88f, 0.7f);
+        sun.intensity = 1.85f;
         sun.shadows = LightShadows.Soft;
         sun.shadowStrength = 0.8f;
         RenderSettings.sun = sun;
 
         var sky = g.gameObject.AddComponent<ExteriorSky>();
-        sky.zenith = new Color(0.33f, 0.58f, 0.95f);
-        sky.horizon = new Color(1f, 0.9f, 0.76f);
-        sky.ground = new Color(0.36f, 0.34f, 0.3f);
-        sky.sunColor = new Color(1f, 0.88f, 0.7f) * 1.5f;
-        sky.cloudColor = new Color(1f, 0.97f, 0.94f);
-        sky.cloudCover = 0.42f;
-        sky.fogStart = 90f;
-        sky.fogEnd = 650f;
+        // tarde dorada de cuento: azul claro arriba, durazno en el horizonte, nubes cálidas
+        sky.zenith = new Color(0.42f, 0.62f, 0.9f);
+        sky.horizon = new Color(1f, 0.84f, 0.64f);
+        sky.ground = new Color(0.6f, 0.68f, 0.78f);
+        sky.sunColor = new Color(1f, 0.85f, 0.6f) * 1.7f;
+        sky.sunSize = 0.004f;
+        sky.cloudColor = new Color(1f, 0.93f, 0.86f);
+        sky.cloudCover = 0.55f;
+        // bruma azul clara (perspectiva aérea): lo lejano se aclara y se funde con el cielo sin apagar los colores
+        sky.driveFog = false;
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.Linear;
+        RenderSettings.fogColor = new Color(0.74f, 0.83f, 0.93f);
+        RenderSettings.fogStartDistance = 120f;
+        RenderSettings.fogEndDistance = 820f;
 #if UNITY_EDITOR
         var skyMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Exterior/Sky.mat");
         if (skyMat != null) RenderSettings.skybox = skyMat;
@@ -864,7 +873,6 @@ public partial class DioramaBuilder : MonoBehaviour
         ps.Play();
 
         Sparkles(g);
-        GodRays(g);
     }
 
     /// <summary>Destellos del sol en el agua: puntitos que aparecen y se apagan sobre el río (el sello del HD-2D).</summary>
@@ -969,7 +977,7 @@ public partial class DioramaBuilder : MonoBehaviour
         mLeavesAutumn = PixelMat("Dio_HojasOtonoPix", "pix_leaves_autumn", new Color(1.25f, 1.05f, 0.85f), 0.08f);
         mTuft = Saved("Dio_Mechon", () => { var m = new Material(Ext("GrassTuft")); m.SetColor("_BaseColor", new Color(0.78f, 0.9f, 0.55f)); return m; });
         mWaterfall = Saved("Dio_Cascada", () => { var m = new Material(Ext("Waterfall")); m.SetColor("_Color", new Color(0.35f, 0.82f, 0.92f, 0.85f)); return m; });
-        mMountain = Saved("Dio_Montana3", () => { var m = new Material(mRock); m.SetColor("_BaseColor", new Color(0.5f, 0.6f, 0.72f)); m.mainTextureScale = new Vector2(3f, 3f); return m; });
+        mMountain = Saved("Dio_Montana4", () => { var m = new Material(mRock); m.SetColor("_BaseColor", new Color(0.68f, 0.78f, 0.92f)); m.mainTextureScale = new Vector2(3f, 3f); return m; });
         mPlank = PixelMat("Dio_TablonPix", "pix_bark", new Color(1.55f, 1.4f, 1.25f), 0.05f);   // madera gastada, no naranja
         mLily = Plain("Dio_Nenufar", new Color(0.3f, 0.55f, 0.25f), 0.4f);
         mLilyFlower = Plain("Dio_Lirio", new Color(1f, 0.62f, 0.8f), 0.3f);

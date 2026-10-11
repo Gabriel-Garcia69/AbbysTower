@@ -449,7 +449,21 @@ public class MouseOrbitCamera : MonoBehaviour
     /// <summary>Busca la toma del lugar donde está Abby y acerca suavemente los valores de la toma; shotW sube o baja.</summary>
     void UpdateShot(float dt)
     {
-        var next = active.allowShots && !peeking && player != null ? CameraShot.At(player.position) : null;
+        // candidata: la toma del lugar; ninguna mientras hay pelea (que no estorbe al combatir)
+        var cand = active.allowShots && !peeking && player != null && RoomEncounter.ActiveCombats == 0 ? CameraShot.At(player.position) : null;
+        stillTime = playerVel.sqrMagnitude < 0.09f ? stillTime + dt : 0f;
+        CameraShot next;
+        if (cand == null || cand == shot) { pending = null; next = cand; }
+        else
+        {
+            // otra toma: hay que estar un rato dentro (y quieto si es de vista) y no recién salido de otra
+            if (cand != pending) { pending = cand; pendingTime = 0f; }
+            pendingTime += dt;
+            bool ready = cand.introSeconds > 0f ||
+                         (pendingTime >= ShotEnterDelay && (!cand.whenStill || stillTime >= ShotStillDelay) && Time.unscaledTime >= shotCooldownUntil);
+            next = ready ? cand : (shot != null && !leaving && shot.Contains(player.position) ? shot : null);
+        }
+        if (next == null && shot != null && !leaving) shotCooldownUntil = Time.unscaledTime + ShotCooldown;
         if (next != null && next != shot)
         {
             if (shot == null || shotW < 0.01f)
@@ -481,6 +495,9 @@ public class MouseOrbitCamera : MonoBehaviour
     }
 
     bool leaving;
+    CameraShot pending;
+    float pendingTime, stillTime, shotCooldownUntil;
+    const float ShotEnterDelay = 0.5f, ShotStillDelay = 0.6f, ShotCooldown = 2.5f;
 
     /// <summary>Mueve el punto que mira la cámara para que lo visible no se salga de la sala/pasillo donde está Abby.</summary>
     Vector3 FrameInRoom(Vector3 target, Vector3 playerPos)

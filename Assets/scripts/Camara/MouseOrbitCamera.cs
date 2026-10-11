@@ -1,15 +1,55 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>Estilos de cámara que se pueden probar en juego con F1–F5 (o Select/Back del control).</summary>
+public enum CameraStyle { Original, Pulido, TerceraPersona, Isometrica, Sala }
+
+/// <summary>Valores de un estilo de cámara.</summary>
+[System.Serializable]
+public class CameraStyleProfile
+{
+    [Tooltip("Campo de visión vertical (grados).")]
+    public float fov = 38f;
+    [Tooltip("Distancia de la cámara al pivote (m).")]
+    public float distance = 10f;
+    [Tooltip("Altura del pivote sobre los pies de Abby (m).")]
+    public float pivotHeight = 0.6f;
+    [Tooltip("Inclinación con la que entra el estilo (grados, positivo = mira hacia abajo).")]
+    public float startPitch = 34f;
+    public float minPitch = 20f;
+    public float maxPitch = 52f;
+    [Tooltip("Grados que la cámara levanta la vista sobre Abby.")]
+    public float lookUp = 5f;
+    [Tooltip("Metros que la cámara se adelanta hacia donde camina Abby. 0 = siempre centrada.")]
+    public float lookAhead = 0.8f;
+    [Tooltip("Gira libre con el mouse/stick. Apagado = solo gira en pasos con Q/E (LB/RB).")]
+    public bool freeOrbit = true;
+    [Tooltip("Grados por paso con Q/E cuando no es órbita libre.")]
+    public float yawStep = 45f;
+    [Tooltip("Suavizado del giro (s). Bajo = responde al instante.")]
+    public float rotationSmoothTime = 0.04f;
+    [Tooltip("Sin órbita libre: mantener clic derecho (o mover el stick derecho) deja asomarse con el mouse; al soltar vuelve a su ángulo.")]
+    public bool peekHold = false;
+    [Tooltip("Encuadra la sala o pasillo donde está Abby: la cámara no se sale de sus bordes (no se ve el vacío de afuera).")]
+    public bool roomFraming = false;
+}
+
 /// <summary>
 /// Cámara orbital con el mouse (y stick derecho del control): gira libre alrededor de Abby
 /// en vez de los saltos de 90° con Q/E. Va en el mismo objeto que CameraRig (que sigue al jugador),
 /// y mueve el yaw del rig y el pitch del CameraArm.
+/// Estilos (F1–F4 en juego, se recuerda entre escenas):
+///  - Original: los valores de la escena, tal cual.
+///  - Pulido: mismo estilo con FOV más abierto, pivote a media altura y algo de mirada adelante.
+///  - Tercera persona: más cerca y baja, mira hacia donde caminas.
+///  - Isométrica: alta y fija en diagonal; Q/E (LB/RB) la giran 45°.
+///  - Sala (HD-2D): ángulo fijo que encuadra la sala/pasillo actual (AreaReveal) sin salirse de sus bordes;
+///    Q/E giran 90° y con clic derecho sostenido (o el stick derecho) te asomas para buscar secretos.
 /// Opcional (apagado por defecto, se activa por escena):
 ///  - Zoom con la rueda del mouse / gatillos del control (LT acerca, RT aleja).
 ///  - Colisión: si entre Abby y la cámara hay suelo o pared, la cámara se acerca (SphereCast) y luego regresa suave.
 /// Cursor: se oculta y queda fijo al hacer clic en el juego; Esc lo libera.
-/// Para quitar Q/E deja vacío el campo Input del CameraRig en la escena.
+/// Para quitar Q/E del CameraRig deja vacío su campo Input en la escena.
 /// </summary>
 [DefaultExecutionOrder(50)]
 public class MouseOrbitCamera : MonoBehaviour
@@ -26,11 +66,51 @@ public class MouseOrbitCamera : MonoBehaviour
     public float stickSpeed = 150f;
     public bool invertY = false;
 
-    [Header("Inclinación (grados, positivo = mira hacia abajo)")]
+    [Header("Inclinación (grados, positivo = mira hacia abajo) — estilo Original")]
     public float minPitch = -5f;
     public float maxPitch = 40f;
     [Tooltip("Grados que la cámara levanta la vista sobre Abby: ella queda más abajo en pantalla y se ve más de lo que hay adelante. 0 = centrada.")]
     public float lookUp = 0f;
+
+    [Header("Estilos (F1 Original, F2 Pulido, F3 Tercera persona, F4 Isométrica, F5 Sala)")]
+    [SerializeField] CameraStyleProfile pulido = new CameraStyleProfile();
+    [SerializeField] CameraStyleProfile terceraPersona = new CameraStyleProfile
+    {
+        fov = 48f, distance = 6.5f, pivotHeight = 1f, startPitch = 16f, minPitch = 2f, maxPitch = 42f,
+        lookUp = 4f, lookAhead = 1.6f, freeOrbit = true, rotationSmoothTime = 0.04f
+    };
+    [SerializeField] CameraStyleProfile isometrica = new CameraStyleProfile
+    {
+        fov = 32f, distance = 17f, pivotHeight = 0.5f, startPitch = 52f, minPitch = 52f, maxPitch = 52f,
+        lookUp = 0f, lookAhead = 1.2f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.22f, peekHold = true
+    };
+    [SerializeField] CameraStyleProfile sala = new CameraStyleProfile
+    {
+        fov = 32f, distance = 19f, pivotHeight = 0.6f, startPitch = 48f, minPitch = 48f, maxPitch = 48f,
+        lookUp = 2f, lookAhead = 1.4f, freeOrbit = false, yawStep = 90f, rotationSmoothTime = 0.25f,
+        peekHold = true, roomFraming = true
+    };
+    [Tooltip("Qué tan rápido pasa de un estilo a otro (s).")]
+    [SerializeField] float styleBlendTime = 0.35f;
+    [Tooltip("Suavizado de la mirada adelante (s). Alto = la cámara tarda más en adelantarse.")]
+    [SerializeField] float lookAheadSmoothTime = 0.45f;
+    [Tooltip("Inclinación mínima y máxima al asomarse con clic derecho (grados).")]
+    [SerializeField] Vector2 peekPitchRange = new Vector2(8f, 70f);
+    [Tooltip("Suavizado con el que la cámara de Sala sigue el encuadre (s). Alto = se desliza más lento al cambiar de sala.")]
+    [SerializeField] float framingSmoothTime = 0.3f;
+    [Tooltip("Qué parte de la pantalla puede quedar fuera de la sala por los lados (0 = nada, 1 = media pantalla).")]
+    [Range(0f, 1f)] [SerializeField] float framingSideSlack = 0.15f;
+
+    /// <summary>Estilo activo (se guarda en PlayerPrefs para que todos los pisos usen el mismo).</summary>
+    public static CameraStyle Style
+    {
+        get { if (!styleLoaded) { style = (CameraStyle)Mathf.Clamp(PlayerPrefs.GetInt(StylePref, 0), 0, StyleCount - 1); styleLoaded = true; } return style; }
+        set { style = value; styleLoaded = true; PlayerPrefs.SetInt(StylePref, (int)value); }
+    }
+    const string StylePref = "CamStyle";
+    const int StyleCount = 5;
+    static CameraStyle style;
+    static bool styleLoaded;
 
     [Header("Zoom (rueda del mouse, LT/RT del control)")]
     [SerializeField] bool zoomEnabled = false;
@@ -65,26 +145,51 @@ public class MouseOrbitCamera : MonoBehaviour
     [Header("Cursor")]
     public bool lockCursor = true;
 
-    float yaw, pitch;
+    float yaw, pitch, shownYaw, shownPitch, yawVel, pitchVel;
     Camera cam;
     float targetDistance, zoomedDistance, zoomVel, currentDistance, distVel, clearTimer;
     Transform player;
     readonly RaycastHit[] hits = new RaycastHit[16];
 
+    CameraStyleProfile original, active;
+    CameraStyle appliedStyle = (CameraStyle)(-1);
+    Vector3 originalArmPos;
+    float shownFov, fovVel, shownPivot, pivotVel, shownLookUp, lookUpVel;
+    Vector3 lastPlayerPos, playerVel, lookOffset, lookOffsetVel;
+    Vector3 focus, focusVel;
+    Vector2 fxzVel;
+    AreaReveal currentArea;
+    bool peeking;
+    float labelUntil;
+
     void Start()
     {
         if (arm == null && transform.childCount > 0) arm = transform.GetChild(0);
-        yaw = transform.eulerAngles.y;
-        pitch = arm != null ? Mathf.DeltaAngle(0f, arm.localEulerAngles.x) : 10f;
+        yaw = shownYaw = transform.eulerAngles.y;
+        pitch = shownPitch = arm != null ? Mathf.DeltaAngle(0f, arm.localEulerAngles.x) : 10f;
         if (arm != null && pivotHeight > 0f) arm.localPosition = new Vector3(0f, pivotHeight, 0f);
+        if (arm != null) originalArmPos = arm.localPosition;
         cam = GetComponentInChildren<Camera>();
+        if (cam != null && cam.GetComponent<WallCutaway>() == null) cam.gameObject.AddComponent<WallCutaway>();
         if (cam != null)
         {
             targetDistance = zoomedDistance = currentDistance = Mathf.Max(0.1f, -cam.transform.localPosition.z);
             if (zoomEnabled) targetDistance = zoomedDistance = currentDistance = Mathf.Clamp(targetDistance, minDistance, maxDistance);
         }
+
+        // el estilo Original son los valores que trae la escena
+        original = new CameraStyleProfile
+        {
+            fov = cam != null ? cam.fieldOfView : 60f, distance = targetDistance, pivotHeight = originalArmPos.y,
+            startPitch = pitch, minPitch = minPitch, maxPitch = maxPitch, lookUp = lookUp,
+            lookAhead = 0f, freeOrbit = true, rotationSmoothTime = 0f
+        };
+        shownFov = original.fov; shownPivot = original.pivotHeight; shownLookUp = lookUp;
+
         var p = GameObject.FindWithTag("Player");
-        if (p != null) player = p.transform;
+        if (p != null) { player = p.transform; lastPlayerPos = player.position; }
+        ApplyStyle(Style, instant: true);
+        labelUntil = Time.unscaledTime + 4f;   // recuerda las teclas al entrar a la escena
         if (lockCursor) Lock(true);
     }
 
@@ -92,14 +197,56 @@ public class MouseOrbitCamera : MonoBehaviour
     {
         // al volver (p. ej. tras la cinemática) parte de donde quedó la cámara
         if (cam != null) currentDistance = zoomedDistance = Mathf.Max(0.1f, -cam.transform.localPosition.z);
+        shownYaw = yaw; shownPitch = pitch; yawVel = pitchVel = 0f;
+        if (player != null) lastPlayerPos = player.position;
     }
 
     void OnDisable() => Lock(false);
+
+    CameraStyleProfile ProfileFor(CameraStyle s) =>
+        s == CameraStyle.Pulido ? pulido :
+        s == CameraStyle.TerceraPersona ? terceraPersona :
+        s == CameraStyle.Isometrica ? isometrica :
+        s == CameraStyle.Sala ? sala : original;
+
+    void ApplyStyle(CameraStyle s, bool instant)
+    {
+        Style = s;
+        appliedStyle = s;
+        active = ProfileFor(s);
+        if (active == null) active = original;
+
+        pitch = Mathf.Clamp(active.startPitch, active.minPitch, active.maxPitch);
+        if (!active.freeOrbit && active.yawStep > 0f) yaw = Mathf.Round(yaw / active.yawStep) * active.yawStep;
+        peeking = false;
+        targetDistance = zoomEnabled ? Mathf.Clamp(active.distance, minDistance, maxDistance) : active.distance;
+        labelUntil = Time.unscaledTime + 2.5f;
+
+        if (instant)
+        {
+            shownYaw = yaw; shownPitch = pitch;
+            shownFov = active.fov; shownPivot = active.pivotHeight; shownLookUp = active.lookUp;
+            zoomedDistance = currentDistance = targetDistance;
+            if (cam != null) cam.fieldOfView = shownFov;
+        }
+    }
 
     void Update()
     {
         var mouse = Mouse.current;
         var kb = Keyboard.current;
+        var pad = Gamepad.current;
+
+        if (kb != null)
+        {
+            if (kb.f1Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Original, false);
+            else if (kb.f2Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Pulido, false);
+            else if (kb.f3Key.wasPressedThisFrame) ApplyStyle(CameraStyle.TerceraPersona, false);
+            else if (kb.f4Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Isometrica, false);
+            else if (kb.f5Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Sala, false);
+        }
+        if (pad != null && pad.selectButton.wasPressedThisFrame) ApplyStyle((CameraStyle)(((int)Style + 1) % StyleCount), false);
+        if (appliedStyle != Style) ApplyStyle(Style, false);   // otra escena/objeto lo cambió
 
         if (lockCursor)
         {
@@ -111,17 +258,31 @@ public class MouseOrbitCamera : MonoBehaviour
         bool mouseActive = mouse != null && (!lockCursor || Cursor.lockState == CursorLockMode.Locked);
         if (mouseActive)
             look += mouse.delta.ReadValue() * mouseSensitivity;
-        var pad = Gamepad.current;
-        if (pad != null)
-            look += pad.rightStick.ReadValue() * stickSpeed * Time.deltaTime;
+        Vector2 stick = pad != null ? pad.rightStick.ReadValue() : Vector2.zero;
+        look += stick * stickSpeed * Time.deltaTime;
 
-        yaw += look.x;
-        pitch += invertY ? look.y : -look.y;
-        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+        bool wasPeeking = peeking;
+        peeking = !active.freeOrbit && active.peekHold &&
+                  ((mouseActive && mouse.rightButton.isPressed) || stick.sqrMagnitude > 0.02f);
 
-        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-        if (arm != null) arm.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-        if (cam != null) cam.transform.localRotation = Quaternion.Euler(-lookUp, 0f, 0f);
+        if (active.freeOrbit || peeking)
+        {
+            yaw += look.x;
+            pitch += invertY ? look.y : -look.y;
+        }
+        else
+        {
+            // ángulo fijo: el mouse no la mueve; Q/E (LB/RB) la giran un paso
+            if ((kb != null && kb.qKey.wasPressedThisFrame) || (pad != null && pad.leftShoulder.wasPressedThisFrame)) yaw -= active.yawStep;
+            if ((kb != null && kb.eKey.wasPressedThisFrame) || (pad != null && pad.rightShoulder.wasPressedThisFrame)) yaw += active.yawStep;
+            if (wasPeeking)
+            {
+                // al soltar regresa a su ángulo, al paso de giro más cercano
+                if (active.yawStep > 0f) yaw = Mathf.Round(yaw / active.yawStep) * active.yawStep;
+                pitch = active.startPitch;
+            }
+        }
+        pitch = peeking ? Mathf.Clamp(pitch, peekPitchRange.x, peekPitchRange.y) : Mathf.Clamp(pitch, active.minPitch, active.maxPitch);
 
         if (zoomEnabled)
         {
@@ -140,10 +301,51 @@ public class MouseOrbitCamera : MonoBehaviour
     // después de que CameraRig movió el rig (LateUpdate, orden 0): así el pivote ya está en su lugar
     void LateUpdate()
     {
-        if (cam == null || arm == null || (!zoomEnabled && !collisionEnabled)) return;
+        if (cam == null || arm == null) return;
         float dt = Time.unscaledDeltaTime;
+        float gdt = Time.deltaTime;
 
-        zoomedDistance = Mathf.SmoothDamp(zoomedDistance, targetDistance, ref zoomVel, zoomSmoothTime, Mathf.Infinity, dt);
+        UpdatePlayerVelocity(gdt);
+
+        float rotSmooth = peeking ? 0.04f : active.rotationSmoothTime;
+        if (rotSmooth > 0f)
+        {
+            shownYaw = Mathf.SmoothDampAngle(shownYaw, yaw, ref yawVel, rotSmooth, Mathf.Infinity, dt);
+            shownPitch = Mathf.SmoothDampAngle(shownPitch, pitch, ref pitchVel, Mathf.Max(rotSmooth, 0.08f), Mathf.Infinity, dt);
+        }
+        else { shownYaw = yaw; shownPitch = pitch; yawVel = pitchVel = 0f; }
+
+        shownFov = Mathf.SmoothDamp(shownFov, active.fov, ref fovVel, styleBlendTime, Mathf.Infinity, dt);
+        shownPivot = Mathf.SmoothDamp(shownPivot, active.pivotHeight, ref pivotVel, styleBlendTime, Mathf.Infinity, dt);
+        shownLookUp = Mathf.SmoothDamp(shownLookUp, active.lookUp, ref lookUpVel, styleBlendTime, Mathf.Infinity, dt);
+
+        // mirada adelante: el pivote se adelanta hacia donde camina Abby
+        Vector3 wantOffset = active.lookAhead > 0f ? Vector3.ClampMagnitude(playerVel / 5f, 1f) * active.lookAhead : Vector3.zero;
+        lookOffset = Vector3.SmoothDamp(lookOffset, wantOffset, ref lookOffsetVel, lookAheadSmoothTime, Mathf.Infinity, gdt);
+
+        transform.rotation = Quaternion.Euler(0f, shownYaw, 0f);
+        arm.localRotation = Quaternion.Euler(shownPitch, 0f, 0f);
+        if (active.roomFraming && player != null)
+        {
+            // Sala: el pivote sigue a Abby pero sin dejar que la vista se salga de la sala/pasillo donde está
+            Vector3 want = FrameInRoom(player.position + lookOffset, player.position);
+            Vector2 fxz = Vector2.SmoothDamp(new Vector2(focus.x, focus.z), new Vector2(want.x, want.z), ref fxzVel, framingSmoothTime, Mathf.Infinity, gdt);
+            float fy = Mathf.SmoothDamp(focus.y, player.position.y, ref focusVel.y, 0.3f, Mathf.Infinity, gdt);   // los saltos casi no la mueven
+            focus = new Vector3(fxz.x, fy, fxz.y);
+            Vector3 local = transform.InverseTransformPoint(focus);
+            arm.localPosition = new Vector3(local.x, local.y + shownPivot, local.z);
+        }
+        else
+        {
+            arm.localPosition = new Vector3(originalArmPos.x, shownPivot, originalArmPos.z) + transform.InverseTransformDirection(lookOffset);
+            focus = transform.TransformPoint(new Vector3(arm.localPosition.x, arm.localPosition.y - shownPivot, arm.localPosition.z));
+            fxzVel = Vector2.zero; focusVel = Vector3.zero;
+        }
+        cam.transform.localRotation = Quaternion.Euler(-shownLookUp, 0f, 0f);
+        cam.fieldOfView = shownFov;
+
+        float smooth = zoomEnabled ? zoomSmoothTime : styleBlendTime;
+        zoomedDistance = Mathf.SmoothDamp(zoomedDistance, targetDistance, ref zoomVel, smooth, Mathf.Infinity, dt);
         float allowed = zoomedDistance;
 
         if (collisionEnabled)
@@ -162,7 +364,7 @@ public class MouseOrbitCamera : MonoBehaviour
 
         if (allowed < currentDistance - 0.01f)
         {
-            // obstáculo: se acerca rápido para no atravesarlo
+            // obstáculo (o el estilo pide estar más cerca): se acerca rápido para no atravesarlo
             clearTimer = returnDelay;
             currentDistance = Mathf.SmoothDamp(currentDistance, allowed, ref distVel, pullInSmoothTime, Mathf.Infinity, dt);
             if (currentDistance > allowed + 0.15f) { currentDistance = allowed + 0.15f; distVel = 0f; }   // el radio de la esfera cubre estos 15 cm
@@ -177,6 +379,94 @@ public class MouseOrbitCamera : MonoBehaviour
 
         var lp = cam.transform.localPosition;
         cam.transform.localPosition = new Vector3(lp.x, lp.y, -currentDistance);
+    }
+
+    /// <summary>Mueve el punto que mira la cámara para que lo visible no se salga de la sala/pasillo donde está Abby.</summary>
+    Vector3 FrameInRoom(Vector3 target, Vector3 playerPos)
+    {
+        var area = AreaAt(playerPos);
+        if (area == null) return target;
+
+        // cuánto suelo se ve alrededor del punto enfocado: a lo ancho, hacia la cámara y hacia el fondo
+        float d = currentDistance, theta = (shownPitch - shownLookUp) * Mathf.Deg2Rad, v = shownFov * 0.5f * Mathf.Deg2Rad;
+        float h = d * Mathf.Sin(theta), b = d * Mathf.Cos(theta);
+        float halfW = d * Mathf.Tan(v) * cam.aspect;
+        float halfNear = b - h / Mathf.Tan(Mathf.Min(theta + v, 89f * Mathf.Deg2Rad));
+        float farA = theta - v;
+        float halfFar = farA > 5f * Mathf.Deg2Rad ? h / Mathf.Tan(farA) - b : 100f;
+
+        Vector3 R = transform.right, F = transform.forward;
+        float minR = float.MaxValue, maxR = float.MinValue, minF = float.MaxValue, maxF = float.MinValue;
+        for (int i = 0; i < 4; i++)
+        {
+            var c = area.transform.TransformPoint(new Vector3(((i & 1) == 0 ? -0.5f : 0.5f) * area.size.x, 0f, ((i & 2) == 0 ? -0.5f : 0.5f) * area.size.y));
+            float r = Vector3.Dot(c, R), f = Vector3.Dot(c, F);
+            minR = Mathf.Min(minR, r); maxR = Mathf.Max(maxR, r);
+            minF = Mathf.Min(minF, f); maxF = Mathf.Max(maxF, f);
+        }
+
+        float tR = Vector3.Dot(target, R), tF = Vector3.Dot(target, F);
+        float pR = Vector3.Dot(playerPos, R), pF = Vector3.Dot(playerPos, F);
+
+        // a lo ancho: si la sala cabe, centrada; si no, sigue a Abby sin enseñar más allá de los muros
+        float side = halfW * (1f - framingSideSlack);
+        float lo = minR + side, hi = maxR - side;
+        float nR = lo > hi ? (minR + maxR) * 0.5f : Mathf.Clamp(tR, lo, hi);
+
+        // de frente: el borde cercano (su muro se oculta) no entra en pantalla; hacia el fondo puede llegar casi al muro
+        lo = minF + halfNear * 0.95f; hi = maxF - Mathf.Min(halfFar * 0.15f, 2f);
+        float nF = lo > hi ? lo : Mathf.Clamp(tF, lo, hi);
+
+        // Abby siempre bien dentro de la pantalla
+        nR = Mathf.Clamp(nR, pR - halfW * 0.7f, pR + halfW * 0.7f);
+        nF = Mathf.Clamp(nF, pF - halfFar * 0.35f, pF + halfNear * 0.7f);
+
+        return target + R * (nR - tR) + F * (nF - tF);
+    }
+
+    /// <summary>Sala/pasillo donde está Abby: el más chico que la contiene (en las puertas gana el pasillo). Se queda con la actual mientras siga dentro.</summary>
+    AreaReveal AreaAt(Vector3 p)
+    {
+        if (currentArea != null && currentArea.isActiveAndEnabled && currentArea.Contains(p, 0.4f)) return currentArea;
+        AreaReveal best = null; float bestSize = float.MaxValue;
+        foreach (var a in AreaReveal.All)
+        {
+            if (a == null || !a.Contains(p, 0f)) continue;
+            float s = a.size.x * a.size.y;
+            if (s < bestSize) { bestSize = s; best = a; }
+        }
+        if (best != null) { currentArea = best; return best; }
+        return currentArea != null && currentArea.Contains(p, 2f) ? currentArea : null;
+    }
+
+    void UpdatePlayerVelocity(float dt)
+    {
+        if (player == null || dt <= 0f) return;
+        Vector3 v = (player.position - lastPlayerPos) / dt;
+        lastPlayerPos = player.position;
+        v.y = 0f;
+        if (v.sqrMagnitude > 30f * 30f) v = Vector3.zero;   // teletransporte (cambio de sala, respawn): no cuenta
+        playerVel = Vector3.Lerp(playerVel, v, 1f - Mathf.Exp(-12f * dt));
+    }
+
+    static readonly string[] styleNames = { "Original", "Pulido", "Tercera persona", "Isométrica", "Sala (HD-2D)" };
+    GUIStyle labelStyle;
+
+    void OnGUI()
+    {
+        float left = labelUntil - Time.unscaledTime;
+        if (left <= 0f) return;
+        if (labelStyle == null)
+            labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 20, fontStyle = FontStyle.Bold };
+        float a = Mathf.Clamp01(left / 0.5f);
+        string extra = active != null && !active.freeOrbit ? "   ·   Q/E giran · clic derecho para asomarte" : "";
+        string text = "Cámara: " + styleNames[(int)Style] + extra + "\nF1 Original · F2 Pulido · F3 Tercera persona · F4 Isométrica · F5 Sala";
+        var r = new Rect(0f, Screen.height * 0.08f, Screen.width, 60f);
+        GUI.color = new Color(0f, 0f, 0f, 0.7f * a);
+        GUI.Label(new Rect(r.x + 2f, r.y + 2f, r.width, r.height), text, labelStyle);
+        GUI.color = new Color(1f, 1f, 1f, a);
+        GUI.Label(r, text, labelStyle);
+        GUI.color = Color.white;
     }
 
     readonly System.Collections.Generic.Dictionary<Collider, bool> blockCache = new System.Collections.Generic.Dictionary<Collider, bool>();

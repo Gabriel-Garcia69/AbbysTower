@@ -11,9 +11,9 @@ using UnityEngine;
 ///   y bajo 40% se enfurece (más rápido, embestidas encadenadas y ráfagas de orbes).
 /// Se mueve sin físicas dentro de los límites de su sala (RoomEncounter). Se crea con TowerEnemy.Create.
 /// </summary>
-public class TowerEnemy : MonoBehaviour, IHittable
+public partial class TowerEnemy : MonoBehaviour, IHittable
 {
-    public enum Kind { Sombra, Bruto, Jefe }
+    public enum Kind { Sombra, Bruto, Jefe, Arquero, Saltador, Hechicero, Torbellino, Escudero }
 
     public Kind kind;
     public float maxHealth = 40f;
@@ -46,7 +46,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
 
     /// <summary>Colores del piso actual (los pone FloorDirector según el pecado). null = colores de siempre.</summary>
     public static Color? ThemeBody, ThemeEye;
-    public string DisplayName => !string.IsNullOrEmpty(customName) ? customName : kind == Kind.Jefe ? "Guardián de la Base" : kind == Kind.Bruto ? "Bruto" : "Sombra";
+    public string DisplayName => !string.IsNullOrEmpty(customName) ? customName : kind == Kind.Jefe ? "Guardián de la Base" : kind.ToString();
 
     /// <summary>Multiplica la vida (pisos más altos = enemigos más duros).</summary>
     public void ScaleHealth(float mult)
@@ -59,7 +59,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
     public static event Action<TowerEnemy> AnyDied;
     public static event Action<TowerEnemy> BossEnraged;
 
-    enum State { Spawning, Chase, Telegraph, Lunge, Slam, Recover, Stunned, Dying }
+    enum State { Spawning, Chase, Telegraph, Lunge, Slam, Recover, Stunned, Dying, Shoot, Leap, Spin, Blink, Rain }
     State state = State.Spawning;
     float timer, cooldown, poiseDamage, bob;
     Vector3 knock, facing = Vector3.back, lungeDir;
@@ -80,13 +80,13 @@ public class TowerEnemy : MonoBehaviour, IHittable
 
     // ------------------------------------------------------------------ creación
 
-    public static TowerEnemy Create(Kind kind, Vector3 position, Transform parent, RoomEncounter room, Transform target)
+    public static TowerEnemy Create(Kind kind, Vector3 position, Transform parent, RoomEncounter room, Transform target, int bossStyle = 0)
     {
         var go = new GameObject(kind.ToString());
         go.transform.SetParent(parent, true);
         go.transform.position = position;
         var e = go.AddComponent<TowerEnemy>();
-        e.kind = kind; e.room = room; e.target = target;
+        e.kind = kind; e.room = room; e.target = target; e.bossStyle = bossStyle;
         e.Configure();
         return e;
     }
@@ -110,6 +110,9 @@ public class TowerEnemy : MonoBehaviour, IHittable
                 telegraph = 0.75f; lungeSpeed = 15f; lungeTime = 0.36f; recover = 0.9f; poise = 99999f; knockTaken = 0.08f;
                 eyeColor = new Color(1f, 0.22f, 0.15f); bodyColor = new Color(0.09f, 0.05f, 0.11f);
                 break;
+            default:
+                ConfigureExtra();
+                break;
         }
         if (ThemeBody.HasValue) bodyColor = Color.Lerp(bodyColor, ThemeBody.Value, kind == Kind.Jefe ? 0.85f : 0.65f);
         if (ThemeEye.HasValue) eyeColor = Color.Lerp(eyeColor, ThemeEye.Value, kind == Kind.Bruto ? 0.6f : 0.9f);
@@ -127,7 +130,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         hitbox.halfExtents = new Vector3(0.55f, 0.6f, 0.55f) * Scale + new Vector3(radius * 0.4f, 0f, radius * 0.4f);
     }
 
-    float Scale => kind == Kind.Jefe ? 2.6f : kind == Kind.Bruto ? 1.5f : 0.95f;
+    float Scale => kind == Kind.Jefe ? 2.6f : kind == Kind.Bruto || kind == Kind.Escudero ? 1.35f : kind == Kind.Torbellino ? 1.1f : 0.95f;
 
     static Material litMat, eyeMat;
 
@@ -145,10 +148,11 @@ public class TowerEnemy : MonoBehaviour, IHittable
             eyeMat = new Material(sh) { name = "Enemy_Eye (runtime)" };
         }
         mpb = new MaterialPropertyBlock();
+        float s = Scale;
+        if (!ForceProceduralVisual && UsePrefabVisual()) return;
 
         visual = new GameObject("Visual").transform;
         visual.SetParent(transform, false);
-        float s = Scale;
 
         // cuerpo: gota (esfera alargada) + "capa" (cono invertido de cubo girado)
         var b = Part(PrimitiveType.Sphere, "Cuerpo", new Vector3(0f, 0.75f, 0f) * s, new Vector3(0.9f, 1.05f, 0.9f) * s, litMat);
@@ -183,7 +187,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
             var crown = new GameObject("Corona").transform;
             crown.SetParent(visual, false);
             crown.localPosition = new Vector3(0f, 1.4f * s, 0f);
-            crown.gameObject.AddComponent<Spin>().speed = 40f;
+            crown.gameObject.AddComponent<EnemySpin>().speed = 40f;
             for (int i = 0; i < 6; i++)
             {
                 float a = i / 6f * Mathf.PI * 2f;
@@ -204,6 +208,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
             l.type = LightType.Point; l.color = eyeColor; l.range = 9f; l.intensity = 6f; l.shadows = LightShadows.None;
             glow = l;
         }
+        BuildExtraVisual(s);
         SetColor(body, bodyColor);
         foreach (var e in eyes) SetColor(e, eyeColor * 4f);
         visual.localScale = Vector3.one * 0.05f;
@@ -213,7 +218,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
     {
         var go = GameObject.CreatePrimitive(type);
         go.name = name;
-        Destroy(go.GetComponent<Collider>());
+        if (Application.isPlaying) Destroy(go.GetComponent<Collider>()); else DestroyImmediate(go.GetComponent<Collider>());
         go.transform.SetParent(parent != null ? parent : visual, false);
         go.transform.localPosition = pos;
         go.transform.localScale = scale;
@@ -299,7 +304,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
                 }
                 if (dist > 0.01f) facing = Vector3.Slerp(facing, toPlayer / dist, 8f * dt).normalized;
                 float speed = moveSpeed * (Enraged ? 1.35f : 1f);
-                Vector3 move = dist > attackRange * 0.7f ? facing * speed : Vector3.zero;
+                Vector3 move = ChaseMove(dist, speed);
                 move += Separation() * speed;
                 transform.position += move * dt;
                 if (IsBoss) CheckBossPhases();
@@ -367,9 +372,16 @@ public class TowerEnemy : MonoBehaviour, IHittable
             }
             case State.Stunned:
             {
-                if (timer >= 0.3f) Go(State.Chase);
+                if (timer >= stunTime) { stunTime = 0.3f; Go(State.Chase); }
                 break;
             }
+            case State.Shoot:
+            case State.Leap:
+            case State.Spin:
+            case State.Blink:
+            case State.Rain:
+                UpdateExtra(dt, toPlayer, dist, ph, playerAlive);
+                break;
             case State.Dying:
             {
                 float k = Mathf.Clamp01(timer / (IsBoss ? 1.6f : 0.3f));
@@ -386,7 +398,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         }
 
         // flotar suave, mirar hacia donde va, parpadeo blanco al recibir golpes
-        if (state != State.Spawning && state != State.Dying && state != State.Slam && state != State.Telegraph)
+        if (state != State.Spawning && state != State.Dying && state != State.Slam && state != State.Telegraph && state != State.Leap && state != State.Blink)
             visual.localPosition = Vector3.up * Mathf.Sin(bob * 3f) * 0.06f * Scale;
         if (facing.sqrMagnitude > 0.001f) visual.rotation = Quaternion.Slerp(visual.rotation, Quaternion.LookRotation(facing), 12f * dt);
         if (flash > 0f) { flash -= dt; SetColor(body, flash > 0f ? Color.white * 2f : bodyColor); }
@@ -399,13 +411,14 @@ public class TowerEnemy : MonoBehaviour, IHittable
     {
         state = s; timer = 0f;
         if (s == State.Recover || s == State.Chase) cooldown = Mathf.Max(cooldown, s == State.Recover ? 0.2f : 0f);
-        if (s != State.Telegraph && s != State.Lunge && telegraphFx != null) { Destroy(telegraphFx); telegraphFx = null; }
+        if (s != State.Telegraph && s != State.Lunge && s != State.Leap && s != State.Rain && telegraphFx != null) { Destroy(telegraphFx); telegraphFx = null; }
     }
 
     void ChooseAttack(float dist)
     {
         attackCount++;
-        if (IsBoss && (dist < 4f || attackCount % 3 == 0))
+        if (ChooseExtra(dist)) return;
+        if (IsBoss && bossStyle == 0 && (dist < 4f || attackCount % 3 == 0))
         {
             Go(State.Slam);
             telegraphFx = CombatFx.Ring(transform.position, 5.2f, new Color(1f, 0.25f, 0.2f, 0.9f), 1.05f * (Enraged ? 0.75f : 1f));
@@ -487,7 +500,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         {
             float a = (i + 0.5f) / count * Mathf.PI * 2f;
             Vector3 p = transform.position + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 4f;
-            room.SpawnExtra(Kind.Sombra, p);
+            room.SpawnExtra(room.roster != null && room.roster.Length > 0 ? room.roster[i % room.roster.Length] : Kind.Sombra, p);   // invoca a los del piso
         }
     }
 
@@ -509,6 +522,7 @@ public class TowerEnemy : MonoBehaviour, IHittable
         if (hit.attacker is TowerEnemy) return false;   // sin fuego amigo
 
         if (asleep) WakeUp();
+        if (Blocks(hit)) return true;
         Health -= hit.damage;
         LastHitTime = Time.time;
         flash = 0.08f;
@@ -547,16 +561,10 @@ public class TowerEnemy : MonoBehaviour, IHittable
         CameraShake.Shake(IsBoss ? 0.6f : 0.1f, IsBoss ? 1.2f : 0.15f);
         if (IsBoss) HitStop.Do(0.25f, 0.05f);
         AnyDied?.Invoke(this);
-        ShardPickup.Drop(transform.position, kind == Kind.Jefe ? 40 : kind == Kind.Bruto ? 8 : 3);
+        ShardPickup.Drop(transform.position, kind == Kind.Jefe ? 40 : kind == Kind.Bruto || kind == Kind.Escudero ? 8 : kind == Kind.Sombra ? 3 : 5);
     }
 
     // ------------------------------------------------------------------ apoyo
-
-    class Spin : MonoBehaviour
-    {
-        public float speed = 30f;
-        void Update() => transform.Rotate(0f, speed * Time.deltaTime, 0f, Space.Self);
-    }
 
     /// <summary>Orbe lento del jefe: avanza en línea recta y daña a Abby si la toca.</summary>
     class Bolt : MonoBehaviour

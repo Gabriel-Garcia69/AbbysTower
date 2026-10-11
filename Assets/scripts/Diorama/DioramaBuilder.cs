@@ -504,6 +504,7 @@ public partial class DioramaBuilder : MonoBehaviour
         enc.displayName = Info.boss;
         enc.healthMultiplier = Info.hp;
         enc.maxAlive = 4;
+        enc.roster = Roster;
         var t0 = Group("Aparicion", arena);
         t0.localPosition = new Vector3(0f, 0.1f, 2.5f);
         enc.spawnPoints = new[] { t0 };

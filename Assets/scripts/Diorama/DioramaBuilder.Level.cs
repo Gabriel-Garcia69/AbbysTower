@@ -33,6 +33,26 @@ public partial class DioramaBuilder
 
     // ------------------------------------------------------------------ combate
 
+    /// <summary>Enemigos de cada piso (por orden de aparición): cada mundo mezcla estilos de pelea distintos.</summary>
+    TowerEnemy.Kind[] Roster
+    {
+        get
+        {
+            var S = TowerEnemy.Kind.Sombra; var B = TowerEnemy.Kind.Bruto; var A = TowerEnemy.Kind.Arquero; var J = TowerEnemy.Kind.Saltador;
+            var H = TowerEnemy.Kind.Hechicero; var T = TowerEnemy.Kind.Torbellino; var E = TowerEnemy.Kind.Escudero;
+            switch (layout)
+            {
+                case Layout.Puerto: return new[] { S, A, E, S, A };
+                case Layout.Acantilado: return new[] { J, A, S, T, J };
+                case Layout.Cueva: return new[] { H, S, T, A, H };
+                case Layout.Templo: return new[] { E, A, J, H, E };
+                case Layout.Nevado: return new[] { T, H, E, A, J };
+                case Layout.Cima: return new[] { E, H, T, A, J, B };
+                default: return new[] { S, S, B, J };
+            }
+        }
+    }
+
     /// <summary>Arena: al entrar empieza la pelea por oleadas (sombras y brutos) o el jefe. Devuelve el encuentro.</summary>
     RoomEncounter Arena(Transform parent, string name, Vector3 center, Vector2 size, int enemies, bool boss = false)
     {
@@ -47,6 +67,8 @@ public partial class DioramaBuilder
         enc.healthMultiplier = Info.hp;
         enc.displayName = boss ? Info.boss : name;
         if (boss) enc.bossName = Info.boss;
+        enc.roster = Roster;
+        enc.bossStyle = (int)layout;   // cada piso, su jefe con su propio patrón
         var sp = new List<Transform>();
         int count = boss ? 1 : enemies;
         for (int i = 0; i < count; i++)

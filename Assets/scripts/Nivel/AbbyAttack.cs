@@ -99,6 +99,7 @@ public class AbbyAttack : MonoBehaviour
                     // tajo de impulso: atacar durante el dash o justo al terminarlo
                     bool dashStrike = dash != null && (dash.IsDashing || Time.time - dash.LastDashEnd < 0.2f);
                     if (dashStrike) Facing = dash.Direction;
+                    else Facing = AimAssist(Facing);
                     // crítico: después de una esquiva perfecta
                     bool crit = Time.time < critUntil;
                     float mult = RunState.DamageMultiplier * (dashStrike ? 1.6f : 1f) * (crit ? 2f : 1f);
@@ -130,6 +131,33 @@ public class AbbyAttack : MonoBehaviour
                 break;
         }
     }
+
+    /// <summary>
+    /// Apunta al enemigo más cercano que esté más o menos hacia donde mira Abby (o pegado a ella en cualquier dirección):
+    /// con la cámara de maqueta y 8 direcciones de movimiento es fácil fallar por unos grados.
+    /// </summary>
+    Vector3 AimAssist(Vector3 dir)
+    {
+        TowerEnemy best = null; float bestScore = float.MaxValue;
+        foreach (var e in TowerEnemy.All)
+        {
+            if (e == null) continue;
+            Vector3 d = e.transform.position - transform.position; d.y = 0f;
+            float dist = d.magnitude;
+            if (dist > aimRange + e.radius || dist < 0.01f) continue;
+            float ang = Vector3.Angle(dir, d);
+            if (ang > aimAngle && dist > 1.6f + e.radius) continue;
+            float score = dist + ang * 0.04f;
+            if (score < bestScore) { bestScore = score; best = e; }
+        }
+        if (best == null) return dir;
+        Vector3 to = best.transform.position - transform.position; to.y = 0f;
+        return to.normalized;
+    }
+
+    [Header("Asistencia de apuntado")]
+    public float aimRange = 4.2f;
+    public float aimAngle = 70f;
 
     void Begin()
     {

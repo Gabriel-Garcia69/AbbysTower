@@ -37,6 +37,10 @@ public class RoomEncounter : MonoBehaviour
 
     [Tooltip("Los enemigos aparecen dormidos y despiertan al acercarse Abby (piso de la Pereza).")]
     public bool sleepingEnemies;
+    [Tooltip("Tipos de enemigo por orden de aparición (se repite). Vacío = sombras y cada 3er enemigo un bruto.")]
+    public TowerEnemy.Kind[] roster = new TowerEnemy.Kind[0];
+    [Tooltip("Patrón del jefe: 0 Guardián, 1 Capitán, 2 Gárgola, 3 Geoda, 4 Guardián Dorado, 5 Escarcha, 6 Arquitecto.")]
+    public int bossStyle;
 
     TowerEnemy Prepare(TowerEnemy e)
     {
@@ -125,8 +129,11 @@ public class RoomEncounter : MonoBehaviour
             alive.Add(Instantiate(enemyPrefab, sp.position, sp.rotation, transform));
             return;
         }
-        var kind = isBoss ? TowerEnemy.Kind.Jefe : (index % 3 == 2 ? TowerEnemy.Kind.Bruto : TowerEnemy.Kind.Sombra);
-        alive.Add(Prepare(TowerEnemy.Create(kind, sp.position, transform, this, player)).gameObject);
+        var kind = isBoss ? TowerEnemy.Kind.Jefe
+                 : roster != null && roster.Length > 0 ? roster[index % roster.Length]
+                 : (index % 3 == 2 ? TowerEnemy.Kind.Bruto : TowerEnemy.Kind.Sombra);
+        var e = TowerEnemy.Create(kind, sp.position, transform, this, player, isBoss ? bossStyle : 0);
+        alive.Add(Prepare(e).gameObject);
     }
 
     /// <summary>Agrega un enemigo a la pelea en curso (invocaciones del jefe).</summary>

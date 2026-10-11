@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>Estilos de cámara que se pueden probar en juego con F1–F5 (o Select/Back del control).</summary>
-public enum CameraStyle { Original, Pulido, TerceraPersona, Isometrica, Sala }
+public enum CameraStyle { Original, Pulido, TerceraPersona, Isometrica, Sala, Diorama }
 
 /// <summary>Valores de un estilo de cámara.</summary>
 [System.Serializable]
@@ -48,6 +48,7 @@ public class CameraStyleProfile
 ///  - Isométrica: alta y fija en diagonal; Q/E (LB/RB) la giran 45°.
 ///  - Sala (HD-2D): ángulo fijo que encuadra la sala/pasillo actual (AreaReveal) sin salirse de sus bordes;
 ///    Q/E giran 90° y con clic derecho sostenido (o el stick derecho) te asomas para buscar secretos.
+///  - Diorama (F6): lente larga desde lejos y en alto, como maqueta (Octopath); con TiltShiftFocus desenfoca lo cercano y lo lejano.
 /// Opcional (apagado por defecto, se activa por escena):
 ///  - Zoom con la rueda del mouse / gatillos del control (LT acerca, RT aleja).
 ///  - Colisión: si entre Abby y la cámara hay suelo o pared, la cámara se acerca (SphereCast) y luego regresa suave.
@@ -94,6 +95,15 @@ public class MouseOrbitCamera : MonoBehaviour
         lookUp = 2f, lookAhead = 1.4f, freeOrbit = false, yawStep = 90f, rotationSmoothTime = 0.25f,
         peekHold = true, roomFraming = true
     };
+    [System.NonSerialized] CameraStyleProfile diorama = new CameraStyleProfile
+    {
+        fov = 22f, distance = 36f, pivotHeight = 0.8f, startPitch = 24f, minPitch = 24f, maxPitch = 24f,
+        lookUp = 3f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true
+    };
+    [Tooltip("Esta escena arranca con su propio estilo (p. ej. el diorama), sin cambiar el que se guardó para los pisos.")]
+    [SerializeField] bool useSceneStyle = false;
+    [SerializeField] CameraStyle sceneStyle = CameraStyle.Diorama;
+    bool sceneStyleActive;
     [Tooltip("Qué tan rápido pasa de un estilo a otro (s).")]
     [SerializeField] float styleBlendTime = 0.35f;
     [Tooltip("Suavizado de la mirada adelante (s). Alto = la cámara tarda más en adelantarse.")]
@@ -112,7 +122,7 @@ public class MouseOrbitCamera : MonoBehaviour
         set { style = value; styleLoaded = true; PlayerPrefs.SetInt(StylePref, (int)value); }
     }
     const string StylePref = "CamStyle";
-    const int StyleCount = 5;
+    const int StyleCount = 6;
     static CameraStyle style;
     static bool styleLoaded;
 
@@ -193,7 +203,8 @@ public class MouseOrbitCamera : MonoBehaviour
 
         var p = GameObject.FindWithTag("Player");
         if (p != null) { player = p.transform; lastPlayerPos = player.position; }
-        ApplyStyle(Style, instant: true);
+        sceneStyleActive = useSceneStyle;
+        ApplyStyle(sceneStyleActive ? sceneStyle : Style, instant: true);
         labelUntil = Time.unscaledTime + 4f;   // recuerda las teclas al entrar a la escena
         if (lockCursor) Lock(true);
     }
@@ -216,11 +227,19 @@ public class MouseOrbitCamera : MonoBehaviour
         s == CameraStyle.Pulido ? pulido :
         s == CameraStyle.TerceraPersona ? terceraPersona :
         s == CameraStyle.Isometrica ? isometrica :
-        s == CameraStyle.Sala ? sala : original;
+        s == CameraStyle.Sala ? sala :
+        s == CameraStyle.Diorama ? diorama : original;
+
+    /// <summary>Estilo que el jugador eligió con las teclas: se guarda y deja de mandar el estilo propio de la escena.</summary>
+    void ChooseStyle(CameraStyle s)
+    {
+        sceneStyleActive = false;
+        ApplyStyle(s, false);
+    }
 
     void ApplyStyle(CameraStyle s, bool instant)
     {
-        Style = s;
+        if (!sceneStyleActive) Style = s;
         appliedStyle = s;
         active = ProfileFor(s);
         if (active == null) active = original;
@@ -251,14 +270,15 @@ public class MouseOrbitCamera : MonoBehaviour
 
         if (kb != null)
         {
-            if (kb.f1Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Original, false);
-            else if (kb.f2Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Pulido, false);
-            else if (kb.f3Key.wasPressedThisFrame) ApplyStyle(CameraStyle.TerceraPersona, false);
-            else if (kb.f4Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Isometrica, false);
-            else if (kb.f5Key.wasPressedThisFrame) ApplyStyle(CameraStyle.Sala, false);
+            if (kb.f1Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Original);
+            else if (kb.f2Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Pulido);
+            else if (kb.f3Key.wasPressedThisFrame) ChooseStyle(CameraStyle.TerceraPersona);
+            else if (kb.f4Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Isometrica);
+            else if (kb.f5Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Sala);
+            else if (kb.f6Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Diorama);
         }
-        if (pad != null && pad.selectButton.wasPressedThisFrame) ApplyStyle((CameraStyle)(((int)Style + 1) % StyleCount), false);
-        if (appliedStyle != Style) ApplyStyle(Style, false);   // otra escena/objeto lo cambió
+        if (pad != null && pad.selectButton.wasPressedThisFrame) ChooseStyle((CameraStyle)(((int)appliedStyle + 1) % StyleCount));
+        if (!sceneStyleActive && appliedStyle != Style) ApplyStyle(Style, false);   // otra escena/objeto lo cambió
 
         if (lockCursor)
         {
@@ -462,7 +482,7 @@ public class MouseOrbitCamera : MonoBehaviour
         playerVel = Vector3.Lerp(playerVel, v, 1f - Mathf.Exp(-12f * dt));
     }
 
-    static readonly string[] styleNames = { "Original", "Pulido", "Tercera persona", "Isométrica", "Sala (HD-2D)" };
+    static readonly string[] styleNames = { "Original", "Pulido", "Tercera persona", "Isométrica", "Sala (HD-2D)", "Diorama" };
     GUIStyle labelStyle;
 
     void OnGUI()
@@ -473,7 +493,7 @@ public class MouseOrbitCamera : MonoBehaviour
             labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 20, fontStyle = FontStyle.Bold };
         float a = Mathf.Clamp01(left / 0.5f);
         string extra = active != null && !active.freeOrbit ? "   ·   Q/E giran · clic derecho para asomarte" : "";
-        string text = "Cámara: " + styleNames[(int)Style] + extra + "\nF1 Original · F2 Pulido · F3 Tercera persona · F4 Isométrica · F5 Sala";
+        string text = "Cámara: " + styleNames[(int)appliedStyle] + extra + "\nF1 Original · F2 Pulido · F3 Tercera persona · F4 Isométrica · F5 Sala · F6 Diorama";
         var r = new Rect(0f, Screen.height * 0.08f, Screen.width, 60f);
         GUI.color = new Color(0f, 0f, 0f, 0.7f * a);
         GUI.Label(new Rect(r.x + 2f, r.y + 2f, r.width, r.height), text, labelStyle);

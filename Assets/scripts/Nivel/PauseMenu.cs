@@ -6,13 +6,15 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Menú de pausa (Esc / P / Start): congela el juego y ofrece continuar, opciones (modo de juego), reiniciar la escena,
-/// volver al exterior o salir. Se maneja con mouse, teclado (↑↓ / WS + Enter) o mando (cruceta/stick + A, B regresa).
+/// volver al exterior o salir. En Opciones también está el acceso al mapa de prueba "Diorama HD-2D". Se maneja con mouse, teclado (↑↓ / WS + Enter) o mando (cruceta/stick + A, B regresa).
 /// Mientras está abierto apaga la cámara de mouse y libera el cursor. No se abre con la tienda o la cinemática activas.
 /// FloorDirector lo agrega solo en los pisos; en el exterior va en cualquier objeto de la escena.
 /// </summary>
 public class PauseMenu : MonoBehaviour
 {
     public string exteriorScene = "Exterior";
+    [Tooltip("Mapa de prueba con estilo maqueta (Octopath) que se abre desde Opciones.")]
+    public string dioramaScene = "Diorama";
 
     public static bool IsPaused { get; private set; }
     /// <summary>Otros menús (tienda) lo ponen en true para que Esc no abra la pausa.</summary>
@@ -23,7 +25,8 @@ public class PauseMenu : MonoBehaviour
 
     static readonly Color Gold = new Color(1f, 0.82f, 0.45f);
     static readonly Color PanelFill = new Color(0.07f, 0.05f, 0.12f, 0.95f);
-    const int OptionsBack = 4;   // índice del botón "Volver" en la página de opciones
+    const int OptionsDiorama = 4;   // botón "Probar diorama HD-2D" en la página de opciones
+    const int OptionsBack = 5;      // botón "Volver" en la página de opciones
 
     MouseOrbitCamera[] orbit;
     float savedScale = 1f;
@@ -153,6 +156,7 @@ public class PauseMenu : MonoBehaviour
         if (page == Page.Options)
         {
             if (i == OptionsBack) OpenPage(Page.Main, 1);
+            else if (i == OptionsDiorama) { if (Application.CanStreamedLevelBeLoaded(dioramaScene)) Load(dioramaScene); }
             else Difficulty.Current = (Difficulty.Level)i;
             return;
         }
@@ -238,12 +242,22 @@ public class PauseMenu : MonoBehaviour
         var p = Difficulty.Presets[Mathf.Clamp(sel, 0, Difficulty.Presets.Length - 1)];
         string lost = p.fragmentsLost >= 1f ? "todos tus ◆" : Mathf.RoundToInt(p.fragmentsLost * 100f) + "% de tus ◆";
         string stats = $"Daño recibido x{p.damageTaken:0.##}   ·   Vida enemigos x{p.enemyHealth:0.##}   ·   Curación x{p.healing:0.##}   ·   Al morir pierdes {lost}{(p.loseUpgrades ? " y mejoras" : "")}";
-        Text(new Rect(x, sy, w, 4f * u), stats, FitSize(stats, 1.7f * u, w, false), false, TextAnchor.MiddleCenter, sel < OptionsBack ? new Color(1f, 1f, 1f, 0.7f) : new Color(1f, 1f, 1f, 0f));
+        Text(new Rect(x, sy, w, 4f * u), stats, FitSize(stats, 1.7f * u, w, false), false, TextAnchor.MiddleCenter, sel < OptionsDiorama ? new Color(1f, 1f, 1f, 0.7f) : new Color(1f, 1f, 1f, 0f));
 
-        var back = new Rect(panel.center.x - 14f * u, sy + 5f * u, 28f * u, bh);
+        // pruebas: mapa diorama (estilo Octopath) y volver
+        float bw = (w - 2f * u) / 2f;
+        var diorama = new Rect(x, sy + 5f * u, bw, bh);
+        var back = new Rect(x + bw + 2f * u, sy + 5f * u, bw, bh);
+        var testColor = new Color(0.55f, 0.85f, 1f);
+        if (sel == OptionsDiorama) DrawHighlight(diorama, testColor, u, t);
         if (sel == OptionsBack) DrawHighlight(back, Gold, u, t);
+        if (Interact(diorama, OptionsDiorama)) return;
         if (Interact(back, OptionsBack)) return;
+        DrawButton(diorama, SceneManager.GetActiveScene().name == dioramaScene ? "Reiniciar diorama" : "Probar diorama HD-2D", sel == OptionsDiorama, u, t);
         DrawButton(back, "Volver", sel == OptionsBack, u, t);
+        if (sel == OptionsDiorama)
+            Text(new Rect(x, sy, w, 4f * u), "PRUEBA · mapa aparte con cámara de maqueta (Octopath): Q/E giran, clic derecho para asomarte, F1-F6 cambian la cámara",
+                 FitSize("PRUEBA · mapa aparte con cámara de maqueta (Octopath): Q/E giran, clic derecho para asomarte, F1-F6 cambian la cámara", 1.7f * u, w, false), false, TextAnchor.MiddleCenter, new Color(testColor.r, testColor.g, testColor.b, 0.85f));
         Footer(panel, u);
     }
 
@@ -344,6 +358,7 @@ public class PauseMenu : MonoBehaviour
         string n = SceneManager.GetActiveScene().name;
         if (n == exteriorScene) return "EL ABISMO";
         if (n.StartsWith("Nivel")) return "PISO " + n.Substring(5);
+        if (n == dioramaScene) return "DIORAMA HD-2D (PRUEBA)";
         return n.ToUpperInvariant();
     }
 

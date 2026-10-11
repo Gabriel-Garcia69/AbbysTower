@@ -36,7 +36,9 @@ public class AnamorphicSecret : MonoBehaviour
         Vector3 sp = transform.TransformPoint(standPoint);
         Vector3 d = Hazards.Player.position - sp; d.y = 0f;
         bool standing = d.magnitude < standRadius;
-        float angle = Vector3.Angle(cam.transform.forward, transform.TransformDirection(viewDir).normalized);
+        // dirección del brazo (cámara → Abby), no de la lente: así no cambia con el lookUp de MouseOrbitCamera
+        Vector3 viewFwd = cam.transform.parent != null ? cam.transform.parent.forward : cam.transform.forward;
+        float angle = Vector3.Angle(viewFwd, transform.TransformDirection(viewDir).normalized);
         float target = standing ? Mathf.Clamp01(1f - (angle - tolerance) / 20f) : 0f;   // se iluminan al acercarse al ángulo
         glow = Mathf.MoveTowards(glow, target, Time.deltaTime * 2f);
         foreach (var p in pieces)

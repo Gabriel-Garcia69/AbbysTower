@@ -29,6 +29,8 @@ public class MouseOrbitCamera : MonoBehaviour
     [Header("Inclinación (grados, positivo = mira hacia abajo)")]
     public float minPitch = -5f;
     public float maxPitch = 40f;
+    [Tooltip("Grados que la cámara levanta la vista sobre Abby: ella queda más abajo en pantalla y se ve más de lo que hay adelante. 0 = centrada.")]
+    public float lookUp = 0f;
 
     [Header("Zoom (rueda del mouse, LT/RT del control)")]
     [SerializeField] bool zoomEnabled = false;
@@ -119,6 +121,7 @@ public class MouseOrbitCamera : MonoBehaviour
 
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         if (arm != null) arm.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        if (cam != null) cam.transform.localRotation = Quaternion.Euler(-lookUp, 0f, 0f);
 
         if (zoomEnabled)
         {

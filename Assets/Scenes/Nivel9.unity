@@ -1335652,6 +1335652,7 @@ MonoBehaviour:
   invertY: 0
   minPitch: 18
   maxPitch: 50
+  lookUp: 7
   zoomEnabled: 0
   minDistance: 2
   maxDistance: 18

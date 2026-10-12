@@ -128,9 +128,9 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(Isles[0].x + 5f, 0f, Isles[0].y - 3f), 30, 0f);
         Chest(lvl, new Vector3(Isles[3].x - 6f, Isles[3].w, Isles[3].y + 4f), 40, 90f);
         Note(lvl, new Vector3(Isles[0].x - 4f, 0f, Isles[0].y - 2f), 160f, LoreNote.Kind.Diario, "dio7_diario", "La última página",
-             "Si estás leyendo esto, llegaste otra vez.\nSoy A. Soy tú. Cada vez que caemos, la torre nos regresa al principio, pero las notas se quedan.\nEsta vez no le pidas nada. Rómpela.", "— A.");
+             "Si estás leyendo esto, llegaste otra vez.\nSoy A. Soy tú. Cada vez que caemos, la torre nos regresa al principio, pero las hojas se quedan donde las dejamos.\nEl Arquitecto espera en la azotea. No le pidas nada: derrótalo y rompe la torre.", "— A.");
         Note(lvl, new Vector3(top0.x + 4f, top0.w, top0.y - 6f), 200f, LoreNote.Kind.Inscripcion, "dio7_arquitecto", "Grabado en la azotea",
-             "Quise encerrar los pecados en siete pisos.\nAhora la torre soy yo, y no sé cómo bajar.");
+             "Hice esta torre para guardar lo que no quería perder: un pueblo, un puerto, un lago, una montaña.\nMe quedé arriba para cuidarlos y ya no supe bajar.\n— El Arquitecto");
 
         WalkBoundary(SummitWalk);
         var shots = Group("Tomas", root);

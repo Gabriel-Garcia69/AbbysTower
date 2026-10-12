@@ -490,7 +490,7 @@ public partial class DioramaBuilder
     {
         var g = Group("Fondo", root);
         float a = PortArea.xMin, b = PortArea.xMax, s = PortArea.yMin;
-        const float far = 700f;
+        const float far = 2500f;
         // tierra de afuera a la altura de los bordes (7 m) y su risco hacia el mar
         Flat(g, "TierraOeste", new Vector3((-far + a + 1f) / 2f, 7f, (-far + 14f) / 2f), a + 1f + far, far + 14f, mGrass, 0.25f);
         Flat(g, "TierraEste", new Vector3((b - 1f + far) / 2f, 7f, (-far + 6f) / 2f), far - b + 1f, far + 6f, mGrass, 0.25f);

@@ -61,7 +61,7 @@ public partial class DioramaBuilder : MonoBehaviour
     // ------------------------------------------------------------------ generación
 
     /// <summary>Súbelo cada vez que cambie lo que genera Build(): los pisos viejos se regeneran solos al abrirlos.</summary>
-    public const int BuildVersion = 12;
+    public const int BuildVersion = 17;
     [SerializeField, HideInInspector] int builtVersion;
     public bool IsCurrent => builtVersion == BuildVersion;
 
@@ -819,7 +819,7 @@ public partial class DioramaBuilder : MonoBehaviour
     {
         var g = Group("Fondo", root);
         if (coneMesh == null) coneMesh = Cone(1f, 1f, 9);
-        Flat(g, "Valle", new Vector3(0f, -ValleyDepth - 0.3f, 230f), 1400f, 380f, mGrass, 0.05f);
+        Flat(g, "Valle", new Vector3(0f, -ValleyDepth - 0.3f, 1240f), 3000f, 2400f, mGrass, 0.05f);   // hasta donde llega la bruma
         var river = Flat(g, "RioValle", new Vector3(0f, -ValleyDepth + 0.3f, 125f), 700f, 14f, mWater, 0.05f);
         river.transform.localRotation = Quaternion.Euler(0f, 8f, 0f);
         // cordillera al norte: bultos de roca facetados (la niebla los azula)
@@ -973,6 +973,7 @@ public partial class DioramaBuilder : MonoBehaviour
                 fog = new Color(0.74f, 0.83f, 0.93f); fogStart = 120f; fogEnd = 820f;
                 break;
         }
+        sky.ground = fog;   // bajo el horizonte el cielo es del color de la bruma: no se nota dónde acaba el suelo de afuera
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
         RenderSettings.fogColor = fog;

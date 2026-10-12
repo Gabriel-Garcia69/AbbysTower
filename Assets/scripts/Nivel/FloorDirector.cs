@@ -311,7 +311,9 @@ public class FloorDirector : MonoBehaviour
         {
             float a = Mathf.Clamp01(Mathf.Min(bannerTime / 0.3f, (bannerLength - bannerTime) / 0.6f));
             float slide = (1f - Mathf.Clamp01(bannerTime / 0.35f)) * u * 3f;
-            Box(new Rect(0, sh * 0.2f - u * 1f, sw, u * 13f), new Color(0f, 0f, 0f, 0.35f * a));
+            Box(new Rect(0, sh * 0.2f - u * 1.5f, sw, u * 14f), new Color(0f, 0f, 0f, 0.5f * a));
+            Box(new Rect(sw * 0.2f, sh * 0.2f - u * 1.5f, sw * 0.6f, u * 0.25f), new Color(bannerColor.r, bannerColor.g, bannerColor.b, 0.8f * a));
+            Box(new Rect(sw * 0.2f, sh * 0.2f + u * 12.25f, sw * 0.6f, u * 0.25f), new Color(bannerColor.r, bannerColor.g, bannerColor.b, 0.8f * a));
             var big = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 6.5f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             var small = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
             Text(new Rect(slide, sh * 0.2f, sw, u * 8f), bannerTop, big, new Color(bannerColor.r, bannerColor.g, bannerColor.b, a));
@@ -341,7 +343,8 @@ public class FloorDirector : MonoBehaviour
         {
             float a = Mathf.Clamp01(endTimer / 1f);
             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            Text(new Rect(0, sh * 0.28f, sw, u * 12f), $"¡{floorTitle} COMPLETADO!", st, new Color(1f, 0.88f, 0.5f, a));
+            string done = floorTitle.StartsWith("PISO") ? $"¡{floorTitle} COMPLETADO!" : floorTitle.StartsWith("LA ") ? $"¡{floorTitle}, CONQUISTADA!" : $"¡{floorTitle} SUPERADO!";
+            Text(new Rect(0, sh * 0.28f, sw, u * 12f), done, st, new Color(1f, 0.88f, 0.5f, a));
             var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 3f), fontStyle = FontStyle.Normal };
             Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}        Fragmentos  {RunState.Fragments} ◆", s2, new Color(1f, 1f, 1f, a));
             if (endTimer > 1.5f)
@@ -358,8 +361,12 @@ public class FloorDirector : MonoBehaviour
 
     static void Text(Rect r, string text, GUIStyle st, Color c)
     {
-        st.normal.textColor = new Color(0f, 0f, 0f, c.a * 0.75f);
-        GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), text, st);
+        // GUI.color tiñe las etiquetas: si quedó negro de un rectángulo anterior, el texto salía oscuro
+        GUI.color = Color.white;
+        float o = Mathf.Max(1.5f, st.fontSize * 0.06f);
+        st.normal.textColor = new Color(0f, 0f, 0f, c.a * 0.85f);
+        foreach (var d in new[] { new Vector2(o, o), new Vector2(-o, o), new Vector2(o, -o), new Vector2(-o, -o), new Vector2(o * 1.6f, o * 1.6f) })
+            GUI.Label(new Rect(r.x + d.x, r.y + d.y, r.width, r.height), text, st);
         st.normal.textColor = c;
         GUI.Label(r, text, st);
     }

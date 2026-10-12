@@ -40,7 +40,8 @@ public class LoreNote : MonoBehaviour
 
         if (Open == this)
         {
-            bool close = press || (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) || (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.buttonSouth.wasPressedThisFrame));
+            bool close = press || (kb != null && (kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
+                         || (gp != null && (gp.buttonEast.wasPressedThisFrame || gp.buttonSouth.wasPressedThisFrame));
             if (close && Time.unscaledTime - openTime > 0.15f) Close();
             return;
         }
@@ -134,7 +135,7 @@ public class LoreNote : MonoBehaviour
             GUI.Label(new Rect(page.x + 6f * u, page.yMax - 9f * u, page.width - 12f * u, 4f * u), signature, sig);
         }
         var hint = new GUIStyle(kindSt) { fontStyle = FontStyle.Normal };
-        GUI.Label(new Rect(page.x, page.yMax - 4.5f * u, page.width, 3f * u), "E / Esc / B  cerrar", hint);
+        GUI.Label(new Rect(page.x, page.yMax - 4.5f * u, page.width, 3f * u), "Espacio / Enter / E / Esc  cerrar", hint);
         GUI.color = prev;
     }
 }

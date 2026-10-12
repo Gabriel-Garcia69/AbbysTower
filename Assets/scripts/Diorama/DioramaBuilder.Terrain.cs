@@ -285,7 +285,7 @@ public partial class DioramaBuilder
     {
         var g = Group("Alrededores", root);
         float a = TerrainArea.xMin, b = TerrainArea.xMax, s = TerrainArea.yMin, north = CliffZ - 2f;
-        const float far = 700f;
+        const float far = 2500f;
         // se meten 1 m bajo el borde del terreno para que no quede rendija entre los dos
         Flat(g, "MesetaOeste", new Vector3((-far + a + 1f) / 2f, OuterY, (-far + north) / 2f), a + 1f + far, north + far, mGrass, 0.25f);
         // al este el cañón se abre en un valle de bancales con un lago (terreno de verdad, no paredes lisas)

@@ -29,7 +29,7 @@ public partial class DioramaBuilder
             float zb = MountZ[k], T = k * MountStep;
             if (z > zb - 7.2f && z <= zb)
             {
-                if (Mathf.Abs(x - RampLanding(k)) < 5f) return T + MountStep;
+                if (Mathf.Abs(x - RampLanding(k)) < 5.9f) return T + MountStep;   // el descanso se mete bajo el final de la rampa (sin ranura)
                 float lo = Mathf.Min(RampStart(k), RampEnd(k)) - 1.5f, hi = Mathf.Max(RampStart(k), RampEnd(k)) + 1.5f;
                 if (x > lo && x < hi) return T;
             }
@@ -43,7 +43,7 @@ public partial class DioramaBuilder
         if (z > MountPeakZ + e * 2f) return t + (z < MountPeakZ + 10f ? 6f : z < MountPeakZ + 22f ? 13f : 22f) + (Noise(x * 0.07f, z * 0.07f) > 0.55f ? 4f : 0f);
         // hombros de la montaña a los lados
         float w = Mathf.Abs(x) - 58f + e * 2f;
-        if (w > 0f) return Mathf.Max(t + (w < 6f ? 4f : w < 12f ? 9f : w < 20f ? 15f : 22f), w >= 20f ? 40f : 0f);
+        if (w > 0f) return t + Mathf.Min(5f * Mathf.Ceil(w / 5f), 40f) + (w > 15f && Noise(x * 0.06f, z * 0.06f) > 0.6f ? 3f : 0f);   // hombros en bancales de 5 m
         // al sur, el valle de abajo
         if (z < -66f + e * 2f) return z < -73f + e * 2f ? -9f : -4f;
         return t;
@@ -138,9 +138,9 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(-52f, 4 * MountStep, 80f), 26, 90f);
         Chest(lvl, new Vector3(52f, 5 * MountStep, 112f), 30, -90f);
         Note(lvl, new Vector3(6f, 0f, -54f), 180f, LoreNote.Kind.Inscripcion, "dio_montana_pie", "Al pie de la montaña",
-             "Grita tu nombre arriba: la montaña te lo devuelve.\nA veces con otra voz.");
+             "Grita tu nombre en la cumbre y la montaña te lo devolverá.\nSi te contesta con otra voz, es el Eco de Piedra. No le contestes: pelea.");
         Note(lvl, hut + new Vector3(-1f, 0f, 4f), 180f, LoreNote.Kind.Diario, "dio_montana_refugio", "Libro del refugio",
-             "Firmé el libro del refugio. Mi nombre ya estaba ahí, muchas veces, con mi letra.\nTodas las firmas dicen: \"esta vez sí llego\".", "— A.");
+             "Firmé el libro del refugio. Mi nombre ya estaba ahí muchas veces, todas con mi letra y todas diciendo lo mismo: \"esta vez sí llego\".\nAsí que lo escribí otra vez. Esta vez sí llego.", "— A.");
 
         WalkBoundary(MountWalk);
         var bg = Group("Fondo", root);

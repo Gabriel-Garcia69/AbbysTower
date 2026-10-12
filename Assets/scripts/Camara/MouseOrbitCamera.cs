@@ -414,7 +414,7 @@ public class MouseOrbitCamera : MonoBehaviour
         zoomedDistance = Mathf.SmoothDamp(zoomedDistance, targetDistance, ref zoomVel, smooth, Mathf.Infinity, dt);
         float allowed = zoomedDistance;
 
-        if (collisionEnabled || active.interior)
+        if (collisionEnabled || active.interior || outdoorScene)   // al aire libre (también en maqueta) el terreno no deja que la cámara se meta en la roca
         {
             Vector3 pivot = arm.position, dir = -arm.forward;
             int n = Physics.SphereCastNonAlloc(pivot, collisionRadius, dir, hits, zoomedDistance, collisionMask, QueryTriggerInteraction.Ignore);
@@ -427,6 +427,10 @@ public class MouseOrbitCamera : MonoBehaviour
                 if (!collisionEnabled && !Structural(h.collider)) continue;   // estilo interior en los pisos: solo muros, techos y cosas grandes
                 allowed = Mathf.Min(allowed, Mathf.Max(minCollisionDistance, h.distance));
             }
+            // con Abby pegada a una pared la esfera empieza dentro de ella y no la cuenta: un rayo fino sí
+            if (Physics.Raycast(pivot, dir, out var thin, zoomedDistance, collisionMask, QueryTriggerInteraction.Ignore)
+                && (player == null || !thin.collider.transform.IsChildOf(player)) && Blocks(thin.collider) && (collisionEnabled || Structural(thin.collider)))
+                allowed = Mathf.Min(allowed, Mathf.Max(minCollisionDistance, thin.distance - collisionRadius));
         }
 
         if (allowed < currentDistance - 0.01f)

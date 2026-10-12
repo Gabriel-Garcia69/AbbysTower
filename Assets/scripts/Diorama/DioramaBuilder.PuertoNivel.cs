@@ -21,8 +21,8 @@ public partial class DioramaBuilder
         Chest(g, new Vector3(LighthouseX + 4f, 4.5f, LighthouseZ + 2f), 28, 90f);
         Chest(g, new Vector3(-24.4f, 0.1f, 19.6f), 20, 0f);
         Note(g, new Vector3(-4f, 0f, -24f), 180f, LoreNote.Kind.Diario, "dio2_diario", "El mar de adentro",
-             "La torre tiene un mar. Con barcos que no zarpan y gaviotas que dan vueltas siempre al mismo faro.\nEl capitán dice que esperan a alguien. No quiso decir a quién.", "— A.");
+             "La torre también tiene mar. Los barcos están amarrados y nadie los suelta.\nUn pescador me contó que el capitán perdió su barco en este puerto y se quedó a esperarlo en la punta del muelle.\nSi vas para allá, no le des la espalda: ataca en abanico.", "— A.");
         Note(g, new Vector3(LighthouseX - 3f, 4.5f, LighthouseZ + 3f), 90f, LoreNote.Kind.Libro, "dio2_arquitecto", "Registro del Arquitecto",
-             "Segundo piso: el puerto. Puse barcos para que nadie quisiera irse.\nNadie se ha ido.");
+             "Piso dos: el puerto.\nLo hice para los que quieren irse. Pero el mar de la torre no lleva a ningún lado, así que los barcos se quedan amarrados.\nEs mejor así: desde aquí nadie se pierde.");
     }
 }

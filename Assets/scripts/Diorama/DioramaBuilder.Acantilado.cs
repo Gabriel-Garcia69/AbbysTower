@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -25,7 +26,7 @@ public partial class DioramaBuilder
         float zTop = -20f + e * 1.2f, zMid = -8f + e * 1.2f, zLow = 0.5f + e * 0.6f;   // repisa baja honda: al pie de la escalinata queda un descanso amplio
         if (z < zTop) return z < -32f && Noise(x * 0.09f + 5f, z * 0.09f) > 0.62f ? CliffTop + 2.5f : CliffTop;
         if (z < zMid) return 7f;
-        if (z < zLow && Mathf.Abs(x - CliffFallX) > 3f) return 2.5f;
+        if (z < zLow) return Mathf.Abs(x - CliffFallX) < 3f ? 1.6f : 2.5f;   // la repisa baja, con la poza donde cae la cascada
         return z - zLow < 6f ? -6f : -8f;
     }
 
@@ -50,14 +51,23 @@ public partial class DioramaBuilder
 
         // cascada: nace en una poza arriba, cruza la repisa media y cae al mar
         float zt = -20f + EdgeNoise(CliffFallX, -20f) * 1.2f, zm = -8f + EdgeNoise(CliffFallX, -8f) * 1.2f;
-        Flat(g, "Poza", new Vector3(CliffFallX, CliffTop + 0.06f, zt - 3f), 5f, 6f, mWater, 0.2f);
+        Flat(g, "Poza", new Vector3(CliffFallX, CliffTop + 0.06f, zt - 3f), 5f, 6f, mRiver, 0.2f);
         for (int i = 0; i < 7; i++)
             Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + R(-3.5f, 3.5f), CliffTop + 0.2f, zt - 3f + R(-3.6f, 3.6f) + (i % 2 == 0 ? 0f : -1.5f)), new Vector3(R(1.2f, 2f), R(0.8f, 1.4f), R(1.2f, 2f)), mRock);
         Waterfall(g, new Vector3(CliffFallX, (CliffTop + 7f) / 2f, zt + 0.05f), Vector3.forward, 3f, CliffTop - 7f + 0.1f);
-        Flat(g, "Arroyo", new Vector3(CliffFallX, 7.06f, (zt + zm) / 2f), 3f, zm - zt, mWater, 0.2f);
-        Waterfall(g, new Vector3(CliffFallX, (7f + SeaY) / 2f, zm + 0.05f), Vector3.forward, 3f, 7f - SeaY + 0.2f);
+        Flat(g, "Arroyo", new Vector3(CliffFallX, 7.06f, (zt + zm) / 2f), 3f, zm - zt, mRiver, 0.2f);
+        // cae a una poza en la repisa baja y de ahí, en una segunda cascada, al mar
+        float zl = 0.5f + EdgeNoise(CliffFallX, 0.5f) * 0.6f;
+        Waterfall(g, new Vector3(CliffFallX, (7f + 2.2f) / 2f, zm + 0.05f), Vector3.forward, 3f, 7f - 2.2f + 0.1f);
+        Flat(g, "PozaBaja", new Vector3(CliffFallX, 2.2f, (zm + zl) / 2f), 6.1f, zl - zm + 0.2f, mRiver, 0.2f);
+        Foam(g, new Vector3(CliffFallX, 2.25f, zm + 1f), 2f, 18f);
+        Waterfall(g, new Vector3(CliffFallX, (2.2f + SeaY) / 2f, zl + 0.05f), Vector3.forward, 5f, 2.2f - SeaY + 0.2f);
+        for (int i = 0; i < 6; i++)
+            Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + (i % 2 == 0 ? -3.3f : 3.3f), 2.5f, Mathf.Lerp(zm + 1f, zl - 1f, i / 5f)), new Vector3(R(1f, 1.6f), R(0.7f, 1.1f), R(1f, 1.5f)), mRock);
+        BankGuard(g, new List<Vector3> { new Vector3(CliffFallX - 3.2f, 2.5f, zm), new Vector3(CliffFallX - 3.2f, 2.5f, zl) }, p => false);
+        BankGuard(g, new List<Vector3> { new Vector3(CliffFallX + 3.2f, 2.5f, zm), new Vector3(CliffFallX + 3.2f, 2.5f, zl) }, p => false);
         Foam(g, new Vector3(CliffFallX, 7.1f, zt + 0.8f), 1.6f, 14f);
-        Foam(g, new Vector3(CliffFallX, SeaY + 0.1f, zm + 1.2f), 2.6f, 26f);
+        Foam(g, new Vector3(CliffFallX, SeaY + 0.1f, zl + 1.4f), 3.2f, 30f);
 
         // enredaderas que cuelgan de las orillas de las repisas
         for (float x = -46f; x < 50f; x += R(2.2f, 4f))
@@ -134,14 +144,14 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(30f, CliffTop, -26f), 26, 180f);
         Chest(lvl, new Vector3(b2.x + 3f, b2.w, b2.y + 3.2f), 22, 200f);
         Note(lvl, new Vector3(-34f, CliffTop, -34f), 180f, LoreNote.Kind.Diario, "dio3_diario", "El mar al revés",
-             "Desde aquí arriba el mar se ve como un cielo caído. El sol se pone cada vez que llego a esta orilla.\nNo importa a qué hora suba: siempre es atardecer en el tercer piso.", "— A.");
+             "Desde aquí arriba el mar parece un cielo caído. En este piso el sol nunca termina de ponerse.\nCrucé los puentes colgantes despacio. La gárgola del faro salta desde lo alto: cuando veas su sombra en el suelo, muévete.", "— A.");
         Note(lvl, new Vector3(c.x + 1f, c.w, c.y - 5.5f), 0f, LoreNote.Kind.Inscripcion, "dio3_faro", "Placa del faro",
-             "Este faro guiaba a los que bajaban.\nCuando nadie volvió a bajar, se apagó solo.");
+             "Este faro guiaba a los barcos del puerto de abajo.\nCuando los barcos se quedaron amarrados, la luz ya no tuvo a quién guiar, y se apagó.");
 
         WalkBoundary(CliffWalk);
         var bg = Group("Fondo", root);
         OuterLand(bg, CliffTop, false, true, true, true, 260);
-        float far = 700f, ax = CliffArea.xMin, bb = CliffArea.xMax;
+        float far = 2500f, ax = CliffArea.xMin, bb = CliffArea.xMax;
         Wall(bg, "RiscoOeste", new Vector3((-far + ax) / 2f, (CliffTop - 8.3f) / 2f, -20f), Vector3.forward, far + ax, CliffTop + 8.3f, mRock, 0.25f);
         Wall(bg, "RiscoEste", new Vector3((bb + far) / 2f, (CliffTop - 8.3f) / 2f, -20f), Vector3.forward, far - bb, CliffTop + 8.3f, mRock, 0.25f);
         Ship(bg, new Vector3(-60f, SeaY, 150f), 110f, 24f, 6f, false);

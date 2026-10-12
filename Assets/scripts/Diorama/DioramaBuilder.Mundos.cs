@@ -227,7 +227,7 @@ public partial class DioramaBuilder
     void OuterLand(Transform g, float y, bool north, bool south, bool east, bool west, int trees, bool pines = true)
     {
         var a = TerrainArea;
-        const float far = 700f;
+        const float far = 2500f;
         if (west) Flat(g, "AfueraOeste", new Vector3((-far + a.xMin + 1f) / 2f, y, (a.yMin + a.yMax) / 2f), far + a.xMin + 1f, far * 2f, TopMat, 0.25f);
         if (east) Flat(g, "AfueraEste", new Vector3((a.xMax - 1f + far) / 2f, y, (a.yMin + a.yMax) / 2f), far - a.xMax + 1f, far * 2f, TopMat, 0.25f);
         if (south) Flat(g, "AfueraSur", new Vector3((a.xMin + a.xMax) / 2f, y, (-far + a.yMin + 1f) / 2f), a.width, far + a.yMin + 1f, TopMat, 0.25f);

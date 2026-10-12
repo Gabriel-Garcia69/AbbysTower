@@ -187,15 +187,15 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(-52f, LakeLedgeY, 172f), 26, 90f);
         Chest(lvl, new Vector3(48f, LakeTopY, 200f), 30, 180f);
         Note(lvl, new Vector3(4f, 0f, -50f), 180f, LoreNote.Kind.Inscripcion, "dio_lago_pueblo", "Piedra de los pescadores",
-             "Aquí se pesca el reflejo, no el pez.\nEl lago guarda lo que uno fue antes de subir.");
+             "En este lago no se pescan peces: se pescan reflejos.\nQuien se asoma al agua ve cómo era antes de entrar a la torre.");
         Note(lvl, look + new Vector3(-2f, 0f, -1f), 180f, LoreNote.Kind.Diario, "dio_lago_diario", "Espejos",
-             "Desde la cornisa el lago parece otro cielo.\nMe vi abajo, pequeñita, cruzando las pasarelas. Me saludé. Me saludó.", "— A.");
+             "Me asomé al lago y vi a una niña con mi cara, al pie de la torre, mirando hacia arriba. Creo que así empezó todo.\nDesde esta cornisa se ve el camino entero: las pasarelas, las islas y la cascada. Arriba espera la Dama del Lago.", "— A.");
 
         WalkBoundary(LakeWalk);
         var bg = Group("Fondo", root);
         OuterLand(bg, 12f, false, false, true, true, 300, false);
-        Flat(bg, "AfueraSur", new Vector3(0f, 2.5f, (LakeArea.yMin - 700f) / 2f + 1f), LakeArea.width, 702f, mGrass, 0.25f);
-        Flat(bg, "AfueraNorte", new Vector3(0f, LakeTopY + 3f, (LakeArea.yMax + 700f) / 2f - 1f), LakeArea.width, 700f, mGrass, 0.25f);
+        Flat(bg, "AfueraSur", new Vector3(0f, 2.5f, (LakeArea.yMin - 2500f) / 2f + 1f), LakeArea.width, 2502f, mGrass, 0.25f);
+        Flat(bg, "AfueraNorte", new Vector3(0f, LakeTopY + 3f, (LakeArea.yMax + 2500f) / 2f - 1f), LakeArea.width, 2500f, mGrass, 0.25f);
         FarPeaks(bg, new Vector3(0f, 10f, 120f), 430f, -80f, 80f, 16, 110f, 190f, true);
 
         var shots = Group("Tomas", root);

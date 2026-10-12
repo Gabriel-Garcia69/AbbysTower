@@ -251,6 +251,12 @@ public partial class DioramaBuilder
         ramp.transform.localPosition = new Vector3(0f, rise / 2f - 0.08f, run / 2f);
         ramp.transform.localRotation = Quaternion.Euler(-Mathf.Atan2(rise, run) * Mathf.Rad2Deg, 0f, 0f);
         ramp.AddComponent<BoxCollider>().size = new Vector3(width, 0.15f, Mathf.Sqrt(run * run + rise * rise) + 0.4f);
+        // descanso arriba: tapa la ranura entre el último escalón y el suelo de arriba (las celdas del terreno miden 0.7 m)
+        var landing = new GameObject("Collider_Descanso");
+        landing.transform.SetParent(s, false);
+        landing.transform.localPosition = new Vector3(0f, rise - 0.1f, run + 0.6f);
+        landing.AddComponent<BoxCollider>().size = new Vector3(width, 0.2f, 1.6f);
+        Box(s, "Descanso", new Vector3(0f, rise - 0.06f, run + 0.6f), new Vector3(width, 0.12f, 1.6f), mat, false);
         Vector3 c = (from + to) / 2f;
         blocked.Add(new Rect(Mathf.Min(from.x, to.x) - width, Mathf.Min(from.z, to.z) - width, Mathf.Abs(to.x - from.x) + width * 2f, Mathf.Abs(to.z - from.z) + width * 2f));
     }

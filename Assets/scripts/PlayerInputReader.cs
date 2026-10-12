@@ -54,12 +54,17 @@ public class PlayerInputReader : MonoBehaviour, IMoveInput
     void OnDisable()
     {
         _move.Disable(); _jump.Disable(); _rotLeft.Disable(); _rotRight.Disable();
+        // al apagarse (piso completado, cinemática) no se queda "pegada" la última dirección
+        Move = Vector2.zero;
+        _jumpBufferedUntil = -1f;
     }
 
     void Update()
     {
         Move = Vector2.ClampMagnitude(_move.ReadValue<Vector2>(), 1f);
 
+        // con una nota abierta o el juego en pausa, ni se camina ni se guarda el salto (Espacio cierra la nota)
+        if (LoreNote.Open != null || PauseMenu.IsPaused) { Move = Vector2.zero; _jumpBufferedUntil = -1f; return; }
         if (_jump.WasPressedThisFrame())
             _jumpBufferedUntil = Time.time + jumpBufferTime;
 

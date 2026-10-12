@@ -9,7 +9,7 @@ using UnityEngine;
 public partial class DioramaBuilder
 {
     static readonly Rect CaveArea = new Rect(-70f, -62f, 140f, 128f);
-    static readonly Rect CaveWalk = new Rect(-45f, -56f, 90f, 104f);
+    static readonly Rect CaveWalk = new Rect(-45f, -53.5f, 90f, 101.5f);
     static readonly Vector3 CaveSpawn = new Vector3(0f, 3.6f, -50f);
     static readonly Vector2 CaveI1 = new Vector2(0f, 4f), CaveI2 = new Vector2(0f, 26f);
     const float CaveLakeY = -1.2f;
@@ -20,7 +20,7 @@ public partial class DioramaBuilder
     {
         float e = EdgeNoise(x, z);
         if (Mathf.Abs(x) < 3.4f && z > -31f && z < -19f) return 0f;    // escalinata de bajada
-        if (Mathf.Abs(x) < 6.5f + e * 0.3f && z <= -31f) return 3.5f;   // túnel de entrada
+        if (Mathf.Abs(x) < 6.5f + e * 0.3f && z <= -31f && z > -54f) return 3.5f;   // túnel de entrada (cerrado al fondo)
         float ell = CaveEll(x, z, e);
         if (ell > 1f) return z < -24f ? 5.5f : 14f;   // al sur (lado de la cámara) la pared es baja: se ve la gruta por encima
         if (Vector2.Distance(new Vector2(x, z), CaveI1) < 6f + e * 0.5f) return 0.3f;
@@ -121,10 +121,10 @@ public partial class DioramaBuilder
         Exit(lvl, new Vector3(CaveI2.x, 0.6f, CaveI2.y + 4f), boss);
         Chest(lvl, new Vector3(-33f, 0f, 18f), 30, 90f);
         Chest(lvl, new Vector3(36f, 0f, 22f), 24, -90f);
-        Note(lvl, new Vector3(-3.8f, 3.5f, -38f), 90f, LoreNote.Kind.Diario, "dio4_diario", "Bajo la torre",
-             "Bajé para subir. La torre tiene una gruta en el cuarto piso, como si el suelo de arriba fuera el fondo de un lago.\nLos cristales cantan cuando no los miras.", "— A.");
+        Note(lvl, new Vector3(-3.8f, 3.5f, -38f), 90f, LoreNote.Kind.Diario, "dio4_diario", "Bajo la tierra",
+             "Para subir hay que bajar: este piso de la torre es una gruta.\nLos cristales dan luz propia y suenan cuando pasas cerca. Al fondo, en la isla del centro, hay una piedra que late como un corazón.", "— A.");
         Note(lvl, new Vector3(5.5f, 0.6f, CaveI2.y - 3f), -90f, LoreNote.Kind.Inscripcion, "dio4_geoda", "Grabado en la piedra azul",
-             "Aquí late el corazón de la torre.\nCada vez que alguien cae, late una vez más.");
+             "Corazón de Geoda.\nAquí late la torre. Cada vez que alguien cae y vuelve a empezar, late una vez más.");
 
         WalkBoundary(CaveWalk);
         var bg = Group("Fondo", root);

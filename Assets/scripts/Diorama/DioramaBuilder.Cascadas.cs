@@ -19,6 +19,8 @@ public partial class DioramaBuilder
     static readonly float[] FallsStairX = { -32f, 32f, 32f, -30f };
 
     static float FallsRiverX(float z) => 22f * Mathf.Sin(z * 0.035f);
+    const float FallsPondZ = -56f;   // al sur el río termina en un estanque (no corta el terreno hasta la orilla del mapa)
+    static Vector2 FallsPond => new Vector2(FallsRiverX(FallsPondZ), FallsPondZ);
 
     float FallsTier(float z) { int k = 0; while (k < FallsZ.Length && z > FallsZ[k]) k++; return k * FallsStep; }
 
@@ -34,6 +36,7 @@ public partial class DioramaBuilder
     {
         if (z > FallsCliffZ - 2f) return false;
         if (Vector2.Distance(new Vector2(x, z), FallsPool) < 14f) return true;
+        if (z < FallsPondZ) return Vector2.Distance(new Vector2(x, z), FallsPond) < 9.5f;
         return Mathf.Abs(x - FallsRiverX(z)) < 6.6f;
     }
 
@@ -57,7 +60,13 @@ public partial class DioramaBuilder
         if (dp < 14f + e * 0.6f) return 16f - 1.1f;
         // el río: cauce, orilla baja y orilla
         float d = Mathf.Abs(x - FallsRiverX(z)) + e * 0.5f;
-        if (z < FallsPool.y - 6f)
+        if (z < FallsPondZ)
+        {
+            float dpond = Vector2.Distance(new Vector2(x, z), FallsPond) + e * 0.4f;
+            if (dpond < 7.6f) return T - 2f;
+            if (dpond < 9.2f) return T - 1.1f;
+        }
+        else if (z < FallsPool.y - 6f)
         {
             if (d < 4.4f) return T - 2f;
             if (d < 6.2f) return T - 1.1f;
@@ -78,7 +87,9 @@ public partial class DioramaBuilder
         var water = Group("Agua", root);
 
         // agua: una franja que sigue al río en cada bancal (1.2 m bajo el suelo) + la poza
-        float zPrev = FallsArea.yMin;
+        float zPrev = FallsPondZ;
+        var pondWater = Prim(water, PrimitiveType.Cylinder, "Estanque", new Vector3(FallsPond.x, -1.2f, FallsPond.y), new Vector3(19f, 0.005f, 19f), mRiver);
+        pondWater.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         for (int i = 0; i <= FallsZ.Length; i++)
         {
             float z1 = i < FallsZ.Length ? FallsZ[i] : FallsPool.y, y = i * FallsStep - 1.2f;
@@ -132,7 +143,7 @@ public partial class DioramaBuilder
         foreach (float sx in new[] { -1f, 1f })
         {
             var pts = new List<Vector3>();
-            for (float z = FallsArea.yMin + 2f; z < FallsPool.y - 12f; z += 2f)
+            for (float z = FallsPondZ + 6f; z < FallsPool.y - 12f; z += 2f)
             {
                 float x = FallsRiverX(z) + sx * 6.3f;
                 pts.Add(new Vector3(x, FallsTier(z), z));
@@ -144,6 +155,10 @@ public partial class DioramaBuilder
                 return false;
             });
         }
+        // el estanque del sur: muro alrededor menos por donde llega el río
+        var pondRing = new List<Vector3>();
+        for (int k = 0; k <= 36; k++) { float a = k / 36f * Mathf.PI * 2f; pondRing.Add(new Vector3(FallsPond.x + Mathf.Cos(a) * 9.6f, 0f, FallsPond.y + Mathf.Sin(a) * 9.6f)); }
+        BankGuard(lvl, pondRing, p => p.z > FallsPondZ + 5f && Mathf.Abs(p.x - FallsRiverX(p.z)) < 7.5f);
         // la poza: muro alrededor menos por donde sale el río
         var pool = new List<Vector3>();
         for (int k = 0; k <= 36; k++)
@@ -219,15 +234,15 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(-50f, 8f, 150f), 24, 90f);
         Chest(lvl, new Vector3(48f, 12f, 205f), 30, 180f);
         Note(lvl, new Vector3(18f, 0f, -50f), 180f, LoreNote.Kind.Inscripcion, "dio_cascadas_valle", "Piedra del valle",
-             "El agua de este piso baja siempre, aunque nadie la vea empezar.\nDicen que nace en el piso de arriba.");
+             "El río nace al fondo del valle, en las Gemelas, y baja cuatro bancales hasta aquí.\nSube contra la corriente: la salida está donde el agua cae más fuerte.");
         Note(lvl, new Vector3(-40f, 12f, 204f), 180f, LoreNote.Kind.Diario, "dio_cascadas_diario", "Ruido de agua",
-             "Aquí no se oye la torre. Solo el agua.\nMe quedé un rato contando cascadas: cuatro, y dos más al fondo. Como pisos.", "— A.");
+             "Aquí no se oye la torre, solo el agua.\nLa otra vez llegué a las Gemelas sin descansar y no me fue bien. En la ladera del tercer bancal hay un campamento con mercader y un santuario: úsalos antes de seguir.", "— A.");
 
         WalkBoundary(FallsWalk);
         var bg = Group("Fondo", root);
         OuterLand(bg, 30f, false, false, true, true, 260, false);
-        Flat(bg, "AfueraSur", new Vector3(0f, 3f, (FallsArea.yMin - 700f) / 2f + 1f), FallsArea.width, 700f + 2f, mGrass, 0.25f);
-        Flat(bg, "AfueraNorte", new Vector3(0f, FallsCliffY, (FallsArea.yMax + 700f) / 2f - 1f), FallsArea.width, 700f, mGrass, 0.25f);
+        Flat(bg, "AfueraSur", new Vector3(0f, 3f, (FallsArea.yMin - 2500f) / 2f + 1f), FallsArea.width, 2502f, mGrass, 0.25f);
+        Flat(bg, "AfueraNorte", new Vector3(0f, FallsCliffY, (FallsArea.yMax + 2500f) / 2f - 1f), FallsArea.width, 2500f, mGrass, 0.25f);
         FarPeaks(bg, new Vector3(0f, 30f, 120f), 420f, -70f, 70f, 14, 120f, 200f, true);
 
         var shots = Group("Tomas", root);

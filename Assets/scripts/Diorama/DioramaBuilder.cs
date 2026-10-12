@@ -23,7 +23,7 @@ public partial class DioramaBuilder : MonoBehaviour
 
     const string Prefix = "Dio_";
     const float TerraceY = 2.6f;
-    static readonly Rect TownWalk = new Rect(-33f, -29f, 66f, 72.4f);    // zona jugable del pueblo (x, z); al norte llega a la orilla del risco
+    static readonly Rect TownWalk = new Rect(-33f, -29f, 66f, 82.4f);    // zona jugable del pueblo (x, z); al norte llega a la orilla del risco
     Rect Walk
     {
         get
@@ -40,10 +40,10 @@ public partial class DioramaBuilder : MonoBehaviour
             }
         }
     }
-    static readonly Rect Terrace = new Rect(-15f, 18f, 30f, 18f);     // patio en alto
-    const float StairZ0 = 12.5f, StairW = 5f;
-    const float CliffZ = 48f, ValleyDepth = 40f;
-    const float LookoutX = 19f, CliffFenceZ = 43.3f;
+    static readonly Rect Terrace = new Rect(-15f, 28f, 30f, 18f);     // patio en alto
+    const float StairZ0 = 21f, StairW = 7f;   // escalinata ancha y lejos del puente: entre los dos queda una plaza
+    const float CliffZ = 58f, ValleyDepth = 40f;
+    const float LookoutX = 19f, CliffFenceZ = 53.3f;
 
     System.Random rng;
     float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
@@ -57,9 +57,15 @@ public partial class DioramaBuilder : MonoBehaviour
 
     // ------------------------------------------------------------------ generación
 
+    /// <summary>Súbelo cada vez que cambie lo que genera Build(): los pisos viejos se regeneran solos al abrirlos.</summary>
+    public const int BuildVersion = 2;
+    [SerializeField, HideInInspector] int builtVersion;
+    public bool IsCurrent => builtVersion == BuildVersion;
+
     [ContextMenu("Generar diorama")]
     public void Build()
     {
+        builtVersion = BuildVersion;
         Clear();
         rng = new System.Random(seed);
         blocked.Clear();
@@ -137,15 +143,16 @@ public partial class DioramaBuilder : MonoBehaviour
     void BuildPaths()
     {
         var p = Group("Caminos", root);
-        Strip(p, new Vector2(0f, -29f), new Vector2(0f, -FenceZ - 0.6f), 3.4f);
-        Strip(p, new Vector2(0f, FenceZ + 0.6f), new Vector2(0f, StairZ0), 3.4f);
-        Strip(p, new Vector2(-31f, -13f), new Vector2(27f, -13f), 2.8f);
-        Strip(p, new Vector2(-29f, -13f), new Vector2(-29f, -3.4f), 2.4f);
-        Strip(p, new Vector2(-29f, 3.4f), new Vector2(-29f, 12.5f), 2.4f);
-        Strip(p, new Vector2(-29f, 12.5f), new Vector2(0f, 12.5f), 2.4f);
+        Strip(p, new Vector2(0f, -29f), new Vector2(0f, -FenceZ - 0.6f), 5f);
+        Strip(p, new Vector2(0f, FenceZ + 0.6f), new Vector2(0f, StairZ0), 5f);
+        Flat(p, "PlazaRuinas", new Vector3(0f, 0.013f, (FenceZ + StairZ0) / 2f + 0.3f), 16f, StairZ0 - FenceZ - 1.2f, mDirt, 0.5f);
+        Strip(p, new Vector2(-31f, -13f), new Vector2(27f, -13f), 4.2f);
+        Strip(p, new Vector2(-29f, -13f), new Vector2(-29f, -3.4f), 3.6f);
+        Strip(p, new Vector2(-29f, 3.4f), new Vector2(-29f, 16f), 3.6f);
+        Strip(p, new Vector2(-29f, 16f), new Vector2(0f, 16f), 3.6f);
         // al mirador: por el lado este del patio hasta la orilla del risco
-        Strip(p, new Vector2(2.5f, 12.5f), new Vector2(LookoutX, 12.5f), 2.4f);
-        Strip(p, new Vector2(LookoutX, 12.5f), new Vector2(LookoutX, CliffFenceZ), 2.4f);
+        Strip(p, new Vector2(2.5f, 16f), new Vector2(LookoutX, 16f), 3.6f);
+        Strip(p, new Vector2(LookoutX, 16f), new Vector2(LookoutX, CliffFenceZ), 3.6f);
         // plazuela del mercado
         Flat(p, "Plazuela", new Vector3(6f, 0.012f, -17.5f), 12f, 5f, mCobble, 0.5f);
         blocked.Add(new Rect(0f, -20.5f, 12f, 6f));
@@ -183,12 +190,12 @@ public partial class DioramaBuilder : MonoBehaviour
     {
         var g = Group("Mirador", root);
         // cerca en la orilla del risco, con hueco para la plataforma
-        Fence(g, new Vector2(Walk.xMin, CliffFenceZ), new Vector2(x - 1.9f, CliffFenceZ));
-        Fence(g, new Vector2(x + 1.9f, CliffFenceZ), new Vector2(Walk.xMax, CliffFenceZ));
+        Fence(g, new Vector2(Walk.xMin, CliffFenceZ), new Vector2(x - 2.4f, CliffFenceZ));
+        Fence(g, new Vector2(x + 2.4f, CliffFenceZ), new Vector2(Walk.xMax, CliffFenceZ));
 
         var d = Group("Plataforma", g);
         d.localPosition = new Vector3(x, 0f, 0f);
-        float w = 3.6f, z0 = CliffFenceZ - 0.3f, z1 = CliffFenceZ + 5.6f;
+        float w = 4.6f, z0 = CliffFenceZ - 0.3f, z1 = CliffFenceZ + 5.6f;
         for (float z = z0; z < z1; z += 0.42f)
         {
             var pl = Box(d, "Tablon", new Vector3(0f, 0.05f, z + 0.2f), new Vector3(w, 0.1f, 0.38f), mPlank, false);
@@ -450,7 +457,7 @@ public partial class DioramaBuilder : MonoBehaviour
         float y = TerraceY;
         // columnas: unas enteras con capitel, otras rotas
         float[] xs = { -11f, 11f };
-        float[] zs = { 21.5f, 27f, 32.5f };
+        float[] zs = { 31.5f, 37f, 42.5f };
         int k = 0;
         foreach (float x in xs)
             foreach (float z in zs)
@@ -474,10 +481,10 @@ public partial class DioramaBuilder : MonoBehaviour
             b.transform.localRotation = Quaternion.Euler(R(-8f, 8f), R(0f, 90f), R(-8f, 8f));
         }
         // columna caída
-        var fallen = Prim(g, PrimitiveType.Cylinder, "ColumnaCaida", new Vector3(-6f, y + 0.45f, 23f), new Vector3(0.9f, 1.8f, 0.9f), mStone, true);
+        var fallen = Prim(g, PrimitiveType.Cylinder, "ColumnaCaida", new Vector3(-6f, y + 0.45f, 33f), new Vector3(0.9f, 1.8f, 0.9f), mStone, true);
         fallen.transform.localRotation = Quaternion.Euler(0f, 30f, 90f);
         // braseros en las esquinas del patio
-        foreach (var c in new[] { new Vector2(-12.5f, 19.8f), new Vector2(12.5f, 19.8f), new Vector2(-12.5f, 33.5f), new Vector2(12.5f, 33.5f) })
+        foreach (var c in new[] { new Vector2(-12.5f, 29.8f), new Vector2(12.5f, 29.8f), new Vector2(-12.5f, 43.5f), new Vector2(12.5f, 43.5f) })
             Brazier(g, new Vector3(c.x, y, c.y));
         // estatua al centro del fondo (pedestal + figura)
         Box(g, "Pedestal", new Vector3(0f, y + 0.6f, zb - 0.2f), new Vector3(1.6f, 1.2f, 1.6f), mStone, true);
@@ -579,13 +586,13 @@ public partial class DioramaBuilder : MonoBehaviour
         House(v, new Vector3(17f, 0f, -21f), -8f, 7.5f, 5.5f, 3.6f, true);
         House(v, new Vector3(-26.5f, 0f, -21.5f), 90f, 5f, 4.2f, 3f, false);
         House(v, new Vector3(27f, 0f, -18f), -90f, 5.5f, 4.5f, 3.2f, false);
-        House(v, new Vector3(-23f, 0f, 17f), 160f, 6f, 5f, 3.4f, true);
-        House(v, new Vector3(24f, 0f, 17f), 200f, 6f, 4.6f, 3.2f, false);
+        House(v, new Vector3(-24f, 0f, 26f), 160f, 6f, 5f, 3.4f, true);
+        House(v, new Vector3(27f, 0f, 28f), 200f, 6f, 4.6f, 3.2f, false);
         Stall(v, new Vector3(8.5f, 0f, -17.5f), -90f);
         MerchantPost(v, new Vector3(-22.5f, 0f, -16.2f), 0f);
         Well(v, new Vector3(-7f, 0f, -23f));
         // barriles y cajas junto a casas y el mercado
-        foreach (var p in new[] { new Vector3(11.5f, 0f, -15.2f), new Vector3(-10.5f, 0f, -16.4f), new Vector3(22f, 0f, -16.2f), new Vector3(-5.5f, 0f, 14.5f), new Vector3(19f, 0f, 14f) })
+        foreach (var p in new[] { new Vector3(11.5f, 0f, -15.2f), new Vector3(-10.5f, 0f, -16.4f), new Vector3(22f, 0f, -16.2f), new Vector3(-9.5f, 0f, 20f), new Vector3(22f, 0f, 21f) })
             Clutter(v, p);
         // huerto con cerca junto a la primera casa
         Garden(v, new Vector3(-8f, 0f, -26.8f), 7f, 3f);
@@ -775,7 +782,7 @@ public partial class DioramaBuilder : MonoBehaviour
     void BuildLamps()
     {
         var g = Group("Faroles", root);
-        foreach (var p in new[] { new Vector2(2.5f, -26f), new Vector2(-2.5f, -18f), new Vector2(-2.6f, -11.6f), new Vector2(2.6f, 11.6f), new Vector2(-17.5f, -15.2f), new Vector2(17f, -15.2f), new Vector2(-27.4f, 11f), new Vector2(-14f, 14.2f) })
+        foreach (var p in new[] { new Vector2(2.5f, -26f), new Vector2(-2.5f, -18f), new Vector2(-3.4f, -11.6f), new Vector2(3.6f, 12.4f), new Vector2(-17.5f, -15.8f), new Vector2(17f, -15.8f), new Vector2(-31.6f, 13f), new Vector2(-14f, 18.4f), new Vector2(-5.6f, 20f), new Vector2(5.6f, 20f) })
         {
             var t = Group("Farol", g);
             t.localPosition = new Vector3(p.x, 0f, p.y);
@@ -856,7 +863,7 @@ public partial class DioramaBuilder : MonoBehaviour
         SolidBox(g, "Limite_O", new Vector3(r.xMin - 0.5f, 3f, r.center.y), new Vector3(1f, 8f, r.height));
         SolidBox(g, "Limite_E", new Vector3(r.xMax + 0.5f, 3f, r.center.y), new Vector3(1f, 8f, r.height));
         SolidBox(g, "Limite_S", new Vector3(r.center.x, 3f, r.yMin - 0.5f), new Vector3(r.width, 8f, 1f));
-        float gx0 = LookoutX - 1.8f, gx1 = LookoutX + 1.8f;
+        float gx0 = LookoutX - 2.3f, gx1 = LookoutX + 2.3f;
         SolidBox(g, "Limite_N", new Vector3((r.xMin + gx0) / 2f, 3f, r.yMax + 0.5f), new Vector3(gx0 - r.xMin, 8f, 1f));
         SolidBox(g, "Limite_N", new Vector3((gx1 + r.xMax) / 2f, 3f, r.yMax + 0.5f), new Vector3(r.xMax - gx1, 8f, 1f));
     }

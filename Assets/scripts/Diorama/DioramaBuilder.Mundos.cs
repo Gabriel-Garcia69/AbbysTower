@@ -43,7 +43,7 @@ public partial class DioramaBuilder
     // ------------------------------------------------------------------ puentes
 
     /// <summary>Puente colgante de tablones entre dos puntos (puede subir o bajar), con barandal de cuerda y colisión.</summary>
-    void RopeBridge(Transform parent, string name, Vector3 a, Vector3 b, float width = 2.6f)
+    void RopeBridge(Transform parent, string name, Vector3 a, Vector3 b, float width = 3.6f)
     {
         var root2 = Group(name, parent);
         Vector3 flat = b - a; float rise = flat.y; flat.y = 0f;

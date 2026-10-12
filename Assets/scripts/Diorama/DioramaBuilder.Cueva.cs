@@ -19,8 +19,8 @@ public partial class DioramaBuilder
     float CaveHeight(float x, float z)
     {
         float e = EdgeNoise(x, z);
-        if (Mathf.Abs(x) < 2.6f && z > -31f && z < -19f) return 0f;    // escalinata de bajada
-        if (Mathf.Abs(x) < 4.5f + e * 0.3f && z <= -31f) return 3.5f;   // túnel de entrada
+        if (Mathf.Abs(x) < 3.4f && z > -31f && z < -19f) return 0f;    // escalinata de bajada
+        if (Mathf.Abs(x) < 6.5f + e * 0.3f && z <= -31f) return 3.5f;   // túnel de entrada
         float ell = CaveEll(x, z, e);
         if (ell > 1f) return z < -24f ? 5.5f : 14f;   // al sur (lado de la cámara) la pared es baja: se ve la gruta por encima
         if (Vector2.Distance(new Vector2(x, z), CaveI1) < 6f + e * 0.5f) return 0.3f;
@@ -40,22 +40,22 @@ public partial class DioramaBuilder
         var water = Flat(g, "Lago", new Vector3(0f, CaveLakeY, 8f), 140f, 120f, mWater, 0.08f);
         water.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-        Stairs(lvl, "Bajada", new Vector3(0f, 0f, -19.5f), new Vector3(0f, 3.5f, -31f), 4f, mCaveBrick);
+        Stairs(lvl, "Bajada", new Vector3(0f, 0f, -19.5f), new Vector3(0f, 3.5f, -31f), 5.6f, mCaveBrick);
         // arco de la entrada
         var gate = Group("Entrada", g);
         gate.localPosition = new Vector3(0f, 3.5f, -33f);
-        foreach (float sx in new[] { -1f, 1f }) Box(gate, "Jamba", new Vector3(sx * 4f, 3f, 0f), new Vector3(1.4f, 6f, 1.6f), mCaveBrick, true);
-        Box(gate, "Dintel", new Vector3(0f, 6.4f, 0f), new Vector3(9.6f, 1f, 1.8f), mCaveBrick, false);
-        foreach (float sx in new[] { -1f, 1f }) Brazier(gate, new Vector3(sx * 2.4f, 0f, 1.6f));
+        foreach (float sx in new[] { -1f, 1f }) Box(gate, "Jamba", new Vector3(sx * 5.6f, 3f, 0f), new Vector3(1.4f, 6f, 1.6f), mCaveBrick, true);
+        Box(gate, "Dintel", new Vector3(0f, 6.4f, 0f), new Vector3(12.8f, 1f, 1.8f), mCaveBrick, false);
+        foreach (float sx in new[] { -1f, 1f }) Brazier(gate, new Vector3(sx * 3.6f, 0f, 1.6f));
 
         // pasarelas sobre el lago
-        Deck(lvl, -1.7f, 1.7f, -18.6f, -1.4f);
-        Rail(lvl, new Vector2(-1.7f, -18.2f), new Vector2(-1.7f, -1.8f));
-        Rail(lvl, new Vector2(1.7f, -18.2f), new Vector2(1.7f, -1.8f));
-        Deck(lvl, -1.7f, 1.7f, 9.4f, 18.4f);
-        Rail(lvl, new Vector2(-1.7f, 9.8f), new Vector2(-1.7f, 18f));
-        Rail(lvl, new Vector2(1.7f, 9.8f), new Vector2(1.7f, 18f));
-        blocked.Add(new Rect(-3f, -20f, 6f, 40f));
+        Deck(lvl, -2.6f, 2.6f, -18.6f, -1.4f);
+        Rail(lvl, new Vector2(-2.6f, -18.2f), new Vector2(-2.6f, -1.8f));
+        Rail(lvl, new Vector2(2.6f, -18.2f), new Vector2(2.6f, -1.8f));
+        Deck(lvl, -2.6f, 2.6f, 9.4f, 18.4f);
+        Rail(lvl, new Vector2(-2.6f, 9.8f), new Vector2(-2.6f, 18f));
+        Rail(lvl, new Vector2(2.6f, 9.8f), new Vector2(2.6f, 18f));
+        blocked.Add(new Rect(-4f, -20f, 8f, 40f));
 
         // cascada al fondo
         float wz = 45f;

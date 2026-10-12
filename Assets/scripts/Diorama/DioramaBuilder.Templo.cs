@@ -16,7 +16,7 @@ public partial class DioramaBuilder
     {
         float e = EdgeNoise(x, z);
         if (Mathf.Abs(x) < 26f && z > -3f && z < 50f) return 0f;          // planta del templo
-        if (Mathf.Abs(x) < 4.5f && z <= -3f) return 0f;                   // camino de braseros
+        if (Mathf.Abs(x) < 6f && z <= -3f) return 0f;                   // camino de braseros
         float dOasis = Vector2.Distance(new Vector2(x, z), Oasis);
         if (dOasis < 6.5f + e * 0.6f) return -1.2f;
         if (dOasis < 14f) return 0f;
@@ -85,9 +85,9 @@ public partial class DioramaBuilder
         Platform(g, -20f, 20f, 0f, 16f, 1.2f);
         Platform(g, -16f, 16f, 16f, 32f, 2.8f);
         Platform(g, -12f, 12f, 32f, 46f, 4.6f);
-        Stairs(lvl, "Escalinata0", new Vector3(0f, 0f, -3.8f), new Vector3(0f, 1.2f, 0.3f), 5f, mSandstone);
-        Stairs(lvl, "Escalinata1", new Vector3(0f, 1.2f, 11.4f), new Vector3(0f, 2.8f, 16.3f), 5f, mSandstone);
-        Stairs(lvl, "Escalinata2", new Vector3(0f, 2.8f, 27.4f), new Vector3(0f, 4.6f, 32.3f), 5f, mSandstone);
+        Stairs(lvl, "Escalinata0", new Vector3(0f, 0f, -3.8f), new Vector3(0f, 1.2f, 0.3f), 7f, mSandstone);
+        Stairs(lvl, "Escalinata1", new Vector3(0f, 1.2f, 11.4f), new Vector3(0f, 2.8f, 16.3f), 7f, mSandstone);
+        Stairs(lvl, "Escalinata2", new Vector3(0f, 2.8f, 27.4f), new Vector3(0f, 4.6f, 32.3f), 7f, mSandstone);
 
         // columnatas
         for (float z = 2.5f; z < 15f; z += 3.6f)

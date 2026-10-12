@@ -20,8 +20,8 @@ public partial class DioramaBuilder
         foreach (var s in Stacks)
             if (Vector2.Distance(new Vector2(x, z), new Vector2(s.x, s.y)) < s.z + e * 0.4f) return s.w;
         // pasillos de las escalinatas
-        if (Mathf.Abs(x + 36f) < 2.6f && z > -23.4f && z < -13f) return 7f;
-        if (Mathf.Abs(x + 20f) < 2.6f && z > -12.2f && z < -4f) return 2.5f;
+        if (Mathf.Abs(x + 36f) < 3.4f && z > -23.4f && z < -13f) return 7f;
+        if (Mathf.Abs(x + 20f) < 3.4f && z > -12.2f && z < -4f) return 2.5f;
         float zTop = -20f + e * 1.2f, zMid = -8f + e * 1.2f, zLow = -3f + e;
         if (z < zTop) return z < -32f && Noise(x * 0.09f + 5f, z * 0.09f) > 0.62f ? CliffTop + 2.5f : CliffTop;
         if (z < zMid) return 7f;
@@ -41,8 +41,8 @@ public partial class DioramaBuilder
         var lvl = Group("Nivel", root);
 
         // escalinatas entre repisas y puentes a los farallones
-        Stairs(lvl, "EscalinataAlta", new Vector3(-36f, 7f, -17.2f), new Vector3(-36f, CliffTop, -23.5f), 4f);
-        Stairs(lvl, "EscalinataBaja", new Vector3(-20f, 2.5f, -4.5f), new Vector3(-20f, 7f, -12.2f), 4f);
+        Stairs(lvl, "EscalinataAlta", new Vector3(-36f, 7f, -17.2f), new Vector3(-36f, CliffTop, -23.5f), 5.6f);
+        Stairs(lvl, "EscalinataBaja", new Vector3(-20f, 2.5f, -4.5f), new Vector3(-20f, 7f, -12.2f), 5.6f);
         RopeBridge(lvl, "Puente1", new Vector3(-14f, 2.5f, -5f), new Vector3(-14f, 2.5f, 11f - 5.3f));
         RopeBridge(lvl, "Puente2", new Vector3(-8.6f, 2.5f, 12.2f), new Vector3(5.2f, 4f, 14.2f));
         RopeBridge(lvl, "Puente3", new Vector3(15.2f, 4f, 15.2f), new Vector3(27.8f, 5.5f, 12.6f));

@@ -9,7 +9,7 @@ public partial class DioramaBuilder
     {
         var g = Group("Nivel", root);
         // emboscada en la franja entre el cañón y las ruinas
-        Arena(g, "Emboscada frente a las ruinas", new Vector3(-6f, 0f, 14.3f), new Vector2(26f, 6.4f), 4);
+        Arena(g, "Emboscada frente a las ruinas", new Vector3(-4f, 0f, 16f), new Vector2(30f, 8f), 4);
         HealShrine(g, new Vector3(5.5f, 0f, -25.5f));
         Chest(g, new Vector3(-30.5f, 0f, -3.5f), 18, 90f);
         Chest(g, new Vector3(LookoutX - 1f, 0.1f, CliffFenceZ + 1.6f), 25, 180f);

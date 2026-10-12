@@ -474,7 +474,7 @@ public partial class DioramaBuilder
     {
         var b = Group("PuenteCanon", root);
         b.localPosition = new Vector3(x, 0f, 0f);
-        float w = 3.4f, half = FenceZ + 0.6f;
+        float w = 4.8f, half = FenceZ + 0.6f;
         for (float z = -half; z < half; z += 0.45f)
         {
             var p = Box(b, "Tablon", new Vector3(R(-0.06f, 0.06f), 0.05f, z + 0.22f), new Vector3(w, 0.12f, 0.4f), mPlank, false);
@@ -509,7 +509,7 @@ public partial class DioramaBuilder
     {
         var b = Group("PuenteArroyo", root);
         b.localPosition = new Vector3(x, 0f, Meander(x));
-        float w = 2.6f, half = 3f;
+        float w = 3.8f, half = 3f;
         for (float z = -half; z < half; z += 0.45f)
             Box(b, "Tablon", new Vector3(0f, 0.05f, z + 0.22f), new Vector3(w, 0.12f, 0.4f), mPlank, false);
         foreach (float sx in new[] { -1f, 1f })
@@ -530,8 +530,8 @@ public partial class DioramaBuilder
         var g = Group("Cercas", root);
         foreach (float sz in new[] { -1f, 1f })
         {
-            Fence(g, new Vector2(RiverStartX - 1.5f, sz * FenceZ), new Vector2(bridgeX - 1.8f, sz * FenceZ));
-            Fence(g, new Vector2(bridgeX + 1.8f, sz * FenceZ), new Vector2(Walk.xMax, sz * FenceZ));
+            Fence(g, new Vector2(RiverStartX - 1.5f, sz * FenceZ), new Vector2(bridgeX - 2.6f, sz * FenceZ));
+            Fence(g, new Vector2(bridgeX + 2.6f, sz * FenceZ), new Vector2(Walk.xMax, sz * FenceZ));
         }
         // a lo ancho, en la orilla de la cascada (cruza el arroyo)
         Fence(g, new Vector2(RiverStartX - 1.5f, -FenceZ), new Vector2(RiverStartX - 1.5f, -2.6f));

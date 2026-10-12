@@ -14,7 +14,7 @@ using UnityEditor;
 /// </summary>
 public partial class DioramaBuilder : MonoBehaviour
 {
-    public enum Layout { Pueblo, Puerto, Acantilado, Cueva, Templo, Nevado, Cima }
+    public enum Layout { Pueblo, Puerto, Acantilado, Cueva, Templo, Nevado, Cima, Lago, Cascadas, Montana }
     [Tooltip("Qué mapa genera: el pueblo del risco o el muelle de puerto.")]
     public Layout layout = Layout.Pueblo;
     public int seed = 7;
@@ -36,6 +36,9 @@ public partial class DioramaBuilder : MonoBehaviour
                 case Layout.Templo: return TempleWalk;
                 case Layout.Nevado: return SnowWalk;
                 case Layout.Cima: return SummitWalk;
+                case Layout.Lago: return LakeWalk;
+                case Layout.Cascadas: return FallsWalk;
+                case Layout.Montana: return MountWalk;
                 default: return TownWalk;
             }
         }
@@ -58,7 +61,7 @@ public partial class DioramaBuilder : MonoBehaviour
     // ------------------------------------------------------------------ generación
 
     /// <summary>Súbelo cada vez que cambie lo que genera Build(): los pisos viejos se regeneran solos al abrirlos.</summary>
-    public const int BuildVersion = 5;
+    public const int BuildVersion = 12;
     [SerializeField, HideInInspector] int builtVersion;
     public bool IsCurrent => builtVersion == BuildVersion;
 
@@ -80,6 +83,9 @@ public partial class DioramaBuilder : MonoBehaviour
             case Layout.Templo: BuildTemple(); return;
             case Layout.Nevado: BuildSnow(); return;
             case Layout.Cima: BuildSummit(); return;
+            case Layout.Lago: BuildLake(); return;
+            case Layout.Cascadas: BuildFalls(); return;
+            case Layout.Montana: BuildMountain(); return;
         }
 
         BuildTerrain();
@@ -133,6 +139,9 @@ public partial class DioramaBuilder : MonoBehaviour
                 case Layout.Templo: return TempleSpawn;
                 case Layout.Nevado: return SnowSpawn;
                 case Layout.Cima: return SummitSpawn;
+                case Layout.Lago: return LakeSpawn;
+                case Layout.Cascadas: return FallsSpawn;
+                case Layout.Montana: return MountSpawn;
                 default: return Spawn;
             }
         }
@@ -869,7 +878,7 @@ public partial class DioramaBuilder : MonoBehaviour
         SolidBox(g, "Limite_N", new Vector3((gx1 + r.xMax) / 2f, 3f, r.yMax + 0.5f), new Vector3(r.xMax - gx1, 8f, 1f));
     }
 
-    public enum Mood { Dia, Atardecer, Noche, Gruta, Crepusculo }
+    public enum Mood { Dia, Atardecer, Noche, Gruta, Crepusculo, Amanecer }
 
     /// <summary>Hora y ambiente de cada piso.</summary>
     public Mood CurrentMood
@@ -882,6 +891,7 @@ public partial class DioramaBuilder : MonoBehaviour
                 case Layout.Templo: case Layout.Nevado: return Mood.Noche;
                 case Layout.Cueva: return Mood.Gruta;
                 case Layout.Cima: return Mood.Crepusculo;
+                case Layout.Lago: return Mood.Amanecer;
                 default: return Mood.Dia;
             }
         }
@@ -943,6 +953,15 @@ public partial class DioramaBuilder : MonoBehaviour
                 fog = new Color(0.62f, 0.45f, 0.6f); fogStart = 120f; fogEnd = 1000f;
                 stars = true;
                 break;
+            case Mood.Amanecer:
+                // amanecer: cielo lila que se vuelve rosa y oro en el horizonte; el lago lo refleja
+                sun.transform.localRotation = Quaternion.Euler(16f, -62f, 0f);
+                sun.color = new Color(1f, 0.82f, 0.68f); sun.intensity = 2f;
+                sky.zenith = new Color(0.36f, 0.48f, 0.82f); sky.horizon = new Color(1f, 0.74f, 0.62f); sky.ground = new Color(0.6f, 0.58f, 0.66f);
+                sky.sunColor = new Color(1f, 0.8f, 0.55f) * 2.2f; sky.sunSize = 0.009f;
+                sky.cloudColor = new Color(1f, 0.8f, 0.82f); sky.cloudCover = 0.45f;
+                fog = new Color(0.86f, 0.78f, 0.84f); fogStart = 240f; fogEnd = 1100f;
+                break;
             default:
                 // tarde dorada de cuento: azul claro arriba, durazno en el horizonte, nubes cálidas
                 sun.transform.localRotation = Quaternion.Euler(38f, 30f, 0f);
@@ -965,13 +984,14 @@ public partial class DioramaBuilder : MonoBehaviour
 #endif
         sky.Apply();
         // al atardecer, luz de ambiente cálida (lo que da la espalda al sol no queda negro)
-        if (mood == Mood.Atardecer || mood == Mood.Crepusculo)
+        if (mood == Mood.Atardecer || mood == Mood.Crepusculo || mood == Mood.Amanecer)
         {
             sky.driveAmbient = false;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.58f, 0.45f, 0.55f);
-            RenderSettings.ambientEquatorColor = new Color(0.5f, 0.36f, 0.34f);
-            RenderSettings.ambientGroundColor = new Color(0.18f, 0.14f, 0.16f);
+            bool dawn = mood == Mood.Amanecer;
+            RenderSettings.ambientSkyColor = dawn ? new Color(0.72f, 0.7f, 0.86f) : new Color(0.58f, 0.45f, 0.55f);
+            RenderSettings.ambientEquatorColor = dawn ? new Color(0.72f, 0.6f, 0.58f) : new Color(0.5f, 0.36f, 0.34f);
+            RenderSettings.ambientGroundColor = dawn ? new Color(0.26f, 0.24f, 0.26f) : new Color(0.18f, 0.14f, 0.16f);
         }
         // de noche y en la gruta, luz de ambiente azul (si no, todo lo que no alumbra un farol queda negro)
         if (mood == Mood.Noche || mood == Mood.Gruta)
@@ -997,7 +1017,8 @@ public partial class DioramaBuilder : MonoBehaviour
         main.prewarm = true;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
         var em = ps.emission; em.rateOverTime = fireflies ? 30f : 45f;
-        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(70f, 5f, 70f);
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(Mathf.Max(70f, Walk.width), 5f, Mathf.Max(70f, Walk.height));
+        if (layout >= Layout.Lago) { ps.transform.localPosition = new Vector3(Walk.center.x, 2.5f + SpawnPoint.y, Walk.center.y); main.maxParticles = 1200; em.rateOverTime = fireflies ? 90f : 130f; }
         var noise = ps.noise; noise.enabled = true; noise.strength = fireflies ? 0.5f : 0.25f; noise.frequency = 0.2f;
         var col = ps.colorOverLifetime; col.enabled = true;
         var grad = new Gradient();

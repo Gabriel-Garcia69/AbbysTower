@@ -27,24 +27,28 @@ public partial class DioramaBuilder
             placed++;
         }
         // bosque en los bancales y alrededor (fuera de la zona jugable)
-        for (int i = 0, tries = 0; i < 230 && tries < 9000; tries++)
+        bool big = layout >= Layout.Lago;   // mapas largos: el bosque cubre todo el terreno, también dentro (lejos del sendero)
+        var ta = TerrainArea;
+        for (int i = 0, tries = 0; i < (big ? 520 : 230) && tries < (big ? 20000 : 9000); tries++)
         {
-            Vector2 q = new Vector2(R(-85f, 85f), R(-58f, 95f));
-            if (Walk.Contains(q) && q.y < 36f) continue;
+            Vector2 q = big ? new Vector2(R(ta.xMin + 4f, ta.xMax - 4f), R(ta.yMin + 4f, ta.yMax - 4f)) : new Vector2(R(-85f, 85f), R(-58f, 95f));
+            if (big) { if (Walk.Contains(q) && (!Free(q, 2.6f) || ShadowsTrail(q))) continue; }
+            else if (Walk.Contains(q) && q.y < 36f) continue;
             if (q.y < Walk.yMin && q.y > Walk.yMin - 30f && rng.NextDouble() < 0.9) continue;   // al sur está la cámara: no se le pone bosque enfrente
             float h = Height(q.x, q.y);
             if (Underwater(h) || InWater(q) || !Flat(q, 1.2f, h)) continue;
             if (!Free(q, 1f)) continue;
             float s = R(0.95f, 1.6f) * (h < -5f ? 1.3f : 1f);
-            if (rng.NextDouble() < 0.6) Pine(g, q, h, s, false); else Tree(g, q, h, s, false);
+            if (rng.NextDouble() < 0.6 || h >= SnowAbove) Pine(g, q, h, s, false); else Tree(g, q, h, s, false);   // en la nieve, solo pinos
             i++;
         }
         // arbustos en las orillas de los caminos y al pie de los bancales
         for (int i = 0, tries = 0; i < 90 && tries < 4000; tries++)
         {
-            Vector2 q = new Vector2(R(-40f, 40f), R(-40f, 45f));
+            Vector2 q = layout >= Layout.Lago ? new Vector2(R(Walk.xMin, Walk.xMax), R(Walk.yMin, Walk.yMax)) : new Vector2(R(-40f, 40f), R(-40f, 45f));
             float h = Height(q.x, q.y);
             if (Underwater(h) || InWater(q) || !Free(q, 0.3f) || !Flat(q, 0.8f, h)) continue;
+            if (layout >= Layout.Lago && ShadowsTrail(q, 6f)) continue;
             if (q.y < Walk.yMin + 3f) continue;   // detrás del borde sur quedarían pegados a la cámara
             Bush(g, new Vector3(q.x, h, q.y), R(0.7f, 1.3f));
             i++;
@@ -59,7 +63,9 @@ public partial class DioramaBuilder
             case Layout.Pueblo: return h < -4.4f;
             case Layout.Cueva: return h < -0.6f || h > 8f;   // ni en el lago ni en lo alto de las paredes
             case Layout.Cima: return h < -10f;
-            case Layout.Templo: return false;
+            case Layout.Templo: case Layout.Montana: return false;
+            case Layout.Lago: return h < -0.5f;
+            case Layout.Cascadas: return false;   // el cauce lo marca InWater
             default: return h < -0.3f;
         }
     }
@@ -282,10 +288,11 @@ public partial class DioramaBuilder
         var tuft = TuftMesh();
         var batch = new List<CombineInstance>();
         int chunk = 0;
-        for (int i = 0, tries = 0; i < grassTufts && tries < grassTufts * 8; tries++)
+        int tufts = layout >= Layout.Lago ? grassTufts * 3 : grassTufts;
+        for (int i = 0, tries = 0; i < tufts && tries < tufts * 8; tries++)
         {
-            Vector2 q = new Vector2(R(-50f, 50f), R(-45f, 60f));
-            if (!Free(q, 0f) || Terrace.Contains(q)) continue;
+            Vector2 q = layout >= Layout.Lago ? new Vector2(R(Walk.xMin - 6f, Walk.xMax + 6f), R(Walk.yMin, Walk.yMax + 6f)) : new Vector2(R(-50f, 50f), R(-45f, 60f));
+            if (!Free(q, 0f) || (layout == Layout.Pueblo && Terrace.Contains(q))) continue;
             float h = Height(q.x, q.y);
             if (Underwater(h) || InWater(q) || !Flat(q, 0.35f, h)) continue;
             float s = R(0.6f, 1.3f);

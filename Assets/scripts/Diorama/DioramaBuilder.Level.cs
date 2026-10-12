@@ -9,7 +9,7 @@ using UnityEngine;
 public partial class DioramaBuilder
 {
     /// <summary>Orden de la ruta HD-2D (nombre de escena por piso).</summary>
-    public static readonly string[] Route = { "Diorama", "Puerto", "Acantilado", "Cueva", "Templo", "Nevado", "Cima" };
+    public static readonly string[] Route = { "Diorama", "Puerto", "Cascadas", "Acantilado", "Cueva", "Lago", "Templo", "Nevado", "Montana", "Cima" };
 
     public struct LevelInfo { public string title, subtitle, boss, next; public float hp; }
 
@@ -20,12 +20,15 @@ public partial class DioramaBuilder
         {
             switch (layout)
             {
-                case Layout.Puerto: return new LevelInfo { title = "PISO 2", subtitle = "El Puerto de las Mareas", boss = "Capitán sin Barco", next = "Acantilado", hp = 1.15f };
-                case Layout.Acantilado: return new LevelInfo { title = "PISO 3", subtitle = "El Sendero del Acantilado", boss = "La Gárgola del Faro Roto", next = "Cueva", hp = 1.3f };
-                case Layout.Cueva: return new LevelInfo { title = "PISO 4", subtitle = "La Gruta de Cristal", boss = "Corazón de Geoda", next = "Templo", hp = 1.5f };
-                case Layout.Templo: return new LevelInfo { title = "PISO 5", subtitle = "El Templo de Arena", boss = "El Guardián Dorado", next = "Nevado", hp = 1.7f };
-                case Layout.Nevado: return new LevelInfo { title = "PISO 6", subtitle = "La Aldea de la Nieve Eterna", boss = "Escarcha, la Viuda Blanca", next = "Cima", hp = 1.9f };
-                case Layout.Cima: return new LevelInfo { title = "LA CIMA", subtitle = "Sobre las nubes", boss = "El Arquitecto", next = "", hp = 2.3f };
+                case Layout.Puerto: return new LevelInfo { title = "PISO 2", subtitle = "El Puerto de las Mareas", boss = "Capitán sin Barco", next = "Cascadas", hp = 1.15f };
+                case Layout.Cascadas: return new LevelInfo { title = "PISO 3", subtitle = "El Valle de las Cascadas", boss = "El Señor del Torrente", next = "Acantilado", hp = 1.3f };
+                case Layout.Acantilado: return new LevelInfo { title = "PISO 4", subtitle = "El Sendero del Acantilado", boss = "La Gárgola del Faro Roto", next = "Cueva", hp = 1.45f };
+                case Layout.Cueva: return new LevelInfo { title = "PISO 5", subtitle = "La Gruta de Cristal", boss = "Corazón de Geoda", next = "Lago", hp = 1.6f };
+                case Layout.Lago: return new LevelInfo { title = "PISO 6", subtitle = "El Lago de los Espejos", boss = "La Dama del Lago", next = "Templo", hp = 1.75f };
+                case Layout.Templo: return new LevelInfo { title = "PISO 7", subtitle = "El Templo de Arena", boss = "El Guardián Dorado", next = "Nevado", hp = 1.9f };
+                case Layout.Nevado: return new LevelInfo { title = "PISO 8", subtitle = "La Aldea de la Nieve Eterna", boss = "Escarcha, la Viuda Blanca", next = "Montana", hp = 2.05f };
+                case Layout.Montana: return new LevelInfo { title = "PISO 9", subtitle = "La Montaña del Eco", boss = "El Eco de Piedra", next = "Cima", hp = 2.2f };
+                case Layout.Cima: return new LevelInfo { title = "LA CIMA", subtitle = "Sobre las nubes", boss = "El Arquitecto", next = "", hp = 2.4f };
                 default: return new LevelInfo { title = "PISO 1", subtitle = "El Pueblo del Risco", boss = "Guardián de las Ruinas", next = "Puerto", hp = 1f };
             }
         }
@@ -48,6 +51,9 @@ public partial class DioramaBuilder
                 case Layout.Templo: return new[] { E, A, J, H, E };
                 case Layout.Nevado: return new[] { T, H, E, A, J };
                 case Layout.Cima: return new[] { E, H, T, A, J, B };
+                case Layout.Cascadas: return new[] { S, J, A, B, S };
+                case Layout.Lago: return new[] { H, A, S, T, E };
+                case Layout.Montana: return new[] { B, J, T, E, A, H };
                 default: return new[] { S, S, B, J };
             }
         }
@@ -68,7 +74,7 @@ public partial class DioramaBuilder
         enc.displayName = boss ? Info.boss : name;
         if (boss) enc.bossName = Info.boss;
         enc.roster = Roster;
-        enc.bossStyle = (int)layout;   // cada piso, su jefe con su propio patrón
+        enc.bossStyle = BossStyle;   // cada piso, su jefe con su propio patrón
         enc.leash = boss ? 18f : 20f;   // mundo abierto: persiguen a Abby fuera de la arena (puentes, escaleras)
         var sp = new List<Transform>();
         int count = boss ? 1 : enemies;
@@ -84,6 +90,7 @@ public partial class DioramaBuilder
             sp.Add(t);
         }
         enc.spawnPoints = sp.ToArray();
+        if (layout >= Layout.Lago) blocked.Add(new Rect(center.x - size.x / 2f, center.z - size.y / 2f, size.x, size.y));   // sin árboles dentro de la arena
         return enc;
     }
 
@@ -229,7 +236,14 @@ public partial class DioramaBuilder
             float L = Mathf.Sqrt(run * run + rise * rise);
             var rail = Box(s, "Pretil", new Vector3(sx * (width / 2f + 0.25f), rise / 2f + 0.35f, run / 2f), new Vector3(0.5f, 0.6f, L), mStone, false);
             rail.transform.localRotation = Quaternion.Euler(-Mathf.Atan2(rise, run) * Mathf.Rad2Deg, 0f, 0f);
-            Box(s, "Costado", new Vector3(sx * (width / 2f + 0.25f), rise / 2f - 0.6f, run / 2f), new Vector3(0.5f, rise + 1.2f, run), mStone, false);
+            // costado escalonado (sigue a los escalones; un muro rectangular se veía enorme en las rampas largas)
+            int per = Mathf.Max(1, steps / 8);
+            for (int i = 0; i < steps; i += per)
+            {
+                int j = Mathf.Min(steps, i + per);
+                float top = j * h;
+                Box(s, "Costado", new Vector3(sx * (width / 2f + 0.25f), top / 2f - 0.6f, (i + j) * depth / 2f), new Vector3(0.5f, top + 1.2f, (j - i) * depth), mStone, false);
+            }
             SolidBox(s, "Collider_Pretil", new Vector3(sx * (width / 2f + 0.25f), rise / 2f + 1f, run / 2f), new Vector3(0.5f, rise + 2f, run));
         }
         var ramp = new GameObject("Collider_Rampa");
@@ -242,6 +256,28 @@ public partial class DioramaBuilder
     }
 
     /// <summary>Ajusta la escena al piso: título, siguiente escena y altura a la que caer cuenta como caída.</summary>
+    /// <summary>Patrón del jefe (0-6, ver TowerEnemy.ChooseBoss): los pisos nuevos reusan patrones.</summary>
+    int BossStyle => layout == Layout.Lago ? 3 : layout == Layout.Cascadas ? 1 : layout == Layout.Montana ? 2 : (int)layout;
+
+    /// <summary>Altura bajo la cual Abby se cayó del mapa.</summary>
+    public float KillY
+    {
+        get
+        {
+            switch (layout)
+            {
+                case Layout.Puerto: return -2.2f;
+                case Layout.Acantilado: case Layout.Templo: case Layout.Nevado: return -3f;
+                case Layout.Cueva: return -2.5f;
+                case Layout.Cima: return -12f;
+                case Layout.Lago: return -5f;
+                case Layout.Cascadas: return -8f;
+                case Layout.Montana: return -16f;
+                default: return -6f;
+            }
+        }
+    }
+
     public void ConfigureScene(float killY)
     {
         var fd = FindAnyObjectByType<FloorDirector>();

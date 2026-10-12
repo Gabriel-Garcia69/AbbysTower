@@ -59,6 +59,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Cima.unity
     guid: 123ee2b64b9346047a216ee60d091a93
+  - enabled: 1
+    path: Assets/Scenes/Cascadas.unity
+    guid: 571028a8741af984199419b366a0ac71
+  - enabled: 1
+    path: Assets/Scenes/Lago.unity
+    guid: 491d43fa791ea8240a9cf56a1c89399c
+  - enabled: 1
+    path: Assets/Scenes/Montana.unity
+    guid: 8cb3463b7833288478149c40ab3768a4
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

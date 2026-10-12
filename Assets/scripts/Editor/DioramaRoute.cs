@@ -10,8 +10,6 @@ using UnityEngine;
 [InitializeOnLoad]
 public static class DioramaRoute
 {
-    static readonly float[] KillY = { -6f, -2.2f, -3f, -2.5f, -3f, -3f, -12f };
-
     static DioramaRoute()
     {
         EditorSceneManager.sceneOpened += (scene, mode) =>
@@ -52,7 +50,6 @@ public static class DioramaRoute
         if (p != null) p.transform.position = b.SpawnPoint;
         var rig = Object.FindAnyObjectByType<CameraRig>();
         if (rig != null) rig.transform.position = b.SpawnPoint;
-        int k = System.Array.IndexOf(DioramaBuilder.Route, sceneName);
-        b.ConfigureScene(k >= 0 && k < KillY.Length ? KillY[k] : -6f);
+        b.ConfigureScene(b.KillY);
     }
 }

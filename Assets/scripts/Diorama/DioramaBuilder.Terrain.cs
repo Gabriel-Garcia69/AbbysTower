@@ -22,6 +22,9 @@ public partial class DioramaBuilder
                 case Layout.Templo: return TempleArea;
                 case Layout.Nevado: return SnowArea;
                 case Layout.Cima: return SummitArea;
+                case Layout.Lago: return LakeArea;
+                case Layout.Cascadas: return FallsArea;
+                case Layout.Montana: return MountArea;
                 default: return TownArea;
             }
         }
@@ -38,7 +41,8 @@ public partial class DioramaBuilder
             {
                 case Layout.Pueblo: return -4.5f;
                 case Layout.Cueva: return -1.5f;
-                case Layout.Templo: case Layout.Cima: return -999f;
+                case Layout.Templo: case Layout.Cima: case Layout.Montana: case Layout.Cascadas: return -999f;
+                case Layout.Lago: return -1.1f;
                 default: return -0.6f;
             }
         }
@@ -47,6 +51,7 @@ public partial class DioramaBuilder
     const float SpringX = -66f;   // donde nace el arroyo (manantial entre rocas)
     const float OuterY = 12f, OuterSouthY = 4.8f;   // altura de las mesetas de afuera (= último bancal)
     const float Chunk = 30f;
+    static readonly Vector2 EastLake = new Vector2(200f, 6f);   // el río del pueblo termina en un lago, al este
 
     // ------------------------------------------------------------------ forma
 
@@ -64,6 +69,9 @@ public partial class DioramaBuilder
             case Layout.Templo: return TempleHeight(x, z);
             case Layout.Nevado: return SnowHeight(x, z);
             case Layout.Cima: return SummitHeight(x, z);
+            case Layout.Lago: return LakeHeight(x, z);
+            case Layout.Cascadas: return FallsHeight(x, z);
+            case Layout.Montana: return MountHeight(x, z);
         }
         float e = (Noise(x * 0.18f, z * 0.18f) * 2f - 1f) + (Noise(x * 0.5f + 40f, z * 0.5f) * 2f - 1f) * 0.35f
                 + (Noise(x * 1.3f - 17f, z * 1.3f + 9f) * 2f - 1f) * 0.25f;   // orillas irregulares, nada de líneas rectas
@@ -87,22 +95,33 @@ public partial class DioramaBuilder
 
         // el río: arroyo arriba (oeste) y cañón con bancales desde la cascada
         float rz = Mathf.Abs(z - Meander(x));
-        bool inCanyon = rz < 3.2f ? x > RiverStartX : x > RiverStartX + e * 1.2f;   // la orilla de la cascada es recta
+        bool inCanyon = (rz < 3.2f ? x > RiverStartX : x > RiverStartX + e * 1.2f) && x < EastLake.x + 80f;   // la orilla de la cascada es recta
         if (inCanyon)
         {
             // ruido suave (sin el de alta frecuencia): bancales corridos y limpios, sin pilares sueltos de una celda
             float soft = Noise(x * 0.07f + 3f, z * 0.07f - 11f) * 2f - 1f;
             float d = rz + soft * 1.1f;
+            // al este (fuera del pueblo) el cañón se abre poco a poco en un valle de bancales que acaba en un lago
+            float s = 1f + Mathf.Max(0f, x - 45f) / 26f;
+            float lake = Mathf.Max(0f, Vector2.Distance(new Vector2(x, z), EastLake) - 34f) / 1.7f;
+            float ds = x < EastLake.x ? Mathf.Min(d / s, lake) : lake;
             // solo cerca del río: lejos de él el terreno conserva sus bancales
-            if (d < 7.6f) h = Mathf.Min(h, d < 2.8f ? -4.6f : d < 4.5f ? -3.2f : d < 6.1f ? -1.8f : -0.9f);
-            else if (d < 9f) h = Mathf.Min(h, 0f);   // orilla a nivel del pueblo
+            if (ds < 7.6f) h = Mathf.Min(h, ds < 2.8f ? -4.6f : ds < 4.5f ? -3.2f : ds < 6.1f ? -1.8f : -0.9f);
+            else if (ds < 9f) h = Mathf.Min(h, 0f);   // orilla a nivel del pueblo
+            else if (x > 45f)
+            {
+                float w = ds - 9f;
+                h = Mathf.Min(h, w < 2.2f ? 1.5f : w < 4.4f ? 3f : w < 6.6f ? 4.8f : w < 9f ? 7f : w < 11.5f ? 9.5f : OuterY);
+            }
         }
         else if (x > SpringX && rz + e * 0.3f < 2.2f) h -= 0.8f;   // el arroyo baja por los bancales desde el manantial
+        // al este, fuera del pueblo, el terreno baja hacia el lago: se ve lejos, no una muralla
+        if (x > 60f) h = Mathf.Min(h, Mathf.Lerp(OuterY, 3f, Mathf.Clamp01((x - 60f) / 70f)));
         return h;
     }
 
     /// <summary>¿Cae en el cauce del arroyo o del río? (ahí no van árboles, arbustos ni pasto)</summary>
-    static bool InWater(Vector2 q) => Mathf.Abs(q.y - Meander(q.x)) < 3.4f && q.x > SpringX - 2f;
+    bool InWater(Vector2 q) => layout >= Layout.Lago ? NewWorldWater(q) : Mathf.Abs(q.y - Meander(q.x)) < 3.4f && q.x > SpringX - 2f;
 
     /// <summary>Altura del agua del arroyo en x (un poco abajo de la orilla).</summary>
     float StreamWaterAt(float x)
@@ -145,10 +164,24 @@ public partial class DioramaBuilder
         int per = Mathf.RoundToInt(Chunk / Cell);
         for (int ci = 0; ci < nx; ci += per)
             for (int cj = 0; cj < nz; cj += per)
-                BuildTerrainChunk(g, hgt, nx, nz, ci, cj, Mathf.Min(ci + per, nx), Mathf.Min(cj + per, nz));
+                BuildTerrainChunk(g, hgt, nx, nz, ci, cj, Mathf.Min(ci + per, nx), Mathf.Min(cj + per, nz), TerrainArea, Cell, true);
     }
 
-    void BuildTerrainChunk(Transform parent, float[,] hgt, int nx, int nz, int i0, int j0, int i1, int j1)
+    /// <summary>Terreno de afuera (sin collider, celdas más grandes): misma función de altura, así empata con el de adentro.</summary>
+    void BuildOuterTerrain(Transform parent, Rect area, float cell)
+    {
+        int nx = Mathf.CeilToInt(area.width / cell), nz = Mathf.CeilToInt(area.height / cell);
+        var hgt = new float[nx, nz];
+        for (int i = 0; i < nx; i++)
+            for (int j = 0; j < nz; j++)
+                hgt[i, j] = Height(area.xMin + (i + 0.5f) * cell, area.yMin + (j + 0.5f) * cell);
+        int per = Mathf.Max(1, Mathf.RoundToInt(60f / cell));
+        for (int ci = 0; ci < nx; ci += per)
+            for (int cj = 0; cj < nz; cj += per)
+                BuildTerrainChunk(parent, hgt, nx, nz, ci, cj, Mathf.Min(ci + per, nx), Mathf.Min(cj + per, nz), area, cell, false);
+    }
+
+    void BuildTerrainChunk(Transform parent, float[,] hgt, int nx, int nz, int i0, int j0, int i1, int j1, Rect area, float cell, bool collider)
     {
         var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>();
         var tops = new List<int>(); var sides = new List<int>(); var beds = new List<int>();
@@ -163,45 +196,85 @@ public partial class DioramaBuilder
             tris.AddRange(new[] { k, k + 2, k + 3, k, k + 3, k + 1 });
         }
 
-        for (int i = i0; i < i1; i++)
-            for (int j = j0; j < j1; j++)
-            {
-                float h = hgt[i, j];
-                float x0 = TerrainArea.xMin + i * Cell, z0 = TerrainArea.yMin + j * Cell, x1 = x0 + Cell, z1 = z0 + Cell;
-                // arriba
-                if (h > VoidY) Quad(h <= BedBelow ? beds : tops,
-                     new Vector3(x0, h, z0), new Vector3(x1, h, z0), new Vector3(x0, h, z1), new Vector3(x1, h, z1), Vector3.up,
-                     new Vector2(x0, z0) * tile, new Vector2(x1, z0) * tile, new Vector2(x0, z1) * tile, new Vector2(x1, z1) * tile);
-                // paredes hacia los vecinos más bajos (la cara mira hacia el vecino)
-                TrySide(i + 1, j, new Vector3(x1, 0f, z1), new Vector3(x1, 0f, z0), Vector3.right, z1, z0);
-                TrySide(i - 1, j, new Vector3(x0, 0f, z0), new Vector3(x0, 0f, z1), Vector3.left, z0, z1);
-                TrySide(i, j + 1, new Vector3(x0, 0f, z1), new Vector3(x1, 0f, z1), Vector3.forward, x0, x1);
-                TrySide(i, j - 1, new Vector3(x1, 0f, z0), new Vector3(x0, 0f, z0), Vector3.back, x1, x0);
+        // celdas iguales seguidas se juntan en una sola tira (se ve igual y la escena pesa mucho menos)
+        float Lo(int ni, int nj) => ni < 0 || nj < 0 || ni >= nx || nj >= nz
+            ? (collider ? -ValleyDepth - 2f : Height(area.xMin + (ni + 0.5f) * cell, area.yMin + (nj + 0.5f) * cell))   // orilla de la malla: la altura de afuera
+            : hgt[ni, nj];
+        int Sub(int i, int j)
+        {
+            float h = hgt[i, j];
+            if (h <= VoidY) return -1;
+            return h <= BedBelow || h >= SnowAbove || IsBedAt(area.xMin + (i + 0.5f) * cell, area.yMin + (j + 0.5f) * cell, h) ? 1 : 0;
+        }
+        // pared hacia un vecino más bajo; pa -> pb con la cara mirando al vecino; v = 1 en la orilla de arriba (musgo)
+        void Side(Vector3 pa, Vector3 pb, float ua, float ub, Vector3 normal, float h, float lo)
+        {
+            float vlo = 1f - (h - lo) / wallTile;
+            Quad(sides, new Vector3(pa.x, lo, pa.z), new Vector3(pb.x, lo, pb.z), new Vector3(pa.x, h, pa.z), new Vector3(pb.x, h, pb.z), normal,
+                 new Vector2(ua * 0.5f, vlo), new Vector2(ub * 0.5f, vlo), new Vector2(ua * 0.5f, 1f), new Vector2(ub * 0.5f, 1f));
+        }
 
-                void TrySide(int ni, int nj, Vector3 pa, Vector3 pb, Vector3 normal, float ua, float ub)
+        for (int j = j0; j < j1; j++)
+        {
+            float z0 = area.yMin + j * cell, z1 = z0 + cell;
+            // arriba: tiras a lo largo de X
+            for (int i = i0; i < i1;)
+            {
+                float h = hgt[i, j]; int sub = Sub(i, j);
+                int e = i + 1;
+                while (e < i1 && hgt[e, j] == h && Sub(e, j) == sub) e++;
+                if (sub >= 0)
                 {
-                    float lo = ni < 0 || nj < 0 || ni >= nx || nj >= nz ? -ValleyDepth - 2f : hgt[ni, nj];
-                    if (lo >= h - 0.01f) return;
-                    var tp = pa; pa = pb; pb = tp; float tu = ua; ua = ub; ub = tu;   // orden para que la cara mire al vecino
-                    // v = 1 en la orilla de arriba: ahí cae el musgo de la textura
-                    float vlo = 1f - (h - lo) / wallTile;
-                    Quad(sides, new Vector3(pa.x, lo, pa.z), new Vector3(pb.x, lo, pb.z), new Vector3(pa.x, h, pa.z), new Vector3(pb.x, h, pb.z), normal,
-                         new Vector2(ua * 0.5f, vlo), new Vector2(ub * 0.5f, vlo), new Vector2(ua * 0.5f, 1f), new Vector2(ub * 0.5f, 1f));
+                    float xa = area.xMin + i * cell, xb = area.xMin + e * cell;
+                    Quad(sub == 1 ? beds : tops, new Vector3(xa, h, z0), new Vector3(xb, h, z0), new Vector3(xa, h, z1), new Vector3(xb, h, z1), Vector3.up,
+                         new Vector2(xa, z0) * tile, new Vector2(xb, z0) * tile, new Vector2(xa, z1) * tile, new Vector2(xb, z1) * tile);
                 }
+                i = e;
             }
+            // paredes hacia +Z y -Z: tiras a lo largo de X
+            foreach (int dir in new[] { 1, -1 })
+                for (int i = i0; i < i1;)
+                {
+                    float h = hgt[i, j], lo = Lo(i, j + dir);
+                    if (h <= VoidY || lo >= h - 0.01f) { i++; continue; }
+                    int e = i + 1;
+                    while (e < i1 && hgt[e, j] == h && Lo(e, j + dir) == lo) e++;
+                    float xa = area.xMin + i * cell, xb = area.xMin + e * cell;
+                    if (dir > 0) Side(new Vector3(xb, 0f, z1), new Vector3(xa, 0f, z1), xb, xa, Vector3.forward, h, lo);
+                    else Side(new Vector3(xa, 0f, z0), new Vector3(xb, 0f, z0), xa, xb, Vector3.back, h, lo);
+                    i = e;
+                }
+        }
+        // paredes hacia +X y -X: tiras a lo largo de Z
+        for (int i = i0; i < i1; i++)
+        {
+            float x0 = area.xMin + i * cell, x1 = x0 + cell;
+            foreach (int dir in new[] { 1, -1 })
+                for (int j = j0; j < j1;)
+                {
+                    float h = hgt[i, j], lo = Lo(i + dir, j);
+                    if (h <= VoidY || lo >= h - 0.01f) { j++; continue; }
+                    int e = j + 1;
+                    while (e < j1 && hgt[i, e] == h && Lo(i + dir, e) == lo) e++;
+                    float za = area.yMin + j * cell, zb = area.yMin + e * cell;
+                    if (dir > 0) Side(new Vector3(x1, 0f, za), new Vector3(x1, 0f, zb), za, zb, Vector3.right, h, lo);
+                    else Side(new Vector3(x0, 0f, zb), new Vector3(x0, 0f, za), zb, za, Vector3.left, h, lo);
+                    j = e;
+                }
+        }
 
         var m = new Mesh { name = "Terreno", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
         m.SetVertices(v); m.SetNormals(n); m.SetUVs(0, uv);
         m.subMeshCount = 3;
         m.SetTriangles(tops, 0); m.SetTriangles(sides, 1); m.SetTriangles(beds, 2);
-        m.RecalculateTangents(); m.RecalculateBounds();
+        m.RecalculateBounds();
         var go = new GameObject("Terreno_" + i0 + "_" + j0);
         go.transform.SetParent(parent, false);
         go.AddComponent<MeshFilter>().sharedMesh = m;
         var mr = go.AddComponent<MeshRenderer>();
         mr.sharedMaterials = new[] { TopMat, WallMat, BedMat };
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
-        go.AddComponent<MeshCollider>().sharedMesh = m;
+        if (collider) go.AddComponent<MeshCollider>().sharedMesh = m;
     }
 
     /// <summary>
@@ -215,16 +288,14 @@ public partial class DioramaBuilder
         const float far = 700f;
         // se meten 1 m bajo el borde del terreno para que no quede rendija entre los dos
         Flat(g, "MesetaOeste", new Vector3((-far + a + 1f) / 2f, OuterY, (-far + north) / 2f), a + 1f + far, north + far, mGrass, 0.25f);
-        // al este el cañón del río sigue entre las mesetas hasta perderse en la bruma
-        const float gorge = 8f, gx0 = 89f;
-        float gz = Meander(b);
-        Flat(g, "MesetaEsteN", new Vector3((gx0 + far) / 2f, OuterY, (gz + gorge + north) / 2f), far - gx0, north - gz - gorge, mGrass, 0.25f);
-        Flat(g, "MesetaEsteS", new Vector3((gx0 + far) / 2f, OuterY, (-far + gz - gorge) / 2f), far - gx0, far + gz - gorge, mGrass, 0.25f);
-        float wallH = OuterY + 4.8f;
-        Wall(g, "CanonN", new Vector3((gx0 + far) / 2f, OuterY - wallH / 2f, gz + gorge), Vector3.back, far - gx0, wallH, mRock, 0.25f);
-        Wall(g, "CanonS", new Vector3((gx0 + far) / 2f, OuterY - wallH / 2f, gz - gorge), Vector3.forward, far - gx0, wallH, mRock, 0.25f);
-        Flat(g, "CanonFondo", new Vector3((gx0 + far) / 2f, -4.6f, gz), far - gx0, gorge * 2f, mDirt, 0.25f);
-        MeshObject(g, "RioCanon", RiverStrip(gx0, far, WaterLevel, gorge * 2f - 2f), mRiver, false);
+        // al este el cañón se abre en un valle de bancales con un lago (terreno de verdad, no paredes lisas)
+        float ex1 = EastLake.x + 80f;
+        float es0 = s - 70f;
+        BuildOuterTerrain(g, new Rect(b, es0, ex1 - b, north - es0), 1.4f);
+        Flat(g, "MesetaEsteN", new Vector3((ex1 + far) / 2f, 3f, (es0 + north) / 2f), far - ex1, north - es0, mGrass, 0.25f);
+        Flat(g, "MesetaEsteS", new Vector3((b + far) / 2f, 3f, (-far + es0) / 2f), far - b, far + es0, mGrass, 0.25f);
+        var lakeWater = Flat(g, "LagoEste", new Vector3((40f + ex1) / 2f, WaterLevel, EastLake.y - 3f), ex1 - 40f, 90f, mRiver, 0.12f);
+        lakeWater.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         Flat(g, "MesetaSur", new Vector3((a + b) / 2f, OuterSouthY, (-far + s + 1f) / 2f), b - a, s + 1f + far, mGrass, 0.25f);
         // al norte las mesetas bajan al valle en escalones, como el risco del pueblo
         float[] stepZ = { north, north + 10f, north + 22f };
@@ -239,7 +310,8 @@ public partial class DioramaBuilder
             }
             float h = stepY[k] - stepY[k + 1];
             Wall(g, "RiscoOeste", new Vector3((-far + a) / 2f, (stepY[k] + stepY[k + 1]) / 2f, z0), Vector3.forward, a + far, h, mRock, 0.25f);
-            Wall(g, "RiscoEste", new Vector3((b + far) / 2f, (stepY[k] + stepY[k + 1]) / 2f, z0), Vector3.forward, far - b, h, mRock, 0.25f);
+            float topE = k == 0 ? 3f : stepY[k];   // al este el terreno ya bajó hacia el lago
+            Wall(g, "RiscoEste", new Vector3((b + far) / 2f, (topE + stepY[k + 1]) / 2f, z0), Vector3.forward, far - b, topE - stepY[k + 1], mRock, 0.25f);
         }
 
         // bosque en las mesetas
@@ -247,7 +319,9 @@ public partial class DioramaBuilder
         {
             var q = new Vector2(R(-230f, 230f), R(-220f, north - 3f));
             float y;
-            if (q.x < a - 1f || q.x > b + 1f) y = OuterY;
+            if (q.x > b + 1f && q.x < ex1 && q.y > es0 && q.y < north) { y = Height(q.x, q.y); if (y < 1.4f) continue; }
+            else if (q.x > b + 1f) y = 3f;
+            else if (q.x < a - 1f || q.x > b + 1f) y = OuterY;
             else if (q.y < s - 1f) y = OuterSouthY;
             else continue;
             float sc = R(1.2f, 2f);
@@ -262,7 +336,7 @@ public partial class DioramaBuilder
     {
         var g = Group("Agua", root);
         // río del cañón: tira que sigue la curva
-        var strip = RiverStrip(RiverStartX - 0.2f, TerrainArea.xMax, WaterLevel, 10f);
+        var strip = RiverStrip(RiverStartX - 0.2f, 40f, WaterLevel, 10f);   // más al este, el agua es la del lago (BuildOuterWorld)
         var river = MeshObject(g, "Rio", strip, mRiver, false);
         // arroyo de arriba
         BuildStream(g);

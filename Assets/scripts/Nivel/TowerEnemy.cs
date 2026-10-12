@@ -257,11 +257,13 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         if (target == null) { var p = GameObject.FindWithTag("Player"); if (p != null) target = p.transform; }
         CombatFx.Ring(transform.position, radius * 2.2f + 0.6f, eyeColor, 0.8f);
         cooldown = UnityEngine.Random.Range(0.4f, 1.2f);
+        SettleSpawn();
     }
 
     void Update()
     {
         float dt = Time.deltaTime;
+        Vector3 start = transform.position;
         timer += dt;
         if (cooldown > 0f) cooldown -= dt;
         bob += dt;
@@ -405,6 +407,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         if (glow != null) glow.intensity = (Enraged ? 10f : 6f) * (0.85f + Mathf.PerlinNoise(bob * 3f, 0f) * 0.3f);
 
         KeepInRoom();
+        FollowGround(start);
     }
 
     void Go(State s)
@@ -468,11 +471,12 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         Transform rt = room != null ? room.transform : boundsRoot;
         if (rt == null) return;
         Vector2 size = room != null ? room.size : boundsSize;
+        float leash = room != null ? room.leash : 0f;   // pisos abiertos: pueden salir de la arena persiguiendo a Abby
         Vector3 local = rt.InverseTransformPoint(transform.position);
-        float hx = size.x / 2f - radius - 0.4f, hz = size.y / 2f - radius - 0.4f;
+        float hx = size.x / 2f - radius - 0.4f + leash, hz = size.y / 2f - radius - 0.4f + leash;
         local.x = Mathf.Clamp(local.x, -hx, hx);
         local.z = Mathf.Clamp(local.z, -hz, hz);
-        local.y = 0f;
+        if (leash <= 0f) local.y = 0f;   // con correa la altura la pone el suelo (FollowGround)
         transform.position = rt.TransformPoint(local);
     }
 

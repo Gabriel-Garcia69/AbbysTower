@@ -32,14 +32,14 @@ public partial class DioramaBuilder
             return dz < 7f ? -4f : dz < 30f ? -6f : -8f;
         }
         float h = 0f;
-        float ex = Mathf.Abs(x) - 34f + e * 2f;
+        float ex = Mathf.Abs(x) - (x > 0f ? 38f : 34f) + e * 2f;   // al este, calle ancha hacia la escalera del cabo
         if (ex > 0f && z < -2f) h = Mathf.Max(h, ex < 5f ? 1.5f : ex < 10f ? 3f : ex < 16f ? 4.8f : 7f);
         float es = -z - 36f + e * 2f;
         if (es > 0f) h = Mathf.Max(h, es < 6f ? 1.5f : es < 12f ? 3f : es < 18f ? 4.8f : 7f);
         // los cabos que cierran la bahía
         if (z > 0f && x > 30f) h = Mathf.Max(h, Vector2.Distance(new Vector2(x, z), new Vector2(LighthouseX, LighthouseZ)) < 9f ? 4.5f : 2.5f);
         // pasillo de la escalera del malecón al cabo
-        if (Mathf.Abs(x - 31.5f) < 2.4f && z > -8f && z <= 0f) h = 0f;
+        if (Mathf.Abs(x - 33f) < 3.6f && z > -8f && z <= 0f) h = 0f;
         if (z > 0f && x < -30f) h = Mathf.Max(h, 3f);
         // lomas arriba (no en los bordes: ahí empatan con las mesetas de afuera)
         if (h >= 4.8f && Mathf.Abs(x) < 85f && z > -62f && Noise(x * 0.09f + 5f, z * 0.09f) > 0.62f) h += 2.5f;
@@ -127,7 +127,7 @@ public partial class DioramaBuilder
         Box(g, "Remate", new Vector3(0f, 0.08f, 0.15f), new Vector3(60.4f, 0.16f, 1.1f), mStone, false);
         for (float x = -27f; x <= 27f; x += 6f)
         {
-            if (Mathf.Abs(x - PierX) < 4.5f || Mathf.Abs(x + 22f) < 3f) continue;
+            if (Mathf.Abs(x - PierX) < 4.5f || Mathf.Abs(x + 22.5f) < 4f) continue;
             var b = Prim(g, PrimitiveType.Cylinder, "Bolardo", new Vector3(x, 0.4f, 0.25f), new Vector3(0.38f, 0.32f, 0.38f), mMetal);
             Prim(b.transform, PrimitiveType.Cylinder, "Tapa", new Vector3(0f, 1f, 0f), new Vector3(1.3f, 0.12f, 1.3f), mMetal);
         }
@@ -135,7 +135,7 @@ public partial class DioramaBuilder
         for (int i = 0; i < 26; i++)
             Ivy(g, new Vector3(R(-29f, 29f), SeaY + R(-0.1f, 0.5f), 0.55f), new Vector3(R(0.6f, 1.4f), R(0.3f, 0.6f), 0.3f));
         // borde: no se cae una al mar por accidente (huecos en el muelle y el embarcadero)
-        float[] cuts = { -23.7f, -20.3f, PierX - PierW / 2f, PierX + PierW / 2f };
+        float[] cuts = { -25.5f, -19.5f, PierX - PierW / 2f, PierX + PierW / 2f };
         float x0 = -30f;
         for (int i = 0; i <= cuts.Length; i += 2)
         {
@@ -198,22 +198,23 @@ public partial class DioramaBuilder
     void BuildBoardwalk()
     {
         var g = Group("Embarcadero", root);
-        Deck(g, -23.7f, -20.3f, 0f, 18f);
-        Deck(g, -23.7f, -12f, 15.6f, 19.4f);
-        Rail(g, new Vector2(-23.7f, 0.3f), new Vector2(-23.7f, 19.4f));
-        Rail(g, new Vector2(-20.3f, 0.3f), new Vector2(-20.3f, 15.6f));
-        Rail(g, new Vector2(-23.7f, 19.4f), new Vector2(-12f, 19.4f));
-        Rail(g, new Vector2(-20.3f, 15.6f), new Vector2(-12f, 15.6f));
-        Rail(g, new Vector2(-12f, 15.6f), new Vector2(-12f, 19.4f));
-        Boat(g, new Vector3(-17.5f, SeaY + 0.05f, 11f), 4f);
-        Boat(g, new Vector3(-26.2f, SeaY + 0.05f, 9f), 3.6f);
-        Boat(g, new Vector3(-15f, SeaY + 0.05f, 22.3f), 4.2f);
+        // embarcadero ancho (6 m): se camina y se pelea sin pegarse al barandal
+        Deck(g, -25.5f, -19.5f, 0f, 17.4f);
+        Deck(g, -25.5f, -12f, 14.4f, 20.6f);
+        Rail(g, new Vector2(-25.5f, 0.3f), new Vector2(-25.5f, 20.6f));
+        Rail(g, new Vector2(-19.5f, 0.3f), new Vector2(-19.5f, 14.4f));
+        Rail(g, new Vector2(-25.5f, 20.6f), new Vector2(-12f, 20.6f));
+        Rail(g, new Vector2(-19.5f, 14.4f), new Vector2(-12f, 14.4f));
+        Rail(g, new Vector2(-12f, 14.4f), new Vector2(-12f, 20.6f));
+        Boat(g, new Vector3(-16.8f, SeaY + 0.05f, 10f), 4f);
+        Boat(g, new Vector3(-27.6f, SeaY + 0.05f, 9f), 3.6f);
+        Boat(g, new Vector3(-15f, SeaY + 0.05f, 23.2f), 4.2f);
         foreach (Transform b in g) if (b.name == "Barca") { var bob = b.gameObject.AddComponent<FloatingBob>(); bob.amplitude = 0.06f; bob.period = R(3f, 5f); bob.phase = R(0f, 5f); }
         // canastas de pescado y redes
         for (int i = 0; i < 5; i++)
-            Prim(g, PrimitiveType.Cylinder, "Canasta", new Vector3(R(-23f, -13f), 0.32f, R(16.2f, 18.8f)), new Vector3(0.6f, 0.22f, 0.6f), mPlank);
-        PortLamp(g, new Vector3(-23.2f, 0.1f, 18.8f));
-        blocked.Add(new Rect(-25f, 0f, 14f, 21f));
+            Prim(g, PrimitiveType.Cylinder, "Canasta", new Vector3(R(-24.6f, -13f), 0.32f, R(15.4f, 19.8f)), new Vector3(0.6f, 0.22f, 0.6f), mPlank);
+        PortLamp(g, new Vector3(-25f, 0.1f, 20.1f));
+        blocked.Add(new Rect(-27f, 0f, 16f, 22f));
     }
 
     void Deck(Transform parent, float x0, float x1, float z0, float z1)
@@ -422,15 +423,15 @@ public partial class DioramaBuilder
         // casas y almacenes a los lados de la plaza (al sur va la cámara: nada alto ahí)
         House(v, new Vector3(-27.5f, 0f, -26f), 90f, 8f, 6f, 4.6f, true);
         House(v, new Vector3(-27.5f, 0f, -14f), 90f, 6f, 5f, 3.6f, true);
-        House(v, new Vector3(28f, 0f, -24.5f), -90f, 8.5f, 6f, 4.4f, true);
-        House(v, new Vector3(28f, 0f, -12f), -90f, 6.5f, 5f, 3.8f, false);
+        House(v, new Vector3(26.5f, 0f, -24.5f), -90f, 8.5f, 6f, 4.4f, true);
+        House(v, new Vector3(26.5f, 0f, -12f), -90f, 6.5f, 5f, 3.8f, false);
         Garden(v, new Vector3(-12f, 0f, -32f), 8f, 3f);
         Garden(v, new Vector3(12f, 0f, -32f), 8f, 3f);
         // mercado del muelle
         Stall(v, new Vector3(-9f, 0f, -9f), 0f);
         Stall(v, new Vector3(10f, 0f, -10f), 0f);
         Stall(v, new Vector3(-16f, 0f, -16f), 90f);
-        foreach (var p in new[] { new Vector3(-5f, 0f, -2.5f), new Vector3(12.5f, 0f, -3f), new Vector3(21f, 0f, -4f), new Vector3(-13f, 0f, -3f), new Vector3(-26f, 0f, -4f), new Vector3(24f, 0f, -22f) })
+        foreach (var p in new[] { new Vector3(-5f, 0f, -2.5f), new Vector3(12.5f, 0f, -3f), new Vector3(21f, 0f, -4f), new Vector3(-13f, 0f, -3f), new Vector3(-26f, 0f, -4f), new Vector3(20.5f, 0f, -22f) })
             Clutter(v, p);
         foreach (float x in new[] { -26f, -14f, -6f, 10f, 18f, 26f }) PortLamp(v, new Vector3(x, 0f, -1.8f));
         foreach (float x in new[] { -10f, 10f }) PortLamp(v, new Vector3(x, 0f, -21.5f));

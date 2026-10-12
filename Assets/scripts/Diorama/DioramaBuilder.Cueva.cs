@@ -69,7 +69,7 @@ public partial class DioramaBuilder
         {
             var q = new Vector2(R(-55f, 55f), R(-40f, 55f));
             float e = EdgeNoise(q.x, q.y), ell = CaveEll(q.x, q.y, e);
-            if (ell < 0.74f || ell > 1.04f) continue;
+            if (ell < 0.95f || ell > 1.05f) continue;   // al pie de la pared: las terrazas quedan libres para caminar
             float h = CaveHeight(q.x, q.y);
             bool light = lit < 14 && i % 3 == 0;
             Crystals(g, new Vector3(q.x, Mathf.Min(h, 14f), q.y), R(0.8f, 1.8f), rng.NextDouble() < 0.4, light);
@@ -80,7 +80,9 @@ public partial class DioramaBuilder
         {
             var q = new Vector2(R(-45f, 45f), R(-30f, 45f));
             float h = CaveHeight(q.x, q.y);
-            if (h < 1f || h > 4f || !Free(q, 1f)) continue;
+            float el = CaveEll(q.x, q.y, EdgeNoise(q.x, q.y));
+            bool foot = (el > 0.83f && el < 0.86f) || el > 0.96f;   // pegadas al muro de la terraza de arriba
+            if (h < 1f || h > 4f || !foot || !Free(q, 1f)) continue;
             Stalagmite(g, new Vector3(q.x, h, q.y), R(1.5f, 4.5f));
             i++;
         }

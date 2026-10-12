@@ -8,19 +8,19 @@ using UnityEngine;
 public partial class DioramaBuilder
 {
     static readonly Rect TempleArea = new Rect(-80f, -70f, 160f, 140f);
-    static readonly Rect TempleWalk = new Rect(-50f, -56f, 100f, 106f);
+    static readonly Rect TempleWalk = new Rect(-50f, -56f, 100f, 112f);   // detrás del templo queda un paso ancho, no un pasillito
     static readonly Vector3 TempleSpawn = new Vector3(0f, 0.1f, -48f);
     static readonly Vector2 Oasis = new Vector2(-32f, -20f);
 
     float TempleHeight(float x, float z)
     {
         float e = EdgeNoise(x, z);
-        if (Mathf.Abs(x) < 26f && z > -3f && z < 50f) return 0f;          // planta del templo
+        if (Mathf.Abs(x) < 26f && z > -3f && z < 56f) return 0f;          // planta del templo
         if (Mathf.Abs(x) < 6f && z <= -3f) return 0f;                   // camino de braseros
         float dOasis = Vector2.Distance(new Vector2(x, z), Oasis);
         if (dOasis < 6.5f + e * 0.6f) return -1.2f;
         if (dOasis < 14f) return 0f;
-        float ring = Mathf.Max(Mathf.Abs(x) - 48f, Mathf.Max(z - 52f, -z - 56f)) + e * 2f;
+        float ring = Mathf.Max(Mathf.Abs(x) - 48f, Mathf.Max(z - 58f, -z - 56f)) + e * 2f;
         if (ring > 14f) return 6.4f;
         if (ring > 7f) return 4.8f;
         if (ring > 0f) return 3.2f;

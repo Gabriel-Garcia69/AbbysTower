@@ -368,9 +368,11 @@ public class MouseOrbitCamera : MonoBehaviour
         float viewYaw = shownYaw, viewPitch = shownPitch, viewFov = shownFov, viewLookUp = shownLookUp;
         UpdateShot(dt);
         float w = shotW * shotW * (3f - 2f * shotW);
+        // Q/E durante una toma giran la toma también (p. ej. en el puente, para ver el otro lado)
+        float shotTurn = shot != null ? Mathf.DeltaAngle(shotBaseYaw, shownYaw) : 0f;
         if (w > 0.0001f)
         {
-            viewYaw = Mathf.LerpAngle(shownYaw, sYaw, w);
+            viewYaw = Mathf.LerpAngle(shownYaw, sYaw + shotTurn, w);
             viewPitch = Mathf.Lerp(shownPitch, sPitch, w);
             viewFov = Mathf.Lerp(shownFov, sFov, w);
             viewLookUp = Mathf.Lerp(shownLookUp, sLookUp, w);
@@ -401,7 +403,7 @@ public class MouseOrbitCamera : MonoBehaviour
         }
         else
         {
-            arm.localPosition = new Vector3(originalArmPos.x, shownPivot, originalArmPos.z) + transform.InverseTransformDirection(lookOffset + sOffset * w);
+            arm.localPosition = new Vector3(originalArmPos.x, shownPivot, originalArmPos.z) + transform.InverseTransformDirection(lookOffset + Quaternion.Euler(0f, shotTurn, 0f) * sOffset * w);
             focus = transform.TransformPoint(new Vector3(arm.localPosition.x, arm.localPosition.y - shownPivot, arm.localPosition.z));
             fxzVel = Vector2.zero; focusVel = Vector3.zero;
         }
@@ -471,6 +473,7 @@ public class MouseOrbitCamera : MonoBehaviour
                 // entrando desde la cámara normal: la toma arranca en su encuadre y el peso hace la mezcla
                 sYaw = next.yaw; sPitch = next.pitch; sDist = next.distance; sFov = next.fov; sLookUp = next.lookUp; sOffset = next.offset;
                 sYawVel = sPitchVel = sDistVel = sFovVel = sLookVel = 0f; sOffsetVel = Vector3.zero;
+                shotBaseYaw = yaw;
             }
             if (!next.shown && !string.IsNullOrEmpty(next.title))
             {
@@ -495,6 +498,7 @@ public class MouseOrbitCamera : MonoBehaviour
     }
 
     bool leaving;
+    float shotBaseYaw;   // yaw de la cámara normal al entrar a la toma (lo girado después se suma a la toma)
     CameraShot pending;
     float pendingTime, stillTime, shotCooldownUntil;
     const float ShotEnterDelay = 0.5f, ShotStillDelay = 0.6f, ShotCooldown = 2.5f;

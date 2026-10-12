@@ -69,6 +69,7 @@ public partial class DioramaBuilder
         if (boss) enc.bossName = Info.boss;
         enc.roster = Roster;
         enc.bossStyle = (int)layout;   // cada piso, su jefe con su propio patrón
+        enc.leash = boss ? 18f : 20f;   // mundo abierto: persiguen a Abby fuera de la arena (puentes, escaleras)
         var sp = new List<Transform>();
         int count = boss ? 1 : enemies;
         for (int i = 0; i < count; i++)

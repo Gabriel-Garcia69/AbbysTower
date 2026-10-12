@@ -85,6 +85,7 @@ public class FloorDirector : MonoBehaviour
             var room = r;
             room.Began += () => OnRoomBegan(room);
             room.Cleared += () => OnRoomCleared(room);
+            room.Escaped += () => OnRoomEscaped(room);
         }
         TowerEnemy.AnyDied += OnEnemyDied;
         TowerEnemy.BossEnraged += OnBossEnraged;
@@ -122,6 +123,13 @@ public class FloorDirector : MonoBehaviour
         activeRoom = null; boss = null;
         if (room.isBoss) Banner("¡JEFE DERROTADO!", "La salida se ha abierto", new Color(1f, 0.85f, 0.45f), 4f);
         else if (room.Total > 0) Banner("SALA DESPEJADA", "Las puertas se abren", new Color(0.5f, 1f, 0.85f), 2f);
+    }
+
+    void OnRoomEscaped(RoomEncounter room)
+    {
+        if (room != activeRoom) return;
+        activeRoom = null; boss = null;
+        Banner("TE ALEJASTE", "Los enemigos volvieron a su guarida", new Color(0.7f, 0.8f, 1f), 1.8f);
     }
 
     void OnEnemyDied(TowerEnemy e) => kills++;

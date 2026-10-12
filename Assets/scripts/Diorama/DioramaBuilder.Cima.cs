@@ -33,7 +33,7 @@ public partial class DioramaBuilder
         var dir = new Vector2(b.x - a.x, b.y - a.y).normalized;
         var pa = new Vector2(a.x, a.y) + dir * (a.z - 1.6f);
         var pb = new Vector2(b.x, b.y) - dir * (b.z - 1.6f);
-        RopeBridge(parent, "Puente" + i + j, new Vector3(pa.x, a.w, pa.y), new Vector3(pb.x, b.w, pb.y), 2.8f);
+        RopeBridge(parent, "Puente" + i + j, new Vector3(pa.x, a.w, pa.y), new Vector3(pb.x, b.w, pb.y), 4.2f);   // puentes anchos: se pelea y se camina cómodo
     }
 
     void BuildSummit()

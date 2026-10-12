@@ -58,7 +58,7 @@ public partial class DioramaBuilder : MonoBehaviour
     // ------------------------------------------------------------------ generación
 
     /// <summary>Súbelo cada vez que cambie lo que genera Build(): los pisos viejos se regeneran solos al abrirlos.</summary>
-    public const int BuildVersion = 2;
+    public const int BuildVersion = 5;
     [SerializeField, HideInInspector] int builtVersion;
     public bool IsCurrent => builtVersion == BuildVersion;
 
@@ -512,6 +512,7 @@ public partial class DioramaBuilder : MonoBehaviour
         enc.healthMultiplier = Info.hp;
         enc.maxAlive = 4;
         enc.roster = Roster;
+        enc.leash = 22f;   // baja la escalinata detrás de Abby hasta la plaza
         var t0 = Group("Aparicion", arena);
         t0.localPosition = new Vector3(0f, 0.1f, 2.5f);
         enc.spawnPoints = new[] { t0 };

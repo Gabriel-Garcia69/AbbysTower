@@ -41,6 +41,11 @@ public class RoomEncounter : MonoBehaviour
     public TowerEnemy.Kind[] roster = new TowerEnemy.Kind[0];
     [Tooltip("Patrón del jefe: 0 Guardián, 1 Capitán, 2 Gárgola, 3 Geoda, 4 Guardián Dorado, 5 Escarcha, 6 Arquitecto.")]
     public int bossStyle;
+    [Tooltip("Pisos abiertos: cuántos metros pueden salir los enemigos de la arena persiguiendo a Abby (siguen el suelo: " +
+             "suben escaleras y puentes). 0 = sala cerrada de la torre, se quedan dentro.")]
+    public float leash;
+    [Tooltip("Con correa: si Abby se aleja tanto más allá de la correa, la pelea se suspende y los enemigos se van.")]
+    public float escapeDistance = 16f;
 
     TowerEnemy Prepare(TowerEnemy e)
     {
@@ -60,6 +65,8 @@ public class RoomEncounter : MonoBehaviour
     public int Total { get; private set; }
     public event Action Began;
     public event Action Cleared;
+    /// <summary>Abby se fue lejos y la pelea se suspendió (pisos abiertos).</summary>
+    public event Action Escaped;
 
     readonly List<GameObject> alive = new List<GameObject>();
     readonly Queue<int> queue = new Queue<int>();   // índices de spawn points pendientes
@@ -91,6 +98,7 @@ public class RoomEncounter : MonoBehaviour
                     nextSpawn = Time.time + 0.45f;
                 }
                 if (alive.Count == 0 && queue.Count == 0) Finish();
+                else if (leash > 0f && player != null) CheckEscape();
                 break;
         }
     }
@@ -99,6 +107,26 @@ public class RoomEncounter : MonoBehaviour
     {
         Vector3 local = transform.InverseTransformPoint(player.position);
         return Mathf.Abs(local.x) < size.x / 2f - triggerInset && Mathf.Abs(local.z) < size.y / 2f - triggerInset;
+    }
+
+    float escapeTimer;
+
+    /// <summary>Abby huyó lejos (pisos abiertos): tras unos segundos la pelea se suspende y se reinicia al volver.</summary>
+    void CheckEscape()
+    {
+        Vector3 local = transform.InverseTransformPoint(player.position);
+        float m = leash + escapeDistance;
+        bool far = Mathf.Abs(local.x) > size.x / 2f + m || Mathf.Abs(local.z) > size.y / 2f + m;
+        escapeTimer = far ? escapeTimer + Time.deltaTime : 0f;
+        if (escapeTimer < 3f) return;
+        escapeTimer = 0f;
+        foreach (var e in alive) if (e != null) Destroy(e);
+        alive.Clear();
+        queue.Clear();
+        ActiveCombats = Mathf.Max(0, ActiveCombats - 1);
+        foreach (var d in doors) if (d != null) d.SetClosed(false);
+        Current = State.Esperando;
+        Escaped?.Invoke();
     }
 
     void Begin()

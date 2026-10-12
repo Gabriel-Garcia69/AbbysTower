@@ -90,9 +90,11 @@ public partial class DioramaBuilder
         bool inCanyon = rz < 3.2f ? x > RiverStartX : x > RiverStartX + e * 1.2f;   // la orilla de la cascada es recta
         if (inCanyon)
         {
-            float d = rz + e * 1.6f;
+            // ruido suave (sin el de alta frecuencia): bancales corridos y limpios, sin pilares sueltos de una celda
+            float soft = Noise(x * 0.07f + 3f, z * 0.07f - 11f) * 2f - 1f;
+            float d = rz + soft * 1.1f;
             // solo cerca del río: lejos de él el terreno conserva sus bancales
-            if (d < 7.2f) h = Mathf.Min(h, d < 2.6f ? -4.6f : d < 4.4f ? -3.2f : d < 6f ? -1.8f : -0.9f);
+            if (d < 7.6f) h = Mathf.Min(h, d < 2.8f ? -4.6f : d < 4.5f ? -3.2f : d < 6.1f ? -1.8f : -0.9f);
             else if (d < 9f) h = Mathf.Min(h, 0f);   // orilla a nivel del pueblo
         }
         else if (x > SpringX && rz + e * 0.3f < 2.2f) h -= 0.8f;   // el arroyo baja por los bancales desde el manantial

@@ -61,7 +61,7 @@ public partial class DioramaBuilder : MonoBehaviour
     // ------------------------------------------------------------------ generación
 
     /// <summary>Súbelo cada vez que cambie lo que genera Build(): los pisos viejos se regeneran solos al abrirlos.</summary>
-    public const int BuildVersion = 17;
+    public const int BuildVersion = 19;
     [SerializeField, HideInInspector] int builtVersion;
     public bool IsCurrent => builtVersion == BuildVersion;
 

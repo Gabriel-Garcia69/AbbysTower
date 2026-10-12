@@ -32,7 +32,7 @@ public partial class DioramaBuilder
         for (int i = 0, tries = 0; i < (big ? 520 : 230) && tries < (big ? 20000 : 9000); tries++)
         {
             Vector2 q = big ? new Vector2(R(ta.xMin + 4f, ta.xMax - 4f), R(ta.yMin + 4f, ta.yMax - 4f)) : new Vector2(R(-85f, 85f), R(-58f, 95f));
-            if (big) { if (Walk.Contains(q) && (!Free(q, 2.6f) || ShadowsTrail(q))) continue; }
+            if (big) { if ((Walk.Contains(q) && !Free(q, 2.6f)) || ShadowsTrail(q)) continue; }   // tampoco afuera: un árbol justo al sur del inicio tapaba la cámara
             else if (Walk.Contains(q) && q.y < 36f) continue;
             if (q.y < Walk.yMin && q.y > Walk.yMin - 30f && rng.NextDouble() < 0.9) continue;   // al sur está la cámara: no se le pone bosque enfrente
             float h = Height(q.x, q.y);

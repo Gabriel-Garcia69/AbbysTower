@@ -241,8 +241,8 @@ public partial class DioramaBuilder
         WalkBoundary(FallsWalk);
         var bg = Group("Fondo", root);
         OuterLand(bg, 30f, false, false, true, true, 260, false);
-        Flat(bg, "AfueraSur", new Vector3(0f, 3f, (FallsArea.yMin - 2500f) / 2f + 1f), FallsArea.width, 2502f, mGrass, 0.25f);
-        Flat(bg, "AfueraNorte", new Vector3(0f, FallsCliffY, (FallsArea.yMax + 2500f) / 2f - 1f), FallsArea.width, 2500f, mGrass, 0.25f);
+        Flat(bg, "AfueraSur", new Vector3(0f, 3f, FallsArea.yMin - 1250f + 1f), FallsArea.width, 2500f, mGrass, 0.25f);
+        Flat(bg, "AfueraNorte", new Vector3(0f, FallsCliffY, FallsArea.yMax + 1250f - 1f), FallsArea.width, 2500f, mGrass, 0.25f);
         FarPeaks(bg, new Vector3(0f, 30f, 120f), 420f, -70f, 70f, 14, 120f, 200f, true);
 
         var shots = Group("Tomas", root);

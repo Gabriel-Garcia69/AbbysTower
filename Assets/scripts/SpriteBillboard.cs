@@ -18,7 +18,7 @@ public class SpriteBillboard : MonoBehaviour
     void Awake()
     {
         if (targetCamera == null) targetCamera = Camera.main;
-        _baseScale = transform.localScale;
+        _baseScale = transform.localScale;  
     }
 
     void LateUpdate()

@@ -52,9 +52,9 @@ public class ExteriorIntro : MonoBehaviour
         if (disableDuring != null) foreach (var b in disableDuring) if (b != null) list.Add(b);
         if (list.Count == 0)
         {
-            foreach (var b in FindObjectsByType<MouseOrbitCamera>(FindObjectsSortMode.None)) list.Add(b);
-            foreach (var b in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None)) list.Add(b);
-            foreach (var b in FindObjectsByType<CombatInputReader>(FindObjectsSortMode.None)) list.Add(b);
+            foreach (var b in FindObjectsByType<MouseOrbitCamera>()) list.Add(b);
+            foreach (var b in FindObjectsByType<PlayerInputReader>()) list.Add(b);
+            foreach (var b in FindObjectsByType<CombatInputReader>()) list.Add(b);
         }
         foreach (var b in list) if (b.enabled) { b.enabled = false; disabled.Add(b); }
     }
@@ -70,7 +70,7 @@ public class ExteriorIntro : MonoBehaviour
 
     void BuildShots()
     {
-        var b = FindFirstObjectByType<ExteriorBuilder>();
+        var b = FindAnyObjectByType<ExteriorBuilder>();
         if (b == null) return;
         Transform w = b.transform;
         Vector3 W(float x, float y, float z) => w.TransformPoint(new Vector3(x, y, z));

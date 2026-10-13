@@ -79,7 +79,7 @@ public class FloorDirector : MonoBehaviour
 
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
 
-        rooms = FindObjectsByType<RoomEncounter>(FindObjectsSortMode.None);
+        rooms = FindObjectsByType<RoomEncounter>();
         foreach (var r in rooms)
         {
             var room = r;

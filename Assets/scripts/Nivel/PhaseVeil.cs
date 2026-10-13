@@ -54,7 +54,7 @@ public class PhaseVeil : MonoBehaviour
         Color c = Color.Lerp(color * pulse, Color.white, Mathf.Clamp01(flash));
         c.a = Mathf.Lerp(color.a, 0.9f, Mathf.Clamp01(flash));
         mpb.SetColor(BaseColor, c);
-        foreach (var r in rends) r.SetPropertyBlock(mpb);
+        foreach (var r in rends) if (r != null) r.SetPropertyBlock(mpb);
 
         if (!hintShown && player != null && col.bounds.SqrDistance(player.position) < 3.5f * 3.5f)
         {

@@ -33,7 +33,7 @@ public class WallCutaway : MonoBehaviour
     void Start()
     {
         cam = GetComponent<Camera>();
-        foreach (var r in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+        foreach (var r in FindObjectsByType<MeshRenderer>())
         {
             string n = r.name;
             if (!(n.StartsWith("Wall") || n.StartsWith("Pared")) || n.Contains("Roca")) continue;   // ParedRoca = acantilado del Exterior
@@ -106,6 +106,7 @@ public class WallCutaway : MonoBehaviour
     /// <summary>Oculto = solo sombra; si el muro no daba sombra, simplemente no se dibuja.</summary>
     static void Set(Renderer r, UnityEngine.Rendering.ShadowCastingMode original, bool on)
     {
+        if (r == null) return;   // al salir de Play o cambiar de escena el muro puede destruirse antes que la cámara
         if (original == UnityEngine.Rendering.ShadowCastingMode.Off) r.forceRenderingOff = !on;
         else r.shadowCastingMode = on ? original : UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
     }

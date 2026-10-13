@@ -89,7 +89,7 @@ public class PauseMenu : MonoBehaviour
 
     static bool IntroPlaying()
     {
-        var intro = FindFirstObjectByType<ExteriorIntro>();
+        var intro = FindAnyObjectByType<ExteriorIntro>();
         return intro != null && intro.enabled;
     }
 
@@ -98,7 +98,7 @@ public class PauseMenu : MonoBehaviour
         IsPaused = true;
         savedScale = Time.timeScale > 0.05f ? Time.timeScale : 1f;
         Time.timeScale = 0f;
-        orbit = FindObjectsByType<MouseOrbitCamera>(FindObjectsSortMode.None);
+        orbit = FindObjectsByType<MouseOrbitCamera>();
         foreach (var o in orbit) o.enabled = false;
         Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
         openedAt = Time.unscaledTime;

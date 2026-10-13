@@ -17,7 +17,7 @@ public static class CreateDummyMenu
 
     static void Create(bool attacks)
     {
-        var player = Object.FindFirstObjectByType<PlayerController>();
+        var player = Object.FindAnyObjectByType<PlayerController>();
         if (player == null)
             Debug.LogWarning("No encontré a Aby (PlayerController) en la escena: el dummy se crea sin Target.");
 

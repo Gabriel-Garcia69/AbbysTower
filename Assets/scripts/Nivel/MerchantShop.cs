@@ -70,7 +70,7 @@ public class MerchantShop : MonoBehaviour
             var list = new System.Collections.Generic.List<Behaviour>();
             foreach (var b in player.GetComponents<Behaviour>())
                 if (b is PlayerInputReader || b is AbbyAttack) list.Add(b);
-            foreach (var b in FindObjectsByType<MouseOrbitCamera>(FindObjectsSortMode.None)) list.Add(b);
+            foreach (var b in FindObjectsByType<MouseOrbitCamera>()) list.Add(b);
             paused = list.ToArray();
             foreach (var b in paused) b.enabled = false;
             Cursor.lockState = CursorLockMode.None; Cursor.visible = true;

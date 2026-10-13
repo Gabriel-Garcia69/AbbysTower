@@ -94,7 +94,7 @@ public class SpriteShadowCasters : MonoBehaviour
         if (slots == null) return;
 
         rescanTimer -= Time.deltaTime;
-        if (rescanTimer <= 0f) { sceneLights = FindObjectsByType<Light>(FindObjectsSortMode.None); rescanTimer = 2f; }
+        if (rescanTimer <= 0f) { sceneLights = FindObjectsByType<Light>(); rescanTimer = 2f; }
 
         refreshTimer -= Time.deltaTime;
         if (refreshTimer <= 0f) { PickLights(); refreshTimer = refreshInterval; }

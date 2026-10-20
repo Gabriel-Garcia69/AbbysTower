@@ -30,6 +30,7 @@ Material:
     - _NormalStrength: 0.45
     - _Reflection: 0.6
     - _Refraction: 0.035
+    - _VertexFlow: 1
     - _WaveHeight: 0.03
     - _WaveScale: 0.8
     - _WaveSpeed: 0.9

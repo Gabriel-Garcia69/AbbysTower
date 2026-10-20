@@ -30,11 +30,13 @@ Material:
     - _NormalStrength: 0.45
     - _Reflection: 0.85
     - _Refraction: 0.035
+    - _VertexFlow: 0
     - _WaveHeight: 0.02
     - _WaveScale: 0.8
-    - _WaveSpeed: 0.5
+    - _WaveSpeed: 0.25
     m_Colors:
     - _DeepColor: {r: 0.02, g: 0.1, b: 0.2, a: 0.95}
+    - _Flow: {r: 0, g: 0, b: 0, a: 0}
     - _FoamColor: {r: 0.9, g: 0.96999997, b: 1, a: 1}
     - _ShallowColor: {r: 0.18, g: 0.5, b: 0.55, a: 0.5}
   m_BuildTextureStacks: []

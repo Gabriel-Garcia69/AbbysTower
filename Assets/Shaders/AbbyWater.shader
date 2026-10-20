@@ -17,6 +17,7 @@ Shader "Abby/Water"
         _FoamDistance ("Ancho de espuma", Float) = 0.3
         _Reflection ("Reflejo", Range(0, 1)) = 0.85
         _Flow ("Corriente (x, z en m/s)", Vector) = (0, 0, 0, 0)
+        [Toggle] _VertexFlow ("Corriente por vértice (uv1)", Float) = 0
     }
 
     SubShader
@@ -49,6 +50,7 @@ Shader "Abby/Water"
                 float4 _ShallowColor, _DeepColor, _FoamColor;
                 float _DepthDistance, _WaveScale, _WaveSpeed, _WaveHeight, _NormalStrength, _Refraction, _FoamDistance, _Reflection;
                 float4 _Flow;
+                float _VertexFlow;
             CBUFFER_END
 
             // uv1 (TEXCOORD1) = corriente propia de cada vértice en m/s (x, z): así cada río corre río abajo y sigue sus curvas
@@ -92,7 +94,9 @@ Shader "Abby/Water"
                 float t = _Time.y * _WaveSpeed;
                 // la corriente arrastra las olas río abajo (corriente del material + la de cada vértice). Dos fases que se
                 // alternan para que la textura no se estire con el tiempo donde la corriente cambia de dirección.
-                float2 f = _Flow.xy + i.flow;
+                // solo las mallas de río traen corriente en uv1 (_VertexFlow = 1); en las demás ese canal no existe o es
+                // de iluminación, y leerlo hacía que lagos y fuentes corrieran rapidísimo
+                float2 f = _Flow.xy + i.flow * _VertexFlow;
                 const float T = 8.0;   // ciclo largo: la mezcla de fases no se nota (sin parpadeo)
                 float ph0 = frac(_Time.y / T), ph1 = frac(_Time.y / T + 0.5);
                 float w0 = 1.0 - abs(1.0 - 2.0 * ph0);

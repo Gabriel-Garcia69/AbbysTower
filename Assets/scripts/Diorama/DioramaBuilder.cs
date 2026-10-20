@@ -1186,6 +1186,7 @@ public partial class DioramaBuilder : MonoBehaviour
         // ríos y arroyos: la misma agua, pero con corriente hacia +X (río abajo)
         mRiver = Saved("Dio_AguaRio", () => { var m = new Material(mWater); m.SetFloat("_FoamDistance", 0.6f); return m; });
         mRiver.SetVector("_Flow", Vector4.zero);   // la corriente la lleva cada malla (uv1): lagos y pozas quietos, ríos río abajo
+        mRiver.SetFloat("_VertexFlow", 1f);
         // rayos de luz y destellos (aditivos, shader Abby/Particle)
         mRay = Saved("Dio_Rayo", () =>
         {

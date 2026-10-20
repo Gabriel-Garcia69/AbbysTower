@@ -1529,6 +1529,8 @@ public class ExteriorBuilder : MonoBehaviour
         m.SetColor("_DeepColor", deep);
         m.SetFloat("_DepthDistance", depth);
         m.SetFloat("_Reflection", reflection);
+        m.SetFloat("_WaveSpeed", 0.25f);   // agua quieta (fuente, lago): olas lentas
+        m.SetFloat("_VertexFlow", 0f);     // sin corriente: estas mallas no traen uv1
         EditorUtility.SetDirty(m);
         return m;
     }

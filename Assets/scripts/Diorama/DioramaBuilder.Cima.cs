@@ -43,7 +43,11 @@ public partial class DioramaBuilder
         var lvl = Group("Nivel", root);
 
         // mar de nubes
-        Flat(g, "Nubes", new Vector3(0f, CloudY, 0f), 2400f, 2400f, mCloud, 0.01f);
+        // el mar de nubes sin luz ni sombras (con Lit, las sombras de las islas lo hacían ver como un piso rosa)
+        var nubeLisa = Saved("Dio_NubeLisa", () => new Material(Shader.Find("Universal Render Pipeline/Unlit")));
+        nubeLisa.SetColor("_BaseColor", new Color(0.98f, 0.8f, 0.83f));
+        var nubes = Flat(g, "Nubes", new Vector3(0f, CloudY, 0f), 2400f, 2400f, nubeLisa, 0.01f);
+        nubes.GetComponent<MeshRenderer>().receiveShadows = false;   // con las sombras de las islas se veía un piso rosa, no nubes
         var ps = new GameObject("Bruma").AddComponent<ParticleSystem>();
         ps.transform.SetParent(g, false);
         ps.transform.localPosition = new Vector3(0f, CloudY + 2f, 0f);

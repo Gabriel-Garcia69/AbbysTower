@@ -144,9 +144,9 @@ public partial class DioramaBuilder
 
         WalkBoundary(MountWalk);
         var bg = Group("Fondo", root);
-        OuterLand(bg, 40f, false, false, true, true, 200, true);
+        // sierra continua: a los lados las paredes de la montaña, abajo el valle y arriba las cumbres (antes: llanos con cortes rectos)
+        Sierra(bg, MountArea, 40f, 7 * MountStep + 22f, -9f, 200, true);
         // el valle de abajo (se ve desde los miradores): prados, un lago y bosque
-        Flat(bg, "Valle", new Vector3(0f, -9f, MountArea.yMin - 350f + 1f), 1400f, 702f, mGrass, 0.25f);
         var vlake = Prim(bg, PrimitiveType.Cylinder, "LagoValle", new Vector3(-40f, -8.92f, -175f), new Vector3(100f, 0.01f, 64f), mRiver);
         vlake.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         var shoreRing = Prim(bg, PrimitiveType.Cylinder, "OrillaValle", new Vector3(-40f, -8.97f, -175f), new Vector3(108f, 0.01f, 72f), mSand);
@@ -158,7 +158,9 @@ public partial class DioramaBuilder
             float lx = (q.x + 40f) / 56f, lz = (q.y + 175f) / 38f;
             if (lx * lx + lz * lz < 1f) continue;
             if (q.y > -110f && Mathf.Abs(q.x) < 60f) continue;   // no tapar la base de la montaña
-            if (rng.NextDouble() < 0.7) Pine(bg, q, -9f, R(1.3f, 2.4f), false); else Tree(bg, q, -9f, R(1.3f, 2f), false);
+            float ty = SierraH(q.x, q.y);
+            if (Mathf.Abs(SierraH(q.x + 3f, q.y) - ty) > 1.6f) continue;   // en la ladera no
+            if (rng.NextDouble() < 0.7) Pine(bg, q, ty - 0.1f, R(1.3f, 2.4f), false); else Tree(bg, q, ty - 0.1f, R(1.3f, 2f), false);
         }
         // lomas verdes en el valle
         for (int i = 0; i < 12; i++)
@@ -170,7 +172,6 @@ public partial class DioramaBuilder
         }
         House(bg, new Vector3(30f, -9f, -150f), 30f, 7f, 5f, 3.6f, true);
         House(bg, new Vector3(44f, -9f, -170f), -20f, 6f, 5f, 3.4f, false);
-        Flat(bg, "Cumbres", new Vector3(0f, 7 * MountStep + 22f, MountArea.yMax + 349f), MountArea.width, 700f, mSnowPix, 0.25f);
         FarPeaks(bg, new Vector3(0f, 30f, 150f), 380f, -95f, 95f, 18, 160f, 260f, true);
         FarPeaks(bg, new Vector3(0f, -9f, -150f), 620f, 115f, 245f, 12, 70f, 140f, false);
 

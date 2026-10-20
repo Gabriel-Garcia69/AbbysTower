@@ -24,10 +24,111 @@ public partial class DioramaBuilder
         if (Mathf.Abs(x + 36f) < 3.4f && z > -23.4f && z < -13f) return 7f;
         if (Mathf.Abs(x + 20f) < 3.4f && z > -12.2f && z < -4f) return 2.5f;
         float zTop = -20f + e * 1.2f, zMid = -8f + e * 1.2f, zLow = 0.5f + e * 0.6f;   // repisa baja honda: al pie de la escalinata queda un descanso amplio
-        if (z < zTop) return z < -32f && Noise(x * 0.09f + 5f, z * 0.09f) > 0.62f ? CliffTop + 2.5f : CliffTop;
-        if (z < zMid) return 7f;
-        if (z < zLow) return Mathf.Abs(x - CliffFallX) < 3f ? 1.6f : 2.5f;   // la repisa baja, con la poza donde cae la cascada
-        return z - zLow < 6f ? -6f : -8f;
+        float h;
+        if (z < zTop)
+        {
+            // el arroyo baja en un cauce hundido desde el manantial hasta el borde (antes era agua pegada encima del pasto)
+            float zs = -20f + EdgeNoise(CliffFallX, -20f) * 1.2f;
+            bool cauce = Mathf.Abs(x - CliffFallX) < 2.1f + e * 0.25f && z > zs - 16f;
+            bool poza = Vector2.Distance(new Vector2(x, z), new Vector2(CliffFallX, zs - 18f)) < 3.6f + e * 0.3f;
+            h = cauce || poza ? CliffTop - 0.8f : CliffTop;
+        }
+        else if (z < zMid) h = Mathf.Abs(x - CliffFallX) < 1.9f + e * 0.2f ? 7f - 0.6f : 7f;
+        else if (z < zLow) h = Mathf.Abs(x - CliffFallX) < 3f ? 1.6f : 2.5f;   // la repisa baja, con la poza donde cae la cascada
+        else h = z - zLow < 6f ? -6f : -8f;
+        // al oeste el risco termina en el mar abierto, en escalones de roca
+        float dW = x + 60f + e * 2f;
+        if (dW < 0f) return -8f;
+        if (dW < 3f) return Mathf.Min(h, 2.5f);
+        if (dW < 6f) return Mathf.Min(h, 7f);
+        return h;
+    }
+
+    /// <summary>Repisas de un risco según la distancia a la orilla (d mayor que 0 = tierra): mar, repisa baja, media y lo alto.</summary>
+    static float Terraza(float d, float a, float b)
+    {
+        return -8f + 10.5f * Mathf.SmoothStep(0f, 1f, d / 1.4f) + 4.5f * Mathf.SmoothStep(0f, 1f, (d - a + 1.4f) / 1.4f)
+             + (CliffTop - 7f) * Mathf.SmoothStep(0f, 1f, (d - b + 1.4f) / 1.4f);
+    }
+
+    /// <summary>
+    /// Lo de afuera del mapa: al este, la costa de acantilados en tres repisas que se curva hacia el horizonte; al sur,
+    /// montes con árboles; al oeste, mar abierto. Coincide con CliffHeight en la orilla del mapa.
+    /// </summary>
+    float CostaH(float x, float z)
+    {
+        float e = EdgeNoise(x, z);
+        float bend = x > 90f ? (x - 90f) * (x - 90f) * 0.0035f : 0f;
+        float dN = 0.5f + bend + e * 1.5f - z, dW = x + 60f + e * 2f;
+        float h = Mathf.Min(Terraza(dN, 8.5f, 20.5f), Terraza(dW, 3f, 6f));
+        if (h < CliffTop - 0.01f) return h;
+        float adentro = Mathf.SmoothStep(0f, 1f, (dN - 20.5f) / 30f) * Mathf.SmoothStep(0f, 1f, (dW - 6f) / 25f);
+        float sur = Mathf.SmoothStep(0f, 1f, (-70f - z) / 130f), este = Mathf.SmoothStep(0f, 1f, (x - 90f) / 150f);
+        float n = Noise(x * 0.012f + 7f, z * 0.012f), n2 = Noise(x * 0.04f, z * 0.04f + 3f);
+        return h + (Mathf.Max(sur * 34f, este * 18f) * (0.45f + 0.55f * n) + n2 * 2.5f * Mathf.Max(sur, este)) * adentro;
+    }
+
+    void Costa(Transform parent)
+    {
+        const float cell = 6f;
+        float x0 = -108f, x1 = 402f, z0 = -342f, z1 = 438f;
+        int nx = Mathf.CeilToInt((x1 - x0) / cell), nz = Mathf.CeilToInt((z1 - z0) / cell);
+        var hh = new float[nx + 1, nz + 1];
+        for (int i = 0; i <= nx; i++) for (int j = 0; j <= nz; j++) hh[i, j] = CostaH(x0 + i * cell, z0 + j * cell);
+        var v = new List<Vector3>(); var uv = new List<Vector2>(); var pasto = new List<int>(); var roca = new List<int>();
+        var dentro = new Rect(CliffArea.xMin + 1f, CliffArea.yMin + 1f, CliffArea.width - 2f, CliffArea.height - 2f);
+        void Tri(Vector3 a, Vector3 b, Vector3 c)
+        {
+            var n = Vector3.Cross(b - a, c - a).normalized;
+            bool plano = n.y > 0.8f;
+            int k = v.Count;
+            foreach (var p in new[] { a, b, c })
+            {
+                v.Add(p);
+                uv.Add(plano ? new Vector2(p.x, p.z) * 0.25f : Mathf.Abs(n.x) > Mathf.Abs(n.z) ? new Vector2(p.z, p.y) * 0.25f : new Vector2(p.x, p.y) * 0.25f);
+            }
+            var lista = plano ? pasto : roca;
+            lista.Add(k); lista.Add(k + 1); lista.Add(k + 2);
+        }
+        for (int i = 0; i < nx; i++)
+            for (int j = 0; j < nz; j++)
+            {
+                float xa = x0 + i * cell, za = z0 + j * cell;
+                if (dentro.Contains(new Vector2(xa, za)) && dentro.Contains(new Vector2(xa + cell, za + cell))) continue;   // ahí va el terreno del mapa
+                float h00 = hh[i, j], h10 = hh[i + 1, j], h01 = hh[i, j + 1], h11 = hh[i + 1, j + 1];
+                if (Mathf.Max(Mathf.Max(h00, h10), Mathf.Max(h01, h11)) < -7.5f) continue;   // fondo del mar
+                var a = new Vector3(xa, h00, za); var b = new Vector3(xa + cell, h10, za); var c = new Vector3(xa, h01, za + cell); var d = new Vector3(xa + cell, h11, za + cell);
+                Tri(a, c, d); Tri(a, d, b);
+            }
+        var m = new Mesh { name = "Costa", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        m.SetVertices(v); m.SetUVs(0, uv);
+        m.subMeshCount = 2; m.SetTriangles(pasto, 0); m.SetTriangles(roca, 1);
+        m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
+        var go = MeshObject(parent, "Costa", m, TopMat, true);
+        go.GetComponent<MeshRenderer>().sharedMaterials = new[] { TopMat, WallMat };
+        // árboles arriba de los riscos y en los montes (no en lo empinado ni pegados a la orilla)
+        for (int i = 0, tries = 0; i < 300 && tries < 6000; tries++)
+        {
+            var q = new Vector2(R(-60f, 330f), R(-300f, 260f));
+            if (CliffArea.Contains(q) || Vector2.Distance(q, new Vector2(15f, -20f)) > 260f) continue;
+            float h = CostaH(q.x, q.y);
+            if (h < CliffTop - 0.01f || Mathf.Abs(CostaH(q.x + 2f, q.y) - h) > 1.2f || Mathf.Abs(CostaH(q.x, q.y + 2f) - h) > 1.2f) continue;
+            float dN = 0.5f + (q.x > 90f ? (q.x - 90f) * (q.x - 90f) * 0.0035f : 0f) - q.y;
+            if (dN < 26f || q.x + 60f < 10f) continue;
+            if (rng.NextDouble() < 0.55) Pine(parent, q, h - 0.1f, R(0.9f, 1.5f), false); else Tree(parent, q, h - 0.1f, R(0.9f, 1.3f), false);
+            i++;
+        }
+        // farallones sueltos frente a la costa
+        for (int i = 0; i < 14; i++)
+        {
+            float x = R(100f, 330f), z = 0.5f + (x - 90f) * (x - 90f) * 0.0035f + R(6f, 30f), s = R(3f, 7f);
+            var r = Prim(parent, PrimitiveType.Sphere, "Farallon", new Vector3(x, SeaY + s * 0.4f, z), new Vector3(s * R(0.8f, 1.2f), s * R(1.6f, 3f), s * R(0.8f, 1.2f)), mRock);
+            r.transform.localRotation = Quaternion.Euler(R(-8f, 8f), R(0f, 360f), R(-8f, 8f));
+            Foam(parent, new Vector3(x, SeaY + 0.05f, z), s * 0.9f, 6f);
+        }
+        // mar abierto también al suroeste (el mar general no llega tan al sur)
+        var mar = Flat(parent, "MarOeste", new Vector3(-480f, SeaY, -470f), 840f, 440f, mWater, 0.05f);
+        mar.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
     void BuildCliffs()
@@ -49,13 +150,33 @@ public partial class DioramaBuilder
         RopeBridge(lvl, "Puente2", new Vector3(-8.6f, 2.5f, 12.2f), new Vector3(5.2f, 4f, 14.2f));
         RopeBridge(lvl, "Puente3", new Vector3(15.2f, 4f, 15.2f), new Vector3(27.8f, 5.5f, 12.6f));
 
-        // cascada: nace en una poza arriba, cruza la repisa media y cae al mar
+        // el arroyo: nace en un manantial entre rocas, baja por su cauce y cae del risco a la repisa media
         float zt = -20f + EdgeNoise(CliffFallX, -20f) * 1.2f, zm = -8f + EdgeNoise(CliffFallX, -8f) * 1.2f;
-        Flat(g, "Poza", new Vector3(CliffFallX, CliffTop + 0.06f, zt - 3f), 5f, 6f, mRiver, 0.2f);
-        for (int i = 0; i < 7; i++)
-            Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + R(-3.5f, 3.5f), CliffTop + 0.2f, zt - 3f + R(-3.6f, 3.6f) + (i % 2 == 0 ? 0f : -1.5f)), new Vector3(R(1.2f, 2f), R(0.8f, 1.4f), R(1.2f, 2f)), mRock);
-        Waterfall(g, new Vector3(CliffFallX, (CliffTop + 7f) / 2f, zt + 0.05f), Vector3.forward, 3f, CliffTop - 7f + 0.1f);
-        FlowFlat(g, "Arroyo", new Vector3(CliffFallX, 7.06f, (zt + zm) / 2f), 3f, zm - zt, mRiver, 0.2f, new Vector2(0f, 0.6f));   // de la poza de arriba hacia la caída
+        float aguaAlta = CliffTop - 0.35f, zSrc = zt - 18f;
+        Prim(g, PrimitiveType.Cylinder, "Manantial", new Vector3(CliffFallX, aguaAlta, zSrc), new Vector3(7.4f, 0.005f, 7.4f), mRiver);
+        FlowFlat(g, "ArroyoAlto", new Vector3(CliffFallX, aguaAlta + 0.005f, (zSrc + 3.6f + zt) / 2f), 4.6f, zt - zSrc - 3.6f + 0.3f, mRiver, 0.2f, new Vector2(0f, 0.5f));
+        var pena = Group("Manantial", g);   // el peñasco de donde brota el agua, con una caída chica
+        for (int i = 0; i < 9; i++)
+        {
+            float ang = Mathf.Lerp(200f, 340f, i / 8f) * Mathf.Deg2Rad, rr = R(4.6f, 6f), sz = R(2f, 3.6f);
+            var r = Prim(pena, PrimitiveType.Sphere, "Roca", new Vector3(CliffFallX + Mathf.Cos(ang) * rr, CliffTop + sz * 0.25f, zSrc + Mathf.Sin(ang) * rr), new Vector3(sz * 1.3f, sz * R(0.9f, 1.4f), sz), mRock);
+            r.transform.localRotation = Quaternion.Euler(R(-10f, 10f), R(0f, 360f), R(-10f, 10f));
+        }
+        for (int i = 0; i < 6; i++)   // el peñasco: rocas apiladas, la de arriba más chica
+        {
+            float k = i / 5f, sz = Mathf.Lerp(4.2f, 2f, k);
+            var r = Prim(pena, PrimitiveType.Sphere, "Pico", new Vector3(CliffFallX + R(-2.2f, 2.2f) * (1f - k), CliffTop + 0.8f + k * 3.6f, zSrc - 5.6f + R(-0.8f, 0.8f)), new Vector3(sz * R(1f, 1.4f), sz * R(0.6f, 0.85f), sz * R(0.8f, 1.1f)), mRock);
+            r.transform.localRotation = Quaternion.Euler(R(-14f, 14f), R(0f, 360f), R(-14f, 14f));
+        }
+        Waterfall(g, new Vector3(CliffFallX, (CliffTop + 3.4f + aguaAlta) / 2f, zSrc - 3.4f), Vector3.forward, 1.6f, CliffTop + 3.4f - aguaAlta);
+        for (int i = 0; i < 8; i++)   // piedras en las orillas del cauce (no dentro del agua)
+        {
+            float sx = i % 2 == 0 ? -1f : 1f, z = Mathf.Lerp(zSrc + 4f, zt - 1.5f, i / 7f);
+            Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + sx * R(2.9f, 3.4f), CliffTop + 0.1f, z), new Vector3(R(0.9f, 1.5f), R(0.5f, 0.9f), R(0.9f, 1.4f)), mRock);
+        }
+        blocked.Add(new Rect(CliffFallX - 7f, zSrc - 9f, 14f, zt - zSrc + 9f));
+        Waterfall(g, new Vector3(CliffFallX, (aguaAlta + 7f - 0.3f) / 2f, zt + 0.05f), Vector3.forward, 3f, aguaAlta - (7f - 0.3f) + 0.1f);
+        FlowFlat(g, "Arroyo", new Vector3(CliffFallX, 7f - 0.3f, (zt + zm) / 2f), 4f, zm - zt, mRiver, 0.2f, new Vector2(0f, 0.6f));   // cruza la repisa media en su cauce
         // cae a una poza en la repisa baja y de ahí, en una segunda cascada, al mar
         float zl = 0.5f + EdgeNoise(CliffFallX, 0.5f) * 0.6f;
         Waterfall(g, new Vector3(CliffFallX, (7f + 2.2f) / 2f, zm + 0.05f), Vector3.forward, 3f, 7f - 2.2f + 0.1f);
@@ -66,7 +187,7 @@ public partial class DioramaBuilder
             Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + (i % 2 == 0 ? -3.3f : 3.3f), 2.5f, Mathf.Lerp(zm + 1f, zl - 1f, i / 5f)), new Vector3(R(1f, 1.6f), R(0.7f, 1.1f), R(1f, 1.5f)), mRock);
         BankGuard(g, new List<Vector3> { new Vector3(CliffFallX - 3.2f, 2.5f, zm), new Vector3(CliffFallX - 3.2f, 2.5f, zl) }, p => false);
         BankGuard(g, new List<Vector3> { new Vector3(CliffFallX + 3.2f, 2.5f, zm), new Vector3(CliffFallX + 3.2f, 2.5f, zl) }, p => false);
-        Foam(g, new Vector3(CliffFallX, 7.1f, zt + 0.8f), 1.6f, 14f);
+        Foam(g, new Vector3(CliffFallX, 7f - 0.25f, zt + 0.8f), 1.6f, 14f);
         Foam(g, new Vector3(CliffFallX, SeaY + 0.1f, zl + 1.4f), 3.2f, 30f);
 
         // enredaderas que cuelgan de las orillas de las repisas
@@ -150,10 +271,7 @@ public partial class DioramaBuilder
 
         WalkBoundary(CliffWalk);
         var bg = Group("Fondo", root);
-        OuterLand(bg, CliffTop, false, true, true, true, 260);
-        float far = 2500f, ax = CliffArea.xMin, bb = CliffArea.xMax;
-        Wall(bg, "RiscoOeste", new Vector3((-far + ax) / 2f, (CliffTop - 8.3f) / 2f, -20f), Vector3.forward, far + ax, CliffTop + 8.3f, mRock, 0.25f);
-        Wall(bg, "RiscoEste", new Vector3((bb + far) / 2f, (CliffTop - 8.3f) / 2f, -20f), Vector3.forward, far - bb, CliffTop + 8.3f, mRock, 0.25f);
+        Costa(bg);   // costa de riscos al este, montes al sur, mar abierto al oeste (antes: dos muros gigantes y llano)
         Ship(bg, new Vector3(-60f, SeaY, 150f), 110f, 24f, 6f, false);
         // gaviotas sobre los farallones
         foreach (var s in Stacks)

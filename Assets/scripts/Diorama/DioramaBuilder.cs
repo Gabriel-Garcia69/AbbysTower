@@ -1291,6 +1291,7 @@ public partial class DioramaBuilder : MonoBehaviour
     {
 #if UNITY_EDITOR
         if (m == null || m.shader != LitShader || m.GetTexture("_BaseMap") != null) return;
+        if (m.name.Contains("Nube")) { m.SetTexture("_DetailAlbedoMap", null); m.DisableKeyword("_DETAIL_MULX2"); return; }   // las nubes, lisas
         if (granoTex == null) granoTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Diorama/detalle_grano.png");
         if (granoTex == null || m.GetTexture("_DetailAlbedoMap") == granoTex) return;
         m.SetTexture("_DetailAlbedoMap", granoTex);

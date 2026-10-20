@@ -448,9 +448,15 @@ public class MouseOrbitCamera : MonoBehaviour
             else distVel = 0f;
         }
 
+        // muy cerca (un muro la empujó): en vez de meterse en la cara de Abby, la cámara sube y mira hacia abajo
+        float near = Mathf.Clamp01((2.8f - currentDistance) / 2.2f), lift = near * 2.6f;
         var lp = cam.transform.localPosition;
-        cam.transform.localPosition = new Vector3(lp.x, lp.y, -currentDistance);
+        cam.transform.localPosition = new Vector3(lp.x, lp.y - appliedLift + lift, -currentDistance);
+        appliedLift = lift;
+        if (lift > 0.01f) cam.transform.localRotation *= Quaternion.Euler(Mathf.Atan2(lift, Mathf.Max(currentDistance, 0.6f)) * Mathf.Rad2Deg * 0.85f, 0f, 0f);
     }
+
+    float appliedLift;
 
     /// <summary>Busca la toma del lugar donde está Abby y acerca suavemente los valores de la toma; shotW sube o baja.</summary>
     void UpdateShot(float dt)

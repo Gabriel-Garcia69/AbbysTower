@@ -31,6 +31,7 @@ public partial class DioramaBuilder
             if (m != null && m.shader != null && m.shader.name == "Abby/Water") agua.Add(mr.bounds);
         }
         var g = Group("Entorno", root);
+        var flores = Group("Flores", g);   // solo las flores (primitivas) se funden; árboles y arbustos comparten malla y así pesan menos
         Vector3 s = SpawnPoint;
         Transform salida = null;
         foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t.name == "Salida") { salida = t; break; }
@@ -66,7 +67,7 @@ public partial class DioramaBuilder
                     else Bush(g, p, R(0.6f, 1f));
                     break;
                 default:
-                    if (k < 0.55f) Ramo(g, p);
+                    if (k < 0.55f) Ramo(flores, p);
                     else if (k < 0.85f) Bush(g, p, R(0.6f, 1.1f));
                     else Tree(g, q, h, R(0.8f, 1.15f), false);
                     break;
@@ -74,7 +75,7 @@ public partial class DioramaBuilder
             blocked.Add(new Rect(q.x - 1f, q.y - 1f, 2f, 2f));
             puestos++;
         }
-        Fundir(g);   // cientos de flores en pocas mallas
+        Fundir(flores);   // cientos de flores en pocas mallas
     }
 
     /// <summary>Un manchón de flores de colores.</summary>
@@ -85,10 +86,12 @@ public partial class DioramaBuilder
         {
             var o = new Vector3(R(-0.9f, 0.9f), 0f, R(-0.9f, 0.9f));
             float sz = R(0.16f, 0.3f);
-            Prim(parent, PrimitiveType.Cylinder, "Tallo", pos + o + Vector3.up * sz * 0.6f, new Vector3(0.04f, sz * 0.6f, 0.04f), mLeaves[0])
+            // cubitos (24 vértices) en vez de esferas (515): se ven como flores de pixel y la escena pesa mucho menos
+            Prim(parent, PrimitiveType.Cube, "Tallo", pos + o + Vector3.up * sz * 0.6f, new Vector3(0.05f, sz * 1.2f, 0.05f), mLeaves[0])
                 .GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            Prim(parent, PrimitiveType.Sphere, "Flor", pos + o + Vector3.up * sz * 1.2f, Vector3.one * sz, mFlowers[rng.Next(mFlowers.Length)])
-                .GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            var f = Prim(parent, PrimitiveType.Cube, "Flor", pos + o + Vector3.up * sz * 1.25f, Vector3.one * sz * 0.8f, mFlowers[rng.Next(mFlowers.Length)]);
+            f.transform.localRotation = Quaternion.Euler(45f, R(0f, 90f), 45f);
+            f.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
     }
 

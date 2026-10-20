@@ -56,7 +56,7 @@ public partial class DioramaBuilder
 
         var lake = Flat(water, "Lago", new Vector3(8f, LakeWater, 90f), 112f, 142f, mRiver, 0.08f);
         lake.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        Flat(water, "RioAlto", new Vector3(LakeFallX, LakeTopY - 0.7f, 212f), 8.2f, 104f, mRiver, 0.15f);
+        FlowFlat(water, "RioAlto", new Vector3(LakeFallX, LakeTopY - 0.7f, 212f), 8.2f, 104f, mRiver, 0.15f, new Vector2(0f, -0.6f));   // baja hacia la cascada gigante
         // la cascada gigante y su bruma
         Waterfall(water, new Vector3(LakeFallX, (LakeTopY - 0.7f + LakeWater) / 2f, LakeCliffZ), Vector3.back, 8.5f, LakeTopY - 0.7f - LakeWater);
         Foam(water, new Vector3(LakeFallX, LakeWater + 0.1f, LakeCliffZ - 2.5f), 6f, 50f);

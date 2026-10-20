@@ -63,6 +63,18 @@ public partial class DioramaBuilder
         Waterfall(g, new Vector3(14f, (14f + CaveLakeY) / 2f, wz), Vector3.back, 4f, 14f - CaveLakeY);
         Foam(g, new Vector3(14f, CaveLakeY + 0.1f, wz - 1.5f), 2.6f, 26f);
 
+        // la explanada alrededor del túnel de entrada (se ve al girar la cámara al inicio): estalagmitas, cristales y hongos
+        for (int i = 0, tries = 0; i < 64 && tries < 3000; tries++)
+        {
+            var q = new Vector2(R(-62f, 62f), R(-60f, -22f));
+            if (Mathf.Abs(q.x) < 9.5f || CaveEll(q.x, q.y, EdgeNoise(q.x, q.y)) < 1.04f || CaveHeight(q.x, q.y) < 5.4f) continue;
+            var p = new Vector3(q.x, 5.5f, q.y);
+            float k = (float)rng.NextDouble();
+            if (k < 0.45f) Stalagmite(g, p, R(2f, 7.5f));
+            else if (k < 0.75f) Crystals(g, p, R(0.7f, 1.8f), rng.NextDouble() < 0.45, i % 7 == 0);
+            else Mushrooms(g, p);
+            i++;
+        }
         // cristales en terrazas y paredes (algunos alumbran), hongos y estalagmitas
         int lit = 0;
         for (int i = 0, tries = 0; i < 46 && tries < 3000; tries++)

@@ -62,7 +62,7 @@ public partial class DioramaBuilder : MonoBehaviour
     // ------------------------------------------------------------------ generación
 
     /// <summary>Súbelo cada vez que cambie lo que genera Build(): los pisos viejos se regeneran solos al abrirlos.</summary>
-    public const int BuildVersion = 20;
+    public const int BuildVersion = 27;
     [SerializeField, HideInInspector] int builtVersion;
     public bool IsCurrent => builtVersion == BuildVersion;
 
@@ -78,17 +78,17 @@ public partial class DioramaBuilder : MonoBehaviour
         root = Group(Prefix + "Mapa", transform);
         switch (layout)
         {
-            case Layout.Puerto: BuildPort(); return;
-            case Layout.Acantilado: BuildCliffs(); return;
-            case Layout.Cueva: BuildCave(); return;
-            case Layout.Templo: BuildTemple(); return;
-            case Layout.Nevado: BuildSnow(); return;
-            case Layout.Cima: BuildSummit(); return;
-            case Layout.Lago: BuildLake(); return;
-            case Layout.Cascadas: BuildFalls(); return;
-            case Layout.Montana: BuildMountain(); return;
-            case Layout.Intro: BuildIntro(); return;
-            case Layout.Expedicion: BuildExpedition(); return;
+            case Layout.Puerto: BuildPort(); Pulir(); return;
+            case Layout.Acantilado: BuildCliffs(); Pulir(); return;
+            case Layout.Cueva: BuildCave(); Pulir(); return;
+            case Layout.Templo: BuildTemple(); Pulir(); return;
+            case Layout.Nevado: BuildSnow(); Pulir(); return;
+            case Layout.Cima: BuildSummit(); Pulir(); return;
+            case Layout.Lago: BuildLake(); Pulir(); return;
+            case Layout.Cascadas: BuildFalls(); Pulir(); return;
+            case Layout.Montana: BuildMountain(); Pulir(); return;
+            case Layout.Intro: BuildIntro(); Pulir(); return;
+            case Layout.Expedicion: BuildExpedition(); Pulir(); return;
         }
 
         BuildTerrain();
@@ -111,6 +111,7 @@ public partial class DioramaBuilder : MonoBehaviour
         BuildAtmosphere();
         BuildShots();
         BuildTownLevel();
+        Pulir();
 #if UNITY_EDITOR
         if (!Application.isPlaying) EditorUtility.SetDirty(gameObject);
 #endif
@@ -1183,7 +1184,8 @@ public partial class DioramaBuilder : MonoBehaviour
             return m;
         });
         // ríos y arroyos: la misma agua, pero con corriente hacia +X (río abajo)
-        mRiver = Saved("Dio_AguaRio", () => { var m = new Material(mWater); m.SetVector("_Flow", new Vector4(1.3f, 0f, 0f, 0f)); m.SetFloat("_FoamDistance", 0.6f); return m; });
+        mRiver = Saved("Dio_AguaRio", () => { var m = new Material(mWater); m.SetFloat("_FoamDistance", 0.6f); return m; });
+        mRiver.SetVector("_Flow", Vector4.zero);   // la corriente la lleva cada malla (uv1): lagos y pozas quietos, ríos río abajo
         // rayos de luz y destellos (aditivos, shader Abby/Particle)
         mRay = Saved("Dio_Rayo", () =>
         {
@@ -1248,21 +1250,54 @@ public partial class DioramaBuilder : MonoBehaviour
 #endif
     }
 
-    Material Plain(string name, Color c, float smooth) => Saved(name, () =>
+    Material Plain(string name, Color c, float smooth)
     {
-        var m = new Material(LitShader);
-        m.SetColor("_BaseColor", c);
-        m.SetFloat("_Smoothness", smooth);
+        var m = Saved(name, () =>
+        {
+            var n = new Material(LitShader);
+            n.SetColor("_BaseColor", c);
+            n.SetFloat("_Smoothness", smooth);
+            return n;
+        });
+        Grano(m);
         return m;
-    });
+    }
 
-    Material Glow(string name, Color c, float intensity) => Saved(name, () =>
+    /// <summary>
+    /// Lo que brilla (runas, ventanas, lámparas, energía): un material Lit con emisión HDR sobre una base oscura del
+    /// mismo color. Brilla con el Bloom como neón, pero tiene brillo y sombra como un objeto real (antes era Unlit plano).
+    /// Se aplica también a los materiales ya guardados.
+    /// </summary>
+    Material Glow(string name, Color c, float intensity)
     {
-        var m = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-        Color hdr = c * intensity; hdr.a = 1f;
-        m.SetColor("_BaseColor", hdr);
+        var m = Saved(name, () => new Material(LitShader));
+        if (m.shader != LitShader) m.shader = LitShader;
+        Color base0 = c * 0.12f; base0.a = 1f;
+        Color hdr = c * intensity * 0.6f; hdr.a = 1f;   // con más, el tonemap lo quema a blanco y pierde el color
+        if (m.GetColor("_BaseColor") != base0) m.SetColor("_BaseColor", base0);
+        if (m.GetColor("_EmissionColor") != hdr) m.SetColor("_EmissionColor", hdr);
+        if (m.GetFloat("_Smoothness") != 0.6f) m.SetFloat("_Smoothness", 0.6f);
+        if (!m.IsKeywordEnabled("_EMISSION")) m.EnableKeyword("_EMISSION");
+        m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;   // URP solo deja _EMISSION si la marca dice que emite
+        if (m.HasProperty("_EmissionEnabled")) m.SetFloat("_EmissionEnabled", 1f);
         return m;
-    });
+    }
+
+    static Texture2D granoTex;
+
+    /// <summary>Grano fino (mapa de detalle) para que los colores lisos se vean como piedra, madera o tela y no plástico.</summary>
+    void Grano(Material m)
+    {
+#if UNITY_EDITOR
+        if (m == null || m.shader != LitShader || m.GetTexture("_BaseMap") != null) return;
+        if (granoTex == null) granoTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Diorama/detalle_grano.png");
+        if (granoTex == null || m.GetTexture("_DetailAlbedoMap") == granoTex) return;
+        m.SetTexture("_DetailAlbedoMap", granoTex);
+        m.SetTextureScale("_DetailAlbedoMap", new Vector2(3f, 3f));
+        m.SetFloat("_DetailAlbedoMapScale", 1f);
+        m.EnableKeyword("_DETAIL_MULX2");
+#endif
+    }
 
     Material TexMat(string name, string albedo, string normal, Color tint, float smooth) => Saved(name, () =>
     {
@@ -1315,6 +1350,8 @@ public partial class DioramaBuilder : MonoBehaviour
 
     // ------------------------------------------------------------------ piezas
 
+    [System.NonSerialized] System.Collections.Generic.Dictionary<PrimitiveType, Mesh> stillMeshes;
+
     Transform Group(string name, Transform parent)
     {
         var t = new GameObject(name).transform;
@@ -1331,6 +1368,18 @@ public partial class DioramaBuilder : MonoBehaviour
         go.transform.localScale = scale;
         if (!keepCollider) DestroyImmediate(go.GetComponent<Collider>());
         go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+        // agua en una primitiva (pozo, estanque, lago redondo): su uv1 (de iluminación) el shader lo leería como corriente
+        if (mat != null && mat.shader != null && mat.shader.name == "Abby/Water")
+        {
+            var mf = go.GetComponent<MeshFilter>();
+            if (stillMeshes == null) stillMeshes = new System.Collections.Generic.Dictionary<PrimitiveType, Mesh>();
+            if (!stillMeshes.TryGetValue(type, out var still) || still == null)
+            {
+                still = Instantiate(mf.sharedMesh); still.name = mf.sharedMesh.name + "_Quieta"; still.uv2 = null;
+                stillMeshes[type] = still;
+            }
+            mf.sharedMesh = still;
+        }
         return go;
     }
 

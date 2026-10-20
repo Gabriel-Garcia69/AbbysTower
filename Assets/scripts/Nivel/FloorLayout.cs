@@ -72,6 +72,8 @@ public class CorridorSpec
 /// </summary>
 public partial class FloorLayout : MonoBehaviour
 {
+    static readonly bool ThemeDecorOnly = true;   // decoración por tema de piso (la genérica de Decorate queda de respaldo)
+
     [Header("Tema (estética, luces, decoración y mecánica del piso)")]
     public FloorTheme theme = FloorTheme.Base;
 
@@ -181,7 +183,7 @@ public partial class FloorLayout : MonoBehaviour
     float curWall;      // alto "de diseño" de la sala actual (RoomSpec.height o wallHeight)
 
     // Súbelo cada vez que cambie lo que genera Build(): las escenas con un piso de una versión anterior se regeneran solas.
-    const int LayoutVersion = 8;
+    const int LayoutVersion = 9;
     [SerializeField, HideInInspector] int builtVersion;
 
     void Awake()
@@ -665,7 +667,7 @@ public partial class FloorLayout : MonoBehaviour
         var deco = NewChild(root, "Decoracion");
         float hx = r.size.x / 2f, hz = r.size.y / 2f, h = wallHeight;
         Color tint = RoomLightColor(r.type);
-        ThemeDecor(deco, r, gaps, index); return;
+        if (ThemeDecorOnly) { ThemeDecor(deco, r, gaps, index); return; }   // la decoración genérica de abajo queda de respaldo
 
         // pilares en las esquinas
         if (Mathf.Min(r.size.x, r.size.y) >= 10f && r.type != RoomType.Prueba)

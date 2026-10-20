@@ -18,10 +18,23 @@ public class CriaturaProp : MonoBehaviour
         {
             r.GetPropertyBlock(mpb);
             bool ojo = r.name.StartsWith("Ojo") || r.name.StartsWith("Orbe") || r.name.StartsWith("Pua");
-            mpb.SetColor("_BaseColor", ojo ? ojos * 4f : r.name.StartsWith("Cuerpo") ? cuerpo : cuerpo * 0.85f);
+            mpb.SetColor("_BaseColor", ojo ? ojos * 0.3f : r.name.StartsWith("Cuerpo") ? cuerpo : cuerpo * 0.85f);
             r.SetPropertyBlock(mpb);
+            if (ojo && r.sharedMaterial != null)
+            {
+                // los ojos brillan de verdad (emisión + Bloom) sin perder el color; antes un color x4 se quemaba a naranja
+                var m = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                m.SetColor("_BaseColor", ojos * 0.2f);
+                m.EnableKeyword("_EMISSION");
+                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                m.SetColor("_EmissionColor", ojos * (r.name.StartsWith("Pua") ? 0.45f : 1.1f));
+                r.sharedMaterial = m;
+            }
         }
     }
+
+    /// <summary>Para moverla en una cinemática: el flotar se suma a esta posición (si no, Update la regresaría).</summary>
+    public void Colocar(Vector3 mundo) => basePos = transform.parent != null ? transform.parent.InverseTransformPoint(mundo) : mundo;
 
     void Update() => transform.localPosition = basePos + Vector3.up * Mathf.Sin(Time.time * 2.4f + fase) * bob;
 }

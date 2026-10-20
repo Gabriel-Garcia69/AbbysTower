@@ -55,11 +55,11 @@ public partial class DioramaBuilder
         for (int i = 0; i < 7; i++)
             Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + R(-3.5f, 3.5f), CliffTop + 0.2f, zt - 3f + R(-3.6f, 3.6f) + (i % 2 == 0 ? 0f : -1.5f)), new Vector3(R(1.2f, 2f), R(0.8f, 1.4f), R(1.2f, 2f)), mRock);
         Waterfall(g, new Vector3(CliffFallX, (CliffTop + 7f) / 2f, zt + 0.05f), Vector3.forward, 3f, CliffTop - 7f + 0.1f);
-        Flat(g, "Arroyo", new Vector3(CliffFallX, 7.06f, (zt + zm) / 2f), 3f, zm - zt, mRiver, 0.2f);
+        FlowFlat(g, "Arroyo", new Vector3(CliffFallX, 7.06f, (zt + zm) / 2f), 3f, zm - zt, mRiver, 0.2f, new Vector2(0f, 0.6f));   // de la poza de arriba hacia la caída
         // cae a una poza en la repisa baja y de ahí, en una segunda cascada, al mar
         float zl = 0.5f + EdgeNoise(CliffFallX, 0.5f) * 0.6f;
         Waterfall(g, new Vector3(CliffFallX, (7f + 2.2f) / 2f, zm + 0.05f), Vector3.forward, 3f, 7f - 2.2f + 0.1f);
-        Flat(g, "PozaBaja", new Vector3(CliffFallX, 2.2f, (zm + zl) / 2f), 6.1f, zl - zm + 0.2f, mRiver, 0.2f);
+        FlowFlat(g, "PozaBaja", new Vector3(CliffFallX, 2.2f, (zm + zl) / 2f), 6.1f, zl - zm + 0.2f, mRiver, 0.2f, new Vector2(0f, 0.25f));   // se va despacio hacia el mar
         Foam(g, new Vector3(CliffFallX, 2.25f, zm + 1f), 2f, 18f);
         Waterfall(g, new Vector3(CliffFallX, (2.2f + SeaY) / 2f, zl + 0.05f), Vector3.forward, 5f, 2.2f - SeaY + 0.2f);
         for (int i = 0; i < 6; i++)

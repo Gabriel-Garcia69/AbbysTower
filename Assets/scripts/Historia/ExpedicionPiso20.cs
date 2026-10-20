@@ -111,22 +111,28 @@ public class ExpedicionPiso20 : MonoBehaviour
         foreach (var b in FindObjectsByType<MouseOrbitCamera>()) b.enabled = false;
         foreach (var b in FindObjectsByType<CameraRig>()) b.enabled = false;
         Vector3 edge = new Vector3(0f, 0f, 128f);
-        Vector3 cp = player.position + new Vector3(-9f, 5f, -12f);
-        // tiembla y se levanta la criatura
+        Vector3 yo = player.position;
+        Vector3 a = coloso != null ? coloso.position : edge, arriba = new Vector3(a.x, -6f, a.z);
+
+        // 1) tiembla la gruta: plano detrás de la expedición, mirando al borde
         CameraShake.Shake(1.2f, 0.6f);
-        if (coloso != null)
-        {
-            Vector3 a = coloso.position, b = new Vector3(a.x, -14f, a.z);
-            for (float t = 0f; t < 4.5f; t += Time.deltaTime)
-            {
-                coloso.position = Vector3.Lerp(a, b, Mathf.SmoothStep(0f, 1f, t / 4.5f));
-                Encuadre(cam, cp, edge + Vector3.up * Mathf.Lerp(4f, 18f, t / 4.5f));
-                if (t > 1f && Mathf.Repeat(t, 1.1f) < Time.deltaTime) CameraShake.Shake(0.6f, 0.5f);
-                yield return null;
-            }
-        }
+        CombatFx.Burst(edge + Vector3.up, new Color(0.6f, 0.5f, 0.45f), 60, 8f, 0.3f, 1.2f);
+        yield return Toma(cam, yo + new Vector3(0f, 2.4f, -9f), yo + new Vector3(0f, 2f, -7.5f), () => edge + Vector3.up * 5f, 1.8f,
+            t => Subir(a, arriba, t * 0.3f));
+        // 2) desde el borde, mirando hacia arriba: la criatura sube del abismo; la cámara sigue su cabeza
+        yield return Toma(cam, edge + new Vector3(-10f, 5f, -9f), edge + new Vector3(-8f, 3.5f, -5f), () => { var c = Cabeza(); c.y = Mathf.Max(c.y, 1f); return c; }, 3.2f,
+            t => { Subir(a, arriba, 0.3f + t * 0.7f); if (Mathf.Repeat(t * 3.2f, 1.1f) < Time.deltaTime) CameraShake.Shake(0.6f, 0.5f); });
+        // 3) primer plano: los ojos
+        Vector3 ojos = Cabeza();
+        CameraShake.Shake(0.9f, 0.8f);
+        yield return Toma(cam, ojos + new Vector3(3f, -1.5f, -22f), ojos + new Vector3(1.5f, -0.6f, -15f), Cabeza, 2.2f,
+            t => Subir(a, arriba, 1f));
+        // 4) plano abierto: la expedición, pequeña, frente a la criatura
+        Vector3 medio = Vector3.Lerp(yo, Cabeza(), 0.6f);
+        StartCoroutine(Toma(cam, yo + new Vector3(9f, 2f, -20f), yo + new Vector3(8f, 2.6f, -26f), () => medio, 6f, null));   // abajo, detrás de la expedición: ellos pequeños, la criatura enorme
         yield return Hablar(Historia.Capitan, "¿Qué es eso...?");
         // el golpe: destello, la expedición cae
+        tomaId++;   // corta el plano abierto: la cámara se queda ahí para el golpe
         CombatFx.Burst(edge + Vector3.up * 2f, new Color(1f, 0.25f, 0.15f), 200, 18f, 0.5f, 1.4f);
         CameraShake.Shake(1.6f, 1f);
         negro = 0.7f;
@@ -142,6 +148,40 @@ public class ExpedicionPiso20 : MonoBehaviour
         yield return Fundir(1f, 2.5f);
         yield return Tarjeta("La expedición nunca regresó.", 3.5f);
         SceneManager.LoadScene(siguienteEscena);
+    }
+
+    int tomaId;
+
+    /// <summary>Un plano de cámara: corte a p0, se acerca despacio a p1 mirando a 'mira' (que puede moverse).</summary>
+    IEnumerator Toma(Camera cam, Vector3 p0, Vector3 p1, System.Func<Vector3> mira, float dur, System.Action<float> cada)
+    {
+        if (cam == null) yield break;
+        int id = ++tomaId;
+        for (float t = 0f; t < dur && id == tomaId; t += Time.deltaTime)
+        {
+            float k = Mathf.SmoothStep(0f, 1f, t / dur);
+            cada?.Invoke(t / dur);
+            cam.transform.position = Vector3.Lerp(p0, p1, k);
+            cam.transform.rotation = Quaternion.LookRotation(mira() - cam.transform.position);
+            yield return null;
+        }
+    }
+
+    void Subir(Vector3 a, Vector3 b, float t)
+    {
+        if (coloso == null) return;
+        var p = Vector3.Lerp(a, b, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t)));
+        var prop = coloso.GetComponent<CriaturaProp>();
+        if (prop != null) prop.Colocar(p); else coloso.position = p;
+    }
+
+    /// <summary>Dónde están los ojos de la criatura (a 53% de su altura, al frente).</summary>
+    Vector3 Cabeza()
+    {
+        if (coloso == null) return new Vector3(0f, 10f, 150f);
+        var rs = coloso.GetComponentsInChildren<Renderer>();
+        foreach (var r in rs) if (r.name == "Ojo") return new Vector3(coloso.position.x, r.bounds.center.y, r.bounds.center.z);
+        return coloso.position + Vector3.up * 16f;
     }
 
     // ------------------------------------------------------------------ la expedición
@@ -206,13 +246,6 @@ public class ExpedicionPiso20 : MonoBehaviour
             t.position = Vector3.Lerp(p0, p1, k / 0.6f) + Vector3.up * Mathf.Sin(k / 0.6f * Mathf.PI) * 1.2f;
             yield return null;
         }
-    }
-
-    static void Encuadre(Camera cam, Vector3 pos, Vector3 mira)
-    {
-        if (cam == null) return;
-        cam.transform.position = Vector3.Lerp(cam.transform.position, pos, Time.deltaTime * 2f);
-        cam.transform.rotation = Quaternion.Slerp(cam.transform.rotation, Quaternion.LookRotation(mira - cam.transform.position), Time.deltaTime * 3f);
     }
 
     static Vector3 Plano(Vector3 v) => new Vector3(v.x, 0f, v.z);

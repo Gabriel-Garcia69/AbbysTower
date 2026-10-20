@@ -8,10 +8,9 @@ using UnityEditor;
 /// Los siete pisos de los pecados (3 a 9): planos (salas a distintas alturas unidas por escaleras), nombres, jefes,
 /// historia (notas y libros), escondites tras muros falsos y reliquias que solo aparecen desde cierto ángulo.
 ///
-/// La historia: la torre apareció una noche sobre el abismo. Un Arquitecto la levantó para encerrar a los siete
-/// pecados, cada uno con un carcelero que alguna vez fue un Ascendiente. Alguien que firma "A." dejó notas por todos
-/// los pisos… y en la cima se descubre que A. es la propia Abby: cada vez que cae, la torre la devuelve al inicio sin
-/// recuerdos, pero sus notas se quedan.
+/// La historia (guion entregado): en 2030 la torre apareció en la ciudad; dentro, escaleras enormes bajan a un
+/// abismo y, entre más profundo, más fuertes las criaturas. En 2035 la expedición del capitán bajó más allá del piso
+/// 15 y nunca regresó. Abis baja a buscar a su hermano: sus notas firman "A."; los registros son de la expedición.
 /// </summary>
 public partial class FloorLayout
 {
@@ -253,48 +252,48 @@ public partial class FloorLayout
         switch (floor)
         {
             case 1:
-                list.Add(L(0, 3.6f, 2.6f, LoreNote.Kind.Inscripcion, "Bienvenida, Ascendiente",
-                    "Siete pecados duermen en esta torre, uno encima de otro, como libros en un estante.\n\nQuien llegue a la cima podrá pedir lo que quiera.\n\nQuien caiga, volverá a empezar."));
+                list.Add(L(0, 3.6f, 2.6f, LoreNote.Kind.Inscripcion, "Aviso del ejército",
+                    "Torre del abismo. Piso 1.\n\nLas criaturas de abajo son más fuertes que las de arriba. Ningún civil debe bajar sin permiso.\n\nTodo mineral recuperado se entrega en el puesto de comercio."));
                 list.Add(L(4, -5f, 2.5f, LoreNote.Kind.Diario, "Día 1",
-                    "El mercader dice que no es la primera vez que me ve. Yo nunca había estado aquí.\n\nLe compré una poción por si acaso. Me la cobró a mitad de precio y me guiñó un ojo. Qué raro.", "— A."));
+                    "El mercader dice que ya conoció a mi hermano. Que pasó por aquí con la expedición del capitán y le compró una poción.\n\nLe pregunté si regresó. No me contestó.", "— A."));
                 break;
             case 2:
                 list.Add(L(0, 3.6f, 2.6f, LoreNote.Kind.Diario, "Las galerías",
-                    "Las galerías cuelgan del vacío. Alguien construyó esto para que solo subieran los que saben saltar… o los que no le tienen miedo a caer.\n\nYo sí le tengo miedo. Subo igual.", "— A."));
-                list.Add(L(6, 3f, 1.5f, LoreNote.Kind.Libro, "Registro del Arquitecto",
-                    "Segunda planta terminada.\n\nLas siete plantas de arriba serán cárceles: Pereza, Gula, Avaricia, Envidia, Lujuria, Ira y Soberbia. Cada una tendrá su carcelero.\n\nNinguno sabrá que también es prisionero."));
+                    "Las galerías cuelgan sobre el vacío. Hay que saltar de una a otra.\n\nTengo miedo de caer. Bajo igual. Él bajó por aquí.", "— A."));
+                list.Add(L(6, 3f, 1.5f, LoreNote.Kind.Libro, "Registro de la expedición",
+                    "Piso 2 cruzado sin bajas.\n\nLos canalizadores abren camino con su energía. Las armas de pólvora ya no sirven desde el primer piso."));
                 break;
             case 3:
-                list.Add(L(1, -6.5f, 5f, LoreNote.Kind.Libro, "Tratado del Buen Descanso",
-                    "Capítulo I: Mañana.\nCapítulo II: Mañana.\nCapítulo III: Quizá pasado mañana.\n\n(El resto de las páginas están en blanco. En la última alguien escribió con letra muy cansada: \"ya casi\".)"));
+                list.Add(L(1, -6.5f, 5f, LoreNote.Kind.Libro, "Libro olvidado",
+                    "Capítulo I: Mañana.\nCapítulo II: Mañana.\nCapítulo III: Quizá pasado mañana.\n\n(Es un libro de la biblioteca de este piso. Las criaturas de aquí te dan sueño. Las páginas siguen en blanco.)"));
                 list.Add(L(4, -11.3f, 6f, LoreNote.Kind.Diario, "Polvo en las pestañas",
-                    "Me quedé dormida entre los libros. Soñé que ya había subido toda la torre y que arriba no había nada.\n\nDesperté con polvo en las pestañas. ¿Cuánto tiempo pasó? Las velas siguen igual de altas. Aquí nada se consume, nada avanza.", "— A.", 0f, BibliotecaMezzanine));
-                list.Add(L(6, 0f, 2.6f, LoreNote.Kind.Inscripcion, "Epitafio",
-                    "Aquí yace Acedia, que iba a cambiar el mundo en cuanto terminara de descansar."));
+                    "Me quedé dormida entre los libros. Soñé que encontraba a mi hermano y que me decía que siguiera estudiando.\n\nDesperté con polvo en las pestañas. Aquí abajo el tiempo se siente distinto.", "— A.", 0f, BibliotecaMezzanine));
+                list.Add(L(6, 0f, 2.6f, LoreNote.Kind.Inscripcion, "Placa en la pared",
+                    "Aquí cayó la segunda expedición, dormida antes de pelear.\n\nNo te sientes. No cierres los ojos."));
                 break;
             case 4:
                 list.Add(L(1, 6.5f, 5.2f, LoreNote.Kind.Nota, "Menú del día",
                     "Entrada: todo.\nPlato fuerte: lo demás.\nPostre: lo que quede de ti.\n\n(Abajo, con otra letra: \"no comas en la mesa grande si estás peleando, te vas a poner lenta\".)"));
                 list.Add(L(2, -14f, 11f, LoreNote.Kind.Diario, "Un hueco",
-                    "Comí hasta que dolió. La comida no sabía a nada, pero no podía parar.\n\nCreo que entiendo al Guardián: no tiene hambre. Tiene un hueco. Y los huecos no se llenan comiendo.", "— A."));
-                list.Add(L(3, -5.5f, 4.8f, LoreNote.Kind.Libro, "Registro del Arquitecto",
-                    "Gargantúa fue el primer cocinero de la torre. Le pedí que alimentara a los Ascendientes para que tuvieran fuerzas.\n\nNunca le dije cuándo parar."));
+                    "Comí hasta que dolió. La comida de este piso no sabía a nada, pero no podía parar.\n\nLa criatura de aquí no tiene hambre. Tiene un hueco. Y los huecos no se llenan comiendo.", "— A."));
+                list.Add(L(3, -5.5f, 4.8f, LoreNote.Kind.Libro, "Registro de la expedición",
+                    "Piso 4. Dos soldados no quisieron dejar la mesa grande. Los dejamos atrás.\n\nLa criatura que guarda este piso nunca deja de comer. Los canalizadores dicen que se alimenta de lo que uno desea."));
                 break;
             case 5:
                 list.Add(L(1, -5.5f, 4.2f, LoreNote.Kind.Libro, "Libro de cuentas",
-                    "Fragmentos guardados: 1 000 000.\nFragmentos gastados: 0.\nFragmentos necesarios para ser feliz: uno más.\n\n(Las cuentas siguen por cien páginas. Todas terminan igual.)"));
+                    "Minerales recuperados: 1 000 000.\nMinerales vendidos: 0.\nMinerales necesarios para salir: uno más.\n\n(Las cuentas siguen por cien páginas. Todas terminan igual.)"));
                 list.Add(L(3, 10.5f, -8.5f, LoreNote.Kind.Diario, "Cofres con dientes",
-                    "Abrí un cofre y tenía dientes. Abrí otro y tenía dientes. El tercero tenía oro.\n\nFui por un cuarto. Por eso tengo esta cicatriz en la mano. Los que respiran, muerden.", "— A."));
+                    "Abrí un cofre y tenía dientes. Abrí otro y tenía dientes. El tercero tenía minerales.\n\nFui por un cuarto. Por eso tengo esta cicatriz en la mano. Los que respiran, muerden.", "— A."));
                 list.Add(L(7, 0f, 2.6f, LoreNote.Kind.Inscripcion, "Grabado en oro",
-                    "Mammón contó todas las monedas de la torre.\n\nSe le olvidó contar los años."));
+                    "Un minero de la tercera expedición contó todos los minerales de este piso.\n\nSe le olvidó contar los días. Nunca subió."));
                 break;
             case 6:
                 list.Add(L(1, -6.5f, 5f, LoreNote.Kind.Nota, "Los retratos",
-                    "Todos los retratos de esta galería son de la misma persona.\n\nTodos tienen una \"A.\" pintada en la esquina."));
+                    "Todos los retratos de esta galería son de la misma muchacha.\n\nTodos tienen una \"A.\" pintada en la esquina."));
                 list.Add(L(5, 7.5f, 5f, LoreNote.Kind.Diario, "La que llega tarde",
-                    "En los espejos de este piso hay otra yo que se mueve tarde. Me sigue a todas partes.\n\nQuiere lo que tengo, aunque lo único que tengo es esta subida. Si me detengo, me alcanza. Así que no me detengo.", "— A."));
-                list.Add(L(3, 6.5f, 4.8f, LoreNote.Kind.Libro, "Registro del Arquitecto",
-                    "El Reflejo nació de una Ascendiente que pasó demasiado tiempo mirando cómo subían los demás.\n\nNunca subió ella. Ahora solo puede seguir."));
+                    "En los espejos de este piso hay otra yo que se mueve tarde. Me sigue a todas partes.\n\nSi me detengo, me alcanza. Así que no me detengo.", "— A."));
+                list.Add(L(3, 6.5f, 4.8f, LoreNote.Kind.Libro, "Registro de la expedición",
+                    "Piso 6. En los espejos cada uno se vio peleando contra sí mismo.\n\nLa criatura de aquí copia lo que haces. Pelea distinto cada vez o te alcanza."));
                 break;
             case 7:
                 list.Add(L(1, 6.5f, 5f, LoreNote.Kind.Nota, "Carta",
@@ -302,25 +301,25 @@ public partial class FloorLayout
                 list.Add(L(3, -10.5f, 8f, LoreNote.Kind.Diario, "Lo que jala",
                     "Hay algo en este jardín que me jala, como cuando quieres algo tanto que ya no importa si duele.\n\nMe amarré la espada a la mano para no soltarla. Si me jala, me impulso hacia el otro lado.", "— A."));
                 list.Add(L(7, 0f, 2.6f, LoreNote.Kind.Inscripcion, "Sobre la puerta",
-                    "Asmodea no quería ser amada.\nQuería ser necesitada.\n\nAquí sigue, esperando a que alguien no pueda irse."));
+                    "La criatura de este jardín no quiere matarte.\nQuiere que te quedes.\n\nNo te quedes."));
                 break;
             case 8:
                 list.Add(L(1, -6.5f, 5f, LoreNote.Kind.Nota, "Nota quemada",
                     "…y entonces rompí la puerta, y la pared, y el piso, y cuando ya no quedaba nada que romper, me quedé yo."));
                 list.Add(L(3, 9f, 7f, LoreNote.Kind.Diario, "El fuego contesta",
-                    "Grité tan fuerte que el fuego me contestó.\n\nNo sé con quién estoy enojada. Creo que conmigo, por tardar tanto. Por caer tantas veces. Por no acordarme de por qué subo.", "— A."));
-                list.Add(L(5, 6.5f, 4.8f, LoreNote.Kind.Libro, "Registro del Arquitecto",
-                    "Encadené a Furia con eslabones forjados de sus propios golpes.\n\nCada vez que golpea, la cadena se acorta."));
+                    "Grité tan fuerte que el fuego me contestó.\n\nEstoy enojada con la torre. Con la expedición. Con él, por irse. Conmigo, por tardar tanto en bajar.", "— A."));
+                list.Add(L(5, 6.5f, 4.8f, LoreNote.Kind.Libro, "Registro de la expedición",
+                    "Piso 8. La criatura de este piso está encadenada. No sabemos quién la encadenó.\n\nCada vez que golpea, la cadena se acorta. Hay que dejar que se canse."));
                 break;
             case 9:
                 list.Add(L(6, 0f, 3.5f, LoreNote.Kind.Inscripcion, "En el altar de la capilla",
-                    "Aquí rezaban los que dudaban antes de la última escalera.\n\nNadie dudó nunca. Por eso el altar está limpio."));
+                    "Aquí rezaban los soldados antes de seguir bajando.\n\nAlguien dejó una placa de la expedición del capitán " + Historia.CapitanNombre + ". Está limpia, como si la hubieran puesto hace poco."));
                 list.Add(L(1, 0f, -4.5f, LoreNote.Kind.Inscripcion, "A los pies de las estatuas",
                     "Arrodíllate.\n\nTodos los que llegaron hasta aquí se arrodillaron. Los que no, ya no están."));
-                list.Add(L(2, -11f, -9f, LoreNote.Kind.Libro, "Registro del Arquitecto (última página)",
-                    "Construí la torre para encerrar los siete pecados.\n\nMe faltó el octavo: creer que yo podía hacerlo.\n\nAhora el Coronado lleva mi corona y yo soy la torre. Cada piedra. Cada escalón. Cada vez que alguien cae, lo siento."));
+                list.Add(L(2, -11f, -9f, LoreNote.Kind.Libro, "Bitácora del capitán (copia)",
+                    "Han pasado 5 años desde que la torre apareció y aún no sabemos qué es, de dónde proviene o por qué apareció.\n\nBajaremos más allá del piso 15. Si esta bitácora regresa sin nosotros, que nadie venga a buscarnos."));
                 list.Add(L(8, 0f, 2.6f, LoreNote.Kind.Diario, "La última nota",
-                    "Ya lo entendí. Las notas. La letra. La cicatriz en la mano. El mercader que me guiña el ojo.\n\nCada vez que caigo, la torre me devuelve al principio y se me olvida todo. Pero las notas se quedan.\n\nSi estás leyendo esto, Abis: yo soy tú.\n\nEsta vez, llega arriba.", "— A."));
+                    "Encontré su letra en la pared, Abis. Decía \"volveré\".\n\nYa no me importa lo que dijo el capitán. Voy a bajar hasta donde haga falta.\n\nSi alguien encuentra esto: mi hermano se llama " + Historia.Hermano + ". Díganle que lo estoy buscando.", "— A."));
                 break;
         }
         return list;

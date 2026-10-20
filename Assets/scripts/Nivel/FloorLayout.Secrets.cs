@@ -97,15 +97,15 @@ public partial class FloorLayout
     {
         switch (floor)
         {
-            case 1: return "Si encontraste esto es porque giraste la cámara. Bien.\n\nLa torre esconde más de lo que muestra. Los muros del norte mienten a veces.";
-            case 2: return "Dejé esto aquí para la próxima vez. No sé por qué escribo \"próxima vez\". Se siente como si ya hubiera estado aquí.";
+            case 1: return "Si encontraste esto es porque giraste la cámara. Bien.\n\nLa torre del abismo esconde más de lo que muestra. Los muros del norte mienten a veces.";
+            case 2: return "Dejé esto aquí por si alguien de la expedición vuelve a pasar. Por si él vuelve a pasar.";
             case 3: return "Hay figuras flotando en algunos pisos. Si las miras desde el lugar correcto, se acomodan. No me preguntes cómo lo sé.";
-            case 4: return "No todo lo que se come alimenta. Guardé estos fragmentos en lugar de gastarlos en comida.";
+            case 4: return "No todo lo que se come alimenta. Guardé estos minerales en lugar de gastarlos en comida.";
             case 5: return "Este cofre no muerde. Lo revisé tres veces.";
             case 6: return "Aquí no me encuentra La Otra. Detrás de los muros no hay reflejo.";
             case 7: return "Aquí no jala nada. Por fin un lugar donde descansar del deseo de seguir.";
             case 8: return "Me escondí aquí a respirar. El fuego no entra. El enojo sí, pero más bajito.";
-            default: return "Último escondite. Lo que hay en el cofre es tuyo. Bueno, mío. Bueno, nuestro.";
+            default: return "Último escondite. Lo que hay en el cofre es para pagar las deudas cuando salgamos. Los dos.";
         }
     }
 
@@ -117,11 +117,11 @@ public partial class FloorLayout
     {
         switch (floor)
         {
-            case 3: return new RelicSpec { room = 1, stand = new Vector2(-5f, -3f), yaw = 135f, id = "gato", name = "Gato Dormilón", desc = "Lleva aquí siglos. Ronronea. No piensa moverse." };
+            case 3: return new RelicSpec { room = 1, stand = new Vector2(-5f, -3f), yaw = 135f, id = "gato", name = "Gato Dormilón", desc = "Bajó solo a la torre, como todos. Ronronea. No piensa moverse." };
             case 4: return new RelicSpec { room = 3, stand = new Vector2(4f, -3f), yaw = 225f, id = "pastel", name = "Pastel del 20 de Noviembre", desc = "Alguien lo horneó para un día especial. Huele a demo." };
             case 5: return new RelicSpec { room = 4, stand = new Vector2(-5f, 3f), yaw = 90f, id = "peso", name = "Moneda de un Peso", desc = "No alcanza para nada, pero es tuya." };
             case 6: return new RelicSpec { room = 1, stand = new Vector2(5f, 3f), yaw = 270f, id = "espejo", name = "Espejo de Mano Rajado", desc = "En el reflejo, la otra Abis sonríe. Tú no." };
-            case 7: return new RelicSpec { room = 4, stand = new Vector2(-5f, -3f), yaw = 180f, id = "carta", name = "Carta sin Enviar", desc = "Dice \"para ti\". No dice quién." };
+            case 7: return new RelicSpec { room = 4, stand = new Vector2(-5f, -3f), yaw = 180f, id = "carta", name = "Carta sin Enviar", desc = "Dice \"para Abis\". La letra es la de su hermano." };
             case 8: return new RelicSpec { room = 5, stand = new Vector2(5f, -3f), yaw = 45f, id = "patito", name = "Patito de Hule Ignífugo", desc = "Sobrevivió a la lava. Respeto." };
             default: return new RelicSpec { room = 3, stand = new Vector2(-5f, 3f), yaw = 315f, id = "placa", name = "Placa del Estudio 02", desc = "Hecho por Rodrigo, Gabriel, Francisco, Ricardo y Karla — UT Cancún, IDYGS103." };
         }

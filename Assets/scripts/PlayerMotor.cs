@@ -65,6 +65,7 @@ public class PlayerMotor : MonoBehaviour
         float dt = Time.deltaTime;
 
         // El rig solo tiene yaw, as√≠ que forward/right ya son planos (no hace falta ProjectOnPlane)
+        if (_input == null || cameraRig == null) return;   // sin lector de controles o sin rig (cinem·tica): no se mueve
         Vector2 move = _input.Move;
         Vector3 wish = cameraRig.transform.right * move.x + cameraRig.transform.forward * move.y;
 

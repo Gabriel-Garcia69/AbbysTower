@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -17,24 +18,73 @@ public partial class DioramaBuilder
     {
         float e = EdgeNoise(x, z);
         if (z > ExpEdgeZ + e * 0.8f) return -40f;   // el abismo
-        float w = Mathf.Abs(x) - 22f + e * 2f;
-        if (w > 0f || z < -68f + e * 2f) return w > 6f || z < -74f ? 14f : 6f;   // paredes de la gruta
-        if (z > ExpLedgeZ0 && z < ExpLedgeZ1) return 0.9f;   // el escalón (hay que saltar)
+        // las paredes no van en el terreno por celdas (en pendiente se ven como escalones): son la malla lisa de ExpRoca
+        if (z > ExpLedgeZ0 + e * 0.6f && z < ExpLedgeZ1 + e * 0.6f) return 0.9f;   // el escalón (hay que saltar)
         return 0f;
+    }
+
+    /// <summary>Altura de la roca de las paredes de la gruta: sube en curva con bultos (0 = suelo).</summary>
+    static float ExpRoca(float x, float z)
+    {
+        float e = EdgeNoise(x, z);
+        float d = Mathf.Max(Mathf.Abs(x) - 21f + e * 2.5f, -(z + 66f) + e * 2.5f);
+        if (d <= 0f) return 0f;
+        return Mathf.Min(ExpTecho + 2f, d * d * 0.22f + d * 0.9f + Noise(x * 0.22f + 3f, z * 0.22f) * 4f * Mathf.Clamp01(d / 4f));
+    }
+
+    /// <summary>Las paredes de la gruta en una malla lisa (normales suaves), con colisión para la cámara.</summary>
+    void ParedesGruta(Transform parent)
+    {
+        const float cell = 1.25f;
+        float x0 = -48f, z0 = -92f, x1 = 48f, z1 = ExpEdgeZ + 3f;
+        int nx = Mathf.CeilToInt((x1 - x0) / cell), nz = Mathf.CeilToInt((z1 - z0) / cell);
+        var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>();
+        var idx = new int[nx + 1, nz + 1];
+        for (int i = 0; i <= nx; i++)
+            for (int j = 0; j <= nz; j++)
+            {
+                float x = x0 + i * cell, z = z0 + j * cell, y = ExpRoca(x, z) - 0.05f;
+                idx[i, j] = v.Count;
+                v.Add(new Vector3(x, y, z));
+                uv.Add(new Vector2((z + Mathf.Abs(x)) * 0.25f, (y + Mathf.Abs(x) * 0.5f) * 0.25f));
+            }
+        for (int i = 0; i < nx; i++)
+            for (int j = 0; j < nz; j++)
+            {
+                int a = idx[i, j], b = idx[i + 1, j], c = idx[i, j + 1], d = idx[i + 1, j + 1];
+                if (v[a].y < 0f && v[b].y < 0f && v[c].y < 0f && v[d].y < 0f) continue;   // suelo: lo pone el terreno
+                t.Add(a); t.Add(c); t.Add(d); t.Add(a); t.Add(d); t.Add(b);
+            }
+        var m = new Mesh { name = "ParedesGruta", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
+        m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
+        var go = MeshObject(parent, "ParedesGruta", m, mCaveRock, true);
+        go.AddComponent<MeshCollider>().sharedMesh = m;
+    }
+
+    /// <summary>El sendero serpentea suave (una curva con muchos puntos, sin esquinas).</summary>
+    static Vector2[] Sendero(float za, float zb)
+    {
+        int n = Mathf.CeilToInt((zb - za) / 2.5f);
+        var p = new Vector2[n + 1];
+        for (int i = 0; i <= n; i++) { float z = Mathf.Lerp(za, zb, i / (float)n); p[i] = new Vector2(Mathf.Sin(z * 0.06f) * 2.6f + Mathf.Sin(z * 0.17f + 1f) * 0.8f, z); }
+        return p;
     }
 
     void BuildExpedition()
     {
         BuildTerrain();
         var g = Group("Gruta", root);
+        ParedesGruta(g);
         var lvl = Group("Nivel", root);
 
         // cristales y estalagmitas por las paredes
         for (int i = 0; i < 60; i++)
         {
             float z = R(-64f, 126f), x = (rng.NextDouble() < 0.5 ? -1f : 1f) * R(17f, 21f);
-            if (rng.NextDouble() < 0.5) Crystals(g, new Vector3(x, 0f, z), R(0.6f, 1.6f), rng.NextDouble() < 0.4, i % 4 == 0);
-            else Stalagmite(g, new Vector3(x, 0f, z), R(2f, 6f));
+            float y = Mathf.Max(ExpHeight(x, z), ExpRoca(x, z)) - 0.1f;
+            if (rng.NextDouble() < 0.5) Crystals(g, new Vector3(x, y, z), R(0.6f, 1.6f), rng.NextDouble() < 0.4, i % 4 == 0);
+            else Stalagmite(g, new Vector3(x, y, z), R(2f, 6f));
         }
         // el campamento de la expedición
         Tent(g, new Vector3(-10f, 0f, -56f), 30f, mCloth);
@@ -66,11 +116,12 @@ public partial class DioramaBuilder
         veil.transform.SetParent(lvl, false);
         veil.transform.localPosition = new Vector3(0f, 3f, ExpVeilZ);
         veil.AddComponent<BoxCollider>().size = new Vector3(48f, 8f, 0.4f);
-        foreach (float off in new[] { -0.04f, 0.04f })
-        {
-            var face = Prim(veil.transform, PrimitiveType.Cube, "Cara", new Vector3(0f, 0f, off), new Vector3(44f, 6f, 0.02f), Glow("Dio_Velo", new Color(0.55f, 0.25f, 0.9f), 0.9f), false);
-            face.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        }
+        // una cortina de energía translúcida (antes era una pared rosa opaca)
+        var energia = Saved("Dio_VeloEnergia", () => new Material(Shader.Find("Abby/Energia")));
+        energia.SetColor("_Color", new Color(0.55f, 0.3f, 1.4f));
+        var face = Prim(veil.transform, PrimitiveType.Quad, "Cortina", new Vector3(0f, 1.5f, 0f), new Vector3(44f, 9f, 1f), energia, false);
+        face.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        AddLight(veil.transform, new Vector3(0f, -1f, -1.5f), new Color(0.6f, 0.35f, 1f), 14f, 2.5f);
         veil.AddComponent<PhaseVeil>();
 
         // el borde del abismo y la oscuridad de abajo
@@ -79,16 +130,18 @@ public partial class DioramaBuilder
         // la criatura que espera abajo (la cinemática la sube)
         var colosoPf = Resources.Load<GameObject>("Enemigos/Jefe");
         var coloso = Group("Coloso", lvl);
-        coloso.localPosition = new Vector3(0f, -60f, ExpEdgeZ + 22f);
+        coloso.localPosition = new Vector3(0f, -48f, ExpEdgeZ + 28f);   // mide ~31 m: al subir, los ojos quedan sobre el borde
         if (colosoPf != null)
         {
             var v = (GameObject)Instantiate(colosoPf, coloso);
-            v.transform.localScale = Vector3.one * 5.5f;
+            v.transform.localScale = Vector3.one * 7f;
             v.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             var prop = coloso.gameObject.AddComponent<CriaturaProp>();
-            prop.cuerpo = new Color(0.04f, 0.02f, 0.06f); prop.ojos = new Color(1f, 0.15f, 0.1f); prop.bob = 0.6f;
+            prop.cuerpo = new Color(0.1f, 0.08f, 0.13f); prop.ojos = new Color(1f, 0.15f, 0.1f); prop.bob = 0.6f;
         }
-        AddLight(coloso, new Vector3(0f, 16f, -8f), new Color(1f, 0.2f, 0.15f), 50f, 6f);
+        AddLight(coloso, new Vector3(0f, 18f, -14f), new Color(1f, 0.2f, 0.15f), 60f, 7f);
+        AddLight(coloso, new Vector3(-12f, 26f, 10f), new Color(0.45f, 0.75f, 1f), 45f, 6f);   // contraluz: se lee la silueta contra la pared
+        AddLight(coloso, new Vector3(0f, 4f, -24f), new Color(0.35f, 0.7f, 1f), 40f, 3f);     // la luz de las runas del borde, desde abajo
 
         // la expedición: el capitán y los cazadores (ExpedicionPiso20 los va moviendo)
         var exp = Group("Expedicion", lvl);
@@ -111,10 +164,11 @@ public partial class DioramaBuilder
         a2.roster = new[] { TowerEnemy.Kind.Sombra, TowerEnemy.Kind.Bruto, TowerEnemy.Kind.Sombra, TowerEnemy.Kind.Saltador };
         a2.leash = 12f;
 
-        Trail(g, 4f, new Vector2(0f, -60f), new Vector2(0f, ExpLedgeZ0 - 1f));
-        Trail(g, 4f, new Vector2(0f, ExpLedgeZ1 + 1f), new Vector2(0f, ExpEdgeZ - 3f));
+        Trail(g, 3.6f, Sendero(-60f, ExpLedgeZ0 - 1f));
+        Trail(g, 3.6f, Sendero(ExpLedgeZ1 + 1f, ExpEdgeZ - 3f));
         for (float z = -40f; z < ExpEdgeZ; z += 16f) foreach (float sx in new[] { -1f, 1f }) Brazier(lvl, new Vector3(sx * 7f, 0f, z));
 
+        GrutaUnica(g);
         WalkBoundary(ExpWalk);
         var bg = Group("Fondo", root);
         OuterLand(bg, 14f, true, true, true, true, 0);

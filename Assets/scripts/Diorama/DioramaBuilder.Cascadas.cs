@@ -87,16 +87,16 @@ public partial class DioramaBuilder
         var water = Group("Agua", root);
 
         // agua: una franja que sigue al río en cada bancal (1.2 m bajo el suelo) + la poza
-        float zPrev = FallsPondZ;
+        float zPrev = FallsPondZ + 8.4f;   // empieza justo en la orilla del estanque (sin encimarse)
         var pondWater = Prim(water, PrimitiveType.Cylinder, "Estanque", new Vector3(FallsPond.x, -1.2f, FallsPond.y), new Vector3(19f, 0.005f, 19f), mRiver);
         pondWater.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         for (int i = 0; i <= FallsZ.Length; i++)
         {
-            float z1 = i < FallsZ.Length ? FallsZ[i] : FallsPool.y, y = i * FallsStep - 1.2f;
+            float z1 = i < FallsZ.Length ? FallsZ[i] : FallsPool.y - 11.8f, y = i * FallsStep - 1.2f;   // la última termina en la orilla de la poza
             MeshObject(water, "Rio_" + i, ZRiverStrip(zPrev, z1 + 0.02f, y, 12.6f), mRiver, false);
             zPrev = z1;
         }
-        var poolWater = Flat(water, "Poza", new Vector3(FallsPool.x, 16f - 1.2f, FallsPool.y), 29f, 29f, mRiver, 0.12f);
+        var poolWater = Prim(water, PrimitiveType.Cylinder, "Poza", new Vector3(FallsPool.x, 16f - 1.2f, FallsPool.y), new Vector3(25.6f, 0.005f, 25.6f), mRiver);
         poolWater.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         // enredaderas que cuelgan del gran risco
         for (float x = -50f; x < 56f; x += R(2.5f, 5f))
@@ -112,7 +112,7 @@ public partial class DioramaBuilder
         foreach (float fx in new[] { 12f, 26f })
         {
             Waterfall(water, new Vector3(fx, (FallsCliffY - 0.4f + 14.8f) / 2f, FallsCliffZ), Vector3.back, 6f, FallsCliffY - 0.4f - 14.8f);
-            Flat(water, "Acequia", new Vector3(fx, FallsCliffY - 0.4f, FallsCliffZ + 9f), 5.2f, 18f, mRiver, 0.2f);
+            FlowFlat(water, "Acequia", new Vector3(fx, FallsCliffY - 0.4f, FallsCliffZ + 9f), 5.2f, 18f, mRiver, 0.2f, new Vector2(0f, -0.7f));   // corre hacia la caída
             Foam(water, new Vector3(fx, 14.9f, FallsCliffZ - 2.5f), 5f, 40f);
         }
         var mist = Group("Bruma", water);
@@ -261,17 +261,20 @@ public partial class DioramaBuilder
     /// <summary>Franja de agua que sigue la curva del río (a lo largo de Z) entre z0 y z1.</summary>
     Mesh ZRiverStrip(float z0, float z1, float y, float width)
     {
-        var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>();
+        var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>(); var flow = new List<Vector2>();
         int n = Mathf.Max(2, Mathf.CeilToInt((z1 - z0) / 1f));
         for (int i = 0; i <= n; i++)
         {
             float z = Mathf.Lerp(z0, z1, i / (float)n), x = FallsRiverX(z);
             v.Add(new Vector3(x - width / 2f, y, z)); v.Add(new Vector3(x + width / 2f, y, z));
             uv.Add(new Vector2(0f, z * 0.15f)); uv.Add(new Vector2(width * 0.15f, z * 0.15f));
+            // el río baja hacia el sur (de las Gemelas al estanque) siguiendo sus curvas
+            var dir = -new Vector2(FallsRiverX(z + 0.5f) - FallsRiverX(z - 0.5f), 1f).normalized * 0.65f;
+            flow.Add(dir); flow.Add(dir);
             if (i < n) { int k = i * 2; t.AddRange(new[] { k, k + 2, k + 3, k, k + 3, k + 1 }); }
         }
         var m = new Mesh { name = "Rio" };
-        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetUVs(1, flow); m.SetTriangles(t, 0);
         m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
         return m;
     }

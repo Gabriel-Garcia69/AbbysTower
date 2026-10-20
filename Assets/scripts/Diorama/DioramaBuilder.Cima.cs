@@ -3,7 +3,7 @@ using UnityEngine;
 /// <summary>
 /// La Cima — sobre las nubes (crepúsculo con estrellas). Islas de pasto sobre pilares de roca que se hunden en un mar de
 /// nubes, unidas por puentes colgantes. En la isla más alta, la azotea de la torre: almenas, columnas de mármol y el altar
-/// donde espera el Arquitecto. Rocas que flotan, el sol rozando el horizonte rosa.
+/// donde espera el Guardián del Abismo. Rocas que flotan, el sol rozando el horizonte rosa.
 /// </summary>
 public partial class DioramaBuilder
 {

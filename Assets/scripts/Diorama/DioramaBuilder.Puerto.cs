@@ -9,8 +9,8 @@ using UnityEngine;
 /// </summary>
 public partial class DioramaBuilder
 {
-    static readonly Rect PortArea = new Rect(-100f, -70f, 200f, 150f);
-    static readonly Rect PortWalk = new Rect(-30f, -38f, 84f, 84f);
+    static readonly Rect PortArea = new Rect(-100f, -96f, 200f, 176f);
+    static readonly Rect PortWalk = new Rect(-30f, -57f, 84f, 103f);   // al sur, el jardín
     static readonly Vector3 PortSpawn = new Vector3(0f, 0.1f, -24f);
     const float SeaY = -1.4f, PierX = 3f, PierW = 6f, PierEnd = 44f;
     const float LighthouseX = 44f, LighthouseZ = 27f;
@@ -34,7 +34,7 @@ public partial class DioramaBuilder
         float h = 0f;
         float ex = Mathf.Abs(x) - (x > 0f ? 38f : 34f) + e * 2f;   // al este, calle ancha hacia la escalera del cabo
         if (ex > 0f && z < -2f) h = Mathf.Max(h, ex < 5f ? 1.5f : ex < 10f ? 3f : ex < 16f ? 4.8f : 7f);
-        float es = -z - 36f + e * 2f;
+        float es = -z - 60f + e * 2f;   // el bancal del sur, lejos del inicio (antes la cámara se pegaba al muro)
         if (es > 0f) h = Mathf.Max(h, es < 6f ? 1.5f : es < 12f ? 3f : es < 18f ? 4.8f : 7f);
         // los cabos que cierran la bahía
         if (z > 0f && x > 30f) h = Mathf.Max(h, Vector2.Distance(new Vector2(x, z), new Vector2(LighthouseX, LighthouseZ)) < 9f ? 4.5f : 2.5f);
@@ -414,9 +414,49 @@ public partial class DioramaBuilder
 
     // ------------------------------------------------------------------ pueblo del puerto
 
+    /// <summary>Jardín al sur del inicio: fuente, arriates de flores, setos bajos, bancas, faroles y palmeras a los lados.
+    /// Todo bajo cerca de la cámara (al sur de Abby) para no taparla.</summary>
+    void PortGarden(Transform v)
+    {
+        var j = Group("Jardin", v);
+        Flat(j, "Senda", new Vector3(0f, 0.012f, -48f), 4f, 18f, mCobble, 0.5f);
+        Flat(j, "SendaCruz", new Vector3(0f, 0.013f, -48f), 34f, 3.4f, mCobble, 0.5f);
+        // la fuente
+        Prim(j, PrimitiveType.Cylinder, "Pila", new Vector3(0f, 0.3f, -48f), new Vector3(6.4f, 0.3f, 6.4f), mStone, true);
+        Prim(j, PrimitiveType.Cylinder, "AguaFuente", new Vector3(0f, 0.62f, -48f), new Vector3(5.8f, 0.005f, 5.8f), mRiver);
+        Prim(j, PrimitiveType.Cylinder, "Columna", new Vector3(0f, 1.1f, -48f), new Vector3(0.6f, 0.8f, 0.6f), mStone, true);
+        Prim(j, PrimitiveType.Sphere, "Remate", new Vector3(0f, 2f, -48f), Vector3.one * 0.7f, mStone);
+        var chorro = Group("Chorro", j); chorro.localPosition = new Vector3(0f, 2.2f, -48f);
+        Foam(chorro, Vector3.zero, 0.8f, 18f);
+        blocked.Add(new Rect(-4f, -52f, 8f, 8f));
+        // arriates de flores y setos bajos
+        foreach (var gp in new[] { new Vector3(-10f, 0f, -43f), new Vector3(10f, 0f, -43f), new Vector3(-10f, 0f, -53f), new Vector3(10f, 0f, -53f) })
+            Garden(j, gp, 6f, 3f);
+        var seto = Plain("Dio_Seto", new Color(0.2f, 0.38f, 0.16f), 0.1f);
+        foreach (float sx in new[] { -1f, 1f })
+        {
+            Box(j, "Seto", new Vector3(sx * 2.8f, 0.35f, -43f), new Vector3(0.7f, 0.7f, 6f), seto, true);
+            Box(j, "Seto", new Vector3(sx * 2.8f, 0.35f, -53f), new Vector3(0.7f, 0.7f, 6f), seto, true);
+            Box(j, "Banca", new Vector3(sx * 5.5f, 0.45f, -46.2f), new Vector3(2f, 0.12f, 0.6f), mPlank, true);
+            Box(j, "Banca", new Vector3(sx * 5.5f, 0.45f, -49.8f), new Vector3(2f, 0.12f, 0.6f), mPlank, true);
+            PortLamp(j, new Vector3(sx * 4f, 0f, -41f));
+            PortLamp(j, new Vector3(sx * 4f, 0f, -55f));
+            for (int k = 0; k < 3; k++) Palm(j, new Vector3(sx * R(17f, 24f), 0f, -42f - k * 6f + R(-1f, 1f)), R(0.9f, 1.2f));
+        }
+        for (int i = 0; i < 40; i++)   // macetas y flores sueltas
+        {
+            var q = new Vector2(R(-26f, 26f), R(-57f, -40f));
+            if (!Free(q, 0.4f) || Mathf.Abs(q.x) < 4.5f) continue;
+            var f = Prim(j, PrimitiveType.Sphere, "Flor", new Vector3(q.x, 0.15f, q.y), Vector3.one * R(0.15f, 0.28f), mFlowers[rng.Next(mFlowers.Length)]);
+            f.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        blocked.Add(new Rect(-30f, -58f, 60f, 20f));
+    }
+
     void BuildPortTown()
     {
         var v = Group("Pueblo", root);
+        PortGarden(v);
         Flat(v, "Plaza", new Vector3(0f, 0.012f, -12f), 50f, 18f, mCobble, 0.5f);
         blocked.Add(new Rect(-25f, -21f, 50f, 18f));
         // almacenes y casas mirando al mar

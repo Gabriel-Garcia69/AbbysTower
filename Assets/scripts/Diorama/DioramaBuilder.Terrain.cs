@@ -296,7 +296,7 @@ public partial class DioramaBuilder
         BuildOuterTerrain(g, new Rect(b, es0, ex1 - b, north - es0), 1.4f);
         Flat(g, "MesetaEsteN", new Vector3((ex1 + far) / 2f, 3f, (es0 + north) / 2f), far - ex1, north - es0, mGrass, 0.25f);
         Flat(g, "MesetaEsteS", new Vector3((b + far) / 2f, 3f, (-far + es0) / 2f), far - b, far + es0, mGrass, 0.25f);
-        var lakeWater = Flat(g, "LagoEste", new Vector3((40f + ex1) / 2f, WaterLevel, EastLake.y - 3f), ex1 - 40f, 90f, mRiver, 0.12f);
+        var lakeWater = Prim(g, PrimitiveType.Cylinder, "LagoEste", new Vector3(EastLake.x, WaterLevel, EastLake.y), new Vector3(80f, 0.005f, 80f), mRiver);
         lakeWater.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         Flat(g, "MesetaSur", new Vector3((a + b) / 2f, OuterSouthY, (-far + s + 1f) / 2f), b - a, s + 1f + far, mGrass, 0.25f);
         // al norte las mesetas bajan al valle en escalones, como el risco del pueblo
@@ -338,7 +338,7 @@ public partial class DioramaBuilder
     {
         var g = Group("Agua", root);
         // río del cañón: tira que sigue la curva
-        var strip = RiverStrip(RiverStartX - 0.2f, 40f, WaterLevel, 10f);   // más al este, el agua es la del lago (BuildOuterWorld)
+        var strip = RiverStrip(RiverStartX - 0.2f, EastLake.x - 38f, WaterLevel, 10f, 0.55f, x => Mathf.Max(10f, 6.4f * (1f + Mathf.Max(0f, x - 45f) / 26f)));   // hasta el lago del este, ensanchándose con el cañón
         var river = MeshObject(g, "Rio", strip, mRiver, false);
         // arroyo de arriba
         BuildStream(g);
@@ -398,19 +398,33 @@ public partial class DioramaBuilder
         Foam(g, new Vector3(SpringX + 0.7f, water0 + 0.05f, sz), 1.6f, 18f);
     }
 
-    Mesh RiverStrip(float xa, float xb, float y, float width)
+    /// <summary>Agua plana con corriente (m/s en x, z) para el shader: acequias, arroyos rectos, ríos de arriba.</summary>
+    GameObject FlowFlat(Transform parent, string name, Vector3 center, float w, float d, Material mat, float tile, Vector2 flow)
     {
-        var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>();
+        var go = Flat(parent, name, center, w, d, mat, tile);
+        var m = go.GetComponent<MeshFilter>().sharedMesh;
+        var f = new List<Vector2>(); for (int i = 0; i < m.vertexCount; i++) f.Add(flow);
+        m.SetUVs(1, f);
+        return go;
+    }
+
+    /// <summary>Tira de agua a lo largo de X siguiendo la curva del río; el agua corre hacia +X (río abajo).</summary>
+    Mesh RiverStrip(float xa, float xb, float y, float width, float speed = 0.55f, System.Func<float, float> widthAt = null)
+    {
+        var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>(); var flow = new List<Vector2>();
         int segs = Mathf.CeilToInt((xb - xa) / 1.5f);
         for (int s = 0; s <= segs; s++)
         {
             float x = Mathf.Lerp(xa, xb, s / (float)segs), z = Meander(x);
-            v.Add(new Vector3(x, y, z - width / 2f)); v.Add(new Vector3(x, y, z + width / 2f));
+            float wd = widthAt != null ? widthAt(x) : width;
+            v.Add(new Vector3(x, y, z - wd / 2f)); v.Add(new Vector3(x, y, z + wd / 2f));
             uv.Add(new Vector2(x * 0.1f, 0f)); uv.Add(new Vector2(x * 0.1f, width * 0.1f));
+            var dir = new Vector2(1f, Meander(x + 0.5f) - Meander(x - 0.5f)).normalized * speed;
+            flow.Add(dir); flow.Add(dir);
             if (s < segs) { int k = s * 2; t.AddRange(new[] { k, k + 1, k + 3, k, k + 3, k + 2 }); }
         }
         var m = new Mesh { name = "Rio" };
-        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetUVs(1, flow); m.SetTriangles(t, 0);
         m.RecalculateNormals(); m.RecalculateBounds();
         return m;
     }

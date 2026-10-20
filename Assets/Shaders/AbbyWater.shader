@@ -51,14 +51,21 @@ Shader "Abby/Water"
                 float4 _Flow;
             CBUFFER_END
 
-            struct Attributes { float4 positionOS : POSITION; };
+            // uv1 (TEXCOORD1) = corriente propia de cada vértice en m/s (x, z): así cada río corre río abajo y sigue sus curvas
+            struct Attributes { float4 positionOS : POSITION; float2 flow : TEXCOORD1; };
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 float4 screenPos  : TEXCOORD1;
                 float  fogFactor  : TEXCOORD2;
+                float2 flow       : TEXCOORD3;
             };
+
+            float Waves2(float2 p, float t)
+            {
+                return AbbyNoise(p + float2(t, t * 0.7)) * 0.6 + AbbyNoise(p * 2.3 - float2(t * 0.8, t * 1.3)) * 0.4;
+            }
 
             float Waves(float2 p, float t)
             {
@@ -76,18 +83,29 @@ Shader "Abby/Water"
                 o.positionCS = TransformWorldToHClip(ws);
                 o.screenPos = ComputeScreenPos(o.positionCS);
                 o.fogFactor = ComputeFogFactor(o.positionCS.z);
+                o.flow = v.flow;
                 return o;
             }
 
             half4 frag(Varyings i) : SV_Target
             {
                 float t = _Time.y * _WaveSpeed;
-                // la corriente arrastra las olas río abajo
-                float2 p = (i.positionWS.xz - _Flow.xy * _Time.y) * _WaveScale;
+                // la corriente arrastra las olas río abajo (corriente del material + la de cada vértice). Dos fases que se
+                // alternan para que la textura no se estire con el tiempo donde la corriente cambia de dirección.
+                float2 f = _Flow.xy + i.flow;
+                const float T = 8.0;   // ciclo largo: la mezcla de fases no se nota (sin parpadeo)
+                float ph0 = frac(_Time.y / T), ph1 = frac(_Time.y / T + 0.5);
+                float w0 = 1.0 - abs(1.0 - 2.0 * ph0);
+                // (sin girar coordenadas: girarlas según la corriente torcía la textura en las curvas, como remolino)
+                float stretch = saturate(length(f) / 0.9);
+                float2 p = (i.positionWS.xz - f * ph0 * T) * _WaveScale;
+                float2 q = (i.positionWS.xz - f * ph1 * T) * _WaveScale + 0.37;
 
                 // normal a partir de la altura de las olas (diferencias finitas)
                 const float e = 0.05;
-                float h0 = Waves(p, t), hx = Waves(p + float2(e, 0), t), hz = Waves(p + float2(0, e), t);
+                float h0 = Waves2(p, t) * w0 + Waves2(q, t) * (1.0 - w0);
+                float hx = Waves2(p + float2(e, 0), t) * w0 + Waves2(q + float2(e, 0), t) * (1.0 - w0);
+                float hz = Waves2(p + float2(0, e), t) * w0 + Waves2(q + float2(0, e), t) * (1.0 - w0);
                 // a lo lejos las olas finas serían más chicas que un píxel (se ve "granulado"): se suavizan con la distancia
                 float strength = _NormalStrength / (1.0 + i.screenPos.w * 0.04);
                 float3 n = normalize(float3((h0 - hx) / e * strength, 1.0, (h0 - hz) / e * strength));
@@ -137,7 +155,10 @@ Shader "Abby/Water"
 
                 // espuma en las orillas
                 float foam = 1.0 - saturate(depth / _FoamDistance);
-                foam = smoothstep(0.35, 0.9, foam + (AbbyNoise((i.positionWS.xz - _Flow.xy * _Time.y) * 7.0 + t * 0.8) - 0.5) * 0.5);
+                float fn = AbbyNoise(p / _WaveScale * 7.0 + t * 0.8) * w0 + AbbyNoise(q / _WaveScale * 7.0 + t * 0.8) * (1.0 - w0);
+                foam = smoothstep(0.35, 0.9, foam + (fn - 0.5) * 0.5);
+                // hilos de espuma que bajan con la corriente (solo donde el agua corre)
+                foam = max(foam, stretch * smoothstep(0.72, 0.92, fn) * 0.3);
                 col = lerp(col, _FoamColor.rgb * sunShadow, foam * 0.85);
 
                 col = MixFog(col, i.fogFactor);

@@ -320,7 +320,7 @@ public partial class FloorLayout
                 list.Add(L(2, -11f, -9f, LoreNote.Kind.Libro, "Registro del Arquitecto (última página)",
                     "Construí la torre para encerrar los siete pecados.\n\nMe faltó el octavo: creer que yo podía hacerlo.\n\nAhora el Coronado lleva mi corona y yo soy la torre. Cada piedra. Cada escalón. Cada vez que alguien cae, lo siento."));
                 list.Add(L(8, 0f, 2.6f, LoreNote.Kind.Diario, "La última nota",
-                    "Ya lo entendí. Las notas. La letra. La cicatriz en la mano. El mercader que me guiña el ojo.\n\nCada vez que caigo, la torre me devuelve al principio y se me olvida todo. Pero las notas se quedan.\n\nSi estás leyendo esto, Abby: yo soy tú.\n\nEsta vez, llega arriba.", "— A."));
+                    "Ya lo entendí. Las notas. La letra. La cicatriz en la mano. El mercader que me guiña el ojo.\n\nCada vez que caigo, la torre me devuelve al principio y se me olvida todo. Pero las notas se quedan.\n\nSi estás leyendo esto, Abis: yo soy tú.\n\nEsta vez, llega arriba.", "— A."));
                 break;
         }
         return list;

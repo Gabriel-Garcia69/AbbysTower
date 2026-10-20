@@ -25,6 +25,7 @@ public partial class DioramaBuilder
                 case Layout.Lago: return LakeArea;
                 case Layout.Cascadas: return FallsArea;
                 case Layout.Montana: return MountArea;
+                case Layout.Expedicion: return ExpArea;
                 default: return TownArea;
             }
         }
@@ -41,7 +42,7 @@ public partial class DioramaBuilder
             {
                 case Layout.Pueblo: return -4.5f;
                 case Layout.Cueva: return -1.5f;
-                case Layout.Templo: case Layout.Cima: case Layout.Montana: case Layout.Cascadas: return -999f;
+                case Layout.Templo: case Layout.Cima: case Layout.Montana: case Layout.Cascadas: case Layout.Expedicion: return -999f;
                 case Layout.Lago: return -1.1f;
                 default: return -0.6f;
             }
@@ -72,6 +73,7 @@ public partial class DioramaBuilder
             case Layout.Lago: return LakeHeight(x, z);
             case Layout.Cascadas: return FallsHeight(x, z);
             case Layout.Montana: return MountHeight(x, z);
+            case Layout.Expedicion: return ExpHeight(x, z);
         }
         float e = (Noise(x * 0.18f, z * 0.18f) * 2f - 1f) + (Noise(x * 0.5f + 40f, z * 0.5f) * 2f - 1f) * 0.35f
                 + (Noise(x * 1.3f - 17f, z * 1.3f + 9f) * 2f - 1f) * 0.25f;   // orillas irregulares, nada de líneas rectas

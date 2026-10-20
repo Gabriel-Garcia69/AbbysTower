@@ -121,10 +121,10 @@ public partial class DioramaBuilder
         Exit(lvl, new Vector3(CaveI2.x, 0.6f, CaveI2.y + 4f), boss);
         Chest(lvl, new Vector3(-33f, 0f, 18f), 30, 90f);
         Chest(lvl, new Vector3(36f, 0f, 22f), 24, -90f);
-        Note(lvl, new Vector3(-3.8f, 3.5f, -38f), 90f, LoreNote.Kind.Diario, "dio4_diario", "Bajo la tierra",
-             "Para subir hay que bajar: este piso de la torre es una gruta.\nLos cristales dan luz propia y suenan cuando pasas cerca. Al fondo, en la isla del centro, hay una piedra que late como un corazón.", "— A.");
+        Note(lvl, new Vector3(-3.8f, 3.5f, -38f), 90f, LoreNote.Kind.Diario, "dio4_diario", "Diario de la expedición — día 9",
+             "El piso 5 es una gruta llena de cristales. Brillan con la misma energía que usamos en las armas.\nAquí los minerales salen más grandes. Con lo de este piso pagaríamos todas las deudas, Abis. Todas.", "— " + Historia.Hermano);
         Note(lvl, new Vector3(5.5f, 0.6f, CaveI2.y - 3f), -90f, LoreNote.Kind.Inscripcion, "dio4_geoda", "Grabado en la piedra azul",
-             "Corazón de Geoda.\nAquí late la torre. Cada vez que alguien cae y vuelve a empezar, late una vez más.");
+             "Al fondo de la gruta, una piedra que late como un corazón.\nLos canalizadores dicen que la energía de la torre sale de aquí, o pasa por aquí. Nadie lo ha confirmado.");
 
         WalkBoundary(CaveWalk);
         var bg = Group("Fondo", root);

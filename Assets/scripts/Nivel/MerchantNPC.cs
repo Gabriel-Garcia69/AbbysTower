@@ -9,7 +9,7 @@ public class MerchantNPC : MonoBehaviour
     public Transform body;
     public Transform arm;
     public float lookRadius = 7f;
-    public string greeting = "¡Bienvenida, viajera! Tengo de todo... por unos fragmentos.";
+    public string greeting = "¡Bienvenida, viajera! Tengo de todo... por unos minerales.";
 
     Transform player;
     bool greeted;

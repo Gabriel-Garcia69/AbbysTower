@@ -14,7 +14,7 @@ using UnityEditor;
 /// </summary>
 public partial class DioramaBuilder : MonoBehaviour
 {
-    public enum Layout { Pueblo, Puerto, Acantilado, Cueva, Templo, Nevado, Cima, Lago, Cascadas, Montana }
+    public enum Layout { Pueblo, Puerto, Acantilado, Cueva, Templo, Nevado, Cima, Lago, Cascadas, Montana, Intro, Expedicion }
     [Tooltip("Qué mapa genera: el pueblo del risco o el muelle de puerto.")]
     public Layout layout = Layout.Pueblo;
     public int seed = 7;
@@ -39,6 +39,7 @@ public partial class DioramaBuilder : MonoBehaviour
                 case Layout.Lago: return LakeWalk;
                 case Layout.Cascadas: return FallsWalk;
                 case Layout.Montana: return MountWalk;
+                case Layout.Expedicion: return ExpWalk;
                 default: return TownWalk;
             }
         }
@@ -61,7 +62,7 @@ public partial class DioramaBuilder : MonoBehaviour
     // ------------------------------------------------------------------ generación
 
     /// <summary>Súbelo cada vez que cambie lo que genera Build(): los pisos viejos se regeneran solos al abrirlos.</summary>
-    public const int BuildVersion = 19;
+    public const int BuildVersion = 20;
     [SerializeField, HideInInspector] int builtVersion;
     public bool IsCurrent => builtVersion == BuildVersion;
 
@@ -86,6 +87,8 @@ public partial class DioramaBuilder : MonoBehaviour
             case Layout.Lago: BuildLake(); return;
             case Layout.Cascadas: BuildFalls(); return;
             case Layout.Montana: BuildMountain(); return;
+            case Layout.Intro: BuildIntro(); return;
+            case Layout.Expedicion: BuildExpedition(); return;
         }
 
         BuildTerrain();
@@ -142,6 +145,7 @@ public partial class DioramaBuilder : MonoBehaviour
                 case Layout.Lago: return LakeSpawn;
                 case Layout.Cascadas: return FallsSpawn;
                 case Layout.Montana: return MountSpawn;
+                case Layout.Expedicion: return ExpSpawn;
                 default: return Spawn;
             }
         }
@@ -277,7 +281,7 @@ public partial class DioramaBuilder : MonoBehaviour
              "LO ALTO DEL PATIO", "El pueblo del risco a tus pies", still: true);
         // el mirador: plano abierto y bajo hacia el valle, las montañas y la torre
         Shot(g, "Mirador", new Vector3(LookoutX, 0f, CliffFenceZ + 2.4f), new Vector2(3.6f, 6.4f), -22f, 12f, 10f, 44f, 6f, new Vector3(0f, 1.2f, 2.5f), 2.2f, 3,
-             "MIRADOR DEL VALLE", "Allá arriba espera la torre", still: true);
+             "MIRADOR DEL VALLE", "El abismo sigue más abajo", still: true);
     }
 
     void Shot(Transform parent, string name, Vector3 center, Vector2 size, float yaw, float pitch, float dist, float fov, float lookUp,
@@ -892,6 +896,8 @@ public partial class DioramaBuilder : MonoBehaviour
                 case Layout.Cueva: return Mood.Gruta;
                 case Layout.Cima: return Mood.Crepusculo;
                 case Layout.Lago: return Mood.Amanecer;
+                case Layout.Intro: return Mood.Atardecer;
+                case Layout.Expedicion: return Mood.Gruta;
                 default: return Mood.Dia;
             }
         }

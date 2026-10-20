@@ -37,6 +37,6 @@ public class TreasureChest : MonoBehaviour
         opened = true;
         ShardPickup.Drop(transform.position + Vector3.up * 0.4f, fragments);
         CombatFx.Burst(transform.position + Vector3.up * 0.8f, new Color(1f, 0.85f, 0.4f), 40, 5f, 0.18f, 0.9f, -0.2f);
-        FloorDirector.Banner("¡COFRE OCULTO!", $"+{fragments} fragmentos", new Color(1f, 0.85f, 0.45f), 2.2f);
+        FloorDirector.Banner("¡COFRE OCULTO!", $"+{fragments} minerales", new Color(1f, 0.85f, 0.45f), 2.2f);
     }
 }

@@ -22,7 +22,7 @@ public static class Difficulty
     {
         new Preset { name = "FÁCIL", description = "Para disfrutar la torre. Recibes la mitad de daño y pierdes poco al morir.",
             color = new Color(0.45f, 0.95f, 0.6f), damageTaken = 0.5f, enemyHealth = 0.7f, enemySpeed = 0.9f, attackCooldown = 1.3f, healing = 1.5f, fragmentsLost = 0.25f },
-        new Preset { name = "NORMAL", description = "La experiencia pensada. Al morir pierdes la mitad de los fragmentos.",
+        new Preset { name = "NORMAL", description = "La experiencia pensada. Al morir pierdes la mitad de los minerales.",
             color = new Color(0.55f, 0.75f, 1f), damageTaken = 1f, enemyHealth = 1f, enemySpeed = 1f, attackCooldown = 1f, healing = 1f, fragmentsLost = 0.5f },
         new Preset { name = "DIFÍCIL", description = "Enemigos más duros y agresivos. Curarte rinde menos.",
             color = new Color(1f, 0.6f, 0.25f), damageTaken = 1.5f, enemyHealth = 1.35f, enemySpeed = 1.12f, attackCooldown = 0.8f, healing = 0.75f, fragmentsLost = 0.75f },

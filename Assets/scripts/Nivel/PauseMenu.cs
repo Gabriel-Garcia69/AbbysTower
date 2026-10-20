@@ -271,7 +271,7 @@ public class PauseMenu : MonoBehaviour
         DrawButton(back, "Volver", sel == OptionsBack, u, t);
         if (sel == OptionsDiorama || sel == OptionsPort)
         {
-            string tip = sel == OptionsDiorama ? "RUTA HD-2D · 7 pisos con jefe, mercader y salida: Pueblo, Puerto, Acantilado, Gruta, Templo, Aldea nevada y la Cima"
+            string tip = sel == OptionsDiorama ? "RUTA HD-2D · 10 pisos del abismo con jefe, mercader y salida"
                                                : "Salta al siguiente piso de la ruta HD-2D (para probar) · Q/E giran la cámara, clic derecho para asomarte";
             Text(new Rect(x, sy, w, 4f * u), tip, FitSize(tip, 1.7f * u, w, false), false, TextAnchor.MiddleCenter, new Color(testColor.r, testColor.g, testColor.b, 0.85f));
         }

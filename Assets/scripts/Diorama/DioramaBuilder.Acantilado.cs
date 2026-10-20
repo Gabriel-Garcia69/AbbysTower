@@ -143,10 +143,10 @@ public partial class DioramaBuilder
         Exit(lvl, new Vector3(c.x - 3.5f, c.w, c.y + 2.5f), boss);
         Chest(lvl, new Vector3(30f, CliffTop, -26f), 26, 180f);
         Chest(lvl, new Vector3(b2.x + 3f, b2.w, b2.y + 3.2f), 22, 200f);
-        Note(lvl, new Vector3(-34f, CliffTop, -34f), 180f, LoreNote.Kind.Diario, "dio3_diario", "El mar al revés",
-             "Desde aquí arriba el mar parece un cielo caído. En este piso el sol nunca termina de ponerse.\nCrucé los puentes colgantes despacio. La gárgola del faro salta desde lo alto: cuando veas su sombra en el suelo, muévete.", "— A.");
+        Note(lvl, new Vector3(-34f, CliffTop, -34f), 180f, LoreNote.Kind.Diario, "dio3_diario", "Diario de la expedición — día 6",
+             "En este piso el sol nunca termina de ponerse. Cruzamos los puentes colgantes de uno en uno.\nLa criatura del faro salta desde lo alto: cuando su sombra cae al suelo, hay que moverse.", "— " + Historia.Hermano);
         Note(lvl, new Vector3(c.x + 1f, c.w, c.y - 5.5f), 0f, LoreNote.Kind.Inscripcion, "dio3_faro", "Placa del faro",
-             "Este faro guiaba a los barcos del puerto de abajo.\nCuando los barcos se quedaron amarrados, la luz ya no tuvo a quién guiar, y se apagó.");
+             "Este faro alumbra un mar que no existe afuera de la torre.\nNadie sabe quién lo encendió. Se apaga cuando una criatura fuerte anda cerca.");
 
         WalkBoundary(CliffWalk);
         var bg = Group("Fondo", root);

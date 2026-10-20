@@ -88,19 +88,19 @@ public class MerchantShop : MonoBehaviour
         {
             case 0:
                 if (health != null && health.Health >= health.maxHealth) { Say("Ya tienes la vida al máximo."); return; }
-                if (!RunState.Spend(potionCost)) { Say("No te alcanzan los fragmentos."); return; }
+                if (!RunState.Spend(potionCost)) { Say("No te alcanzan los minerales."); return; }
                 health.Heal(50f);
                 Say("¡Poción bebida! +50 de vida");
                 break;
             case 1:
                 if (RunState.DamageLevel >= maxLevel) { Say("Tu filo ya no se puede mejorar más."); return; }
-                if (!RunState.Spend(DamageCost)) { Say("No te alcanzan los fragmentos."); return; }
+                if (!RunState.Spend(DamageCost)) { Say("No te alcanzan los minerales."); return; }
                 RunState.BuyDamage();
                 Say($"Filo de Runa nivel {RunState.DamageLevel}: +{RunState.DamageLevel * 25}% de daño");
                 break;
             case 2:
                 if (RunState.HeartLevel >= maxLevel) { Say("Tu corazón ya no se puede mejorar más."); return; }
-                if (!RunState.Spend(HeartCost)) { Say("No te alcanzan los fragmentos."); return; }
+                if (!RunState.Spend(HeartCost)) { Say("No te alcanzan los minerales."); return; }
                 RunState.BuyHeart();
                 if (health != null) { health.maxHealth += 25f; health.Heal(25f); }
                 Say($"Corazón de Torre nivel {RunState.HeartLevel}: +25 de vida máxima");
@@ -142,7 +142,7 @@ public class MerchantShop : MonoBehaviour
             GUI.Label(new Rect(panel.x, panel.y + u * 2f, panel.width, u * 6f), "EL MERCADER", title);
             var sub = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.2f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
             sub.normal.textColor = new Color(1f, 1f, 1f, 0.75f);
-            GUI.Label(new Rect(panel.x, panel.y + u * 7.5f, panel.width, u * 4f), $"\"Los fragmentos de la torre valen oro aquí arriba...\"     Tienes: {RunState.Fragments} ◆", sub);
+            GUI.Label(new Rect(panel.x, panel.y + u * 7.5f, panel.width, u * 4f), $"\"Los minerales del abismo valen oro allá afuera...\"     Tienes: {RunState.Fragments} ◆", sub);
 
             string[] names = { "Poción de vida", "Filo de Runa", "Corazón de Torre" };
             string[] desc =

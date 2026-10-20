@@ -261,9 +261,9 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(Oasis.x - 11f, 0f, Oasis.y - 6f), 26, 30f);
         Chest(lvl, new Vector3(CanyonX(20f) + 10f, 0f, 20f), 22, -90f);
         Note(lvl, new Vector3(6f, 0f, 120f), 180f, LoreNote.Kind.Inscripcion, "dio5_camino", "Al pie del camino",
-             "Cada viajero que sube enciende un brasero en este camino.\nLos que se rinden lo apagan al bajar.\nCuenta los que siguen encendidos: son los que todavía no se han rendido.");
-        Note(lvl, new Vector3(-12f, 0f, 88f), 160f, LoreNote.Kind.Diario, "dio5_diario", "Noche en el desierto",
-             "En una piedra del templo encontré grabado \"sigue subiendo\", con mi letra.\nYa estuve aquí antes. El Guardián Dorado se defiende con escudo: espera a que ataque y pégale por la espalda.", "— A.");
+             "Cada expedición que baja enciende un brasero en este camino.\nCuenta los que siguen encendidos: son los que todavía no han vuelto.");
+        Note(lvl, new Vector3(-12f, 0f, 88f), 160f, LoreNote.Kind.Diario, "dio5_diario", "Diario de la expedición — día 15",
+             "Encendimos nuestro brasero en el camino del templo. Somos la expedición número doce que pasa por aquí.\nEl guardián dorado se cubre con escudo: hay que esperar a que ataque y pegarle por la espalda.", "— " + Historia.Hermano);
 
         WalkBoundary(TempleWalk);
         var bg = Group("Fondo", root);

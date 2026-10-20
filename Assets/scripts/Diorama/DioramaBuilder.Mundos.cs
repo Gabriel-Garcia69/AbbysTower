@@ -9,10 +9,10 @@ public partial class DioramaBuilder
 {
     Material mSandPix, mSnowPix, mSandstone, mCaveRock, mCaveBrick, mStoneBrick, mIce, mCrystalA, mCrystalB, mMushroom, mCloud;
 
-    Material TopMat => layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? mSnowPix : layout == Layout.Cueva ? mCaveRock : mGrass;
+    Material TopMat => layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? mSnowPix : layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : mGrass;
     /// <summary>Arriba de esta altura el suelo usa el material del lecho (en la Montaña: nieve).</summary>
     float SnowAbove => layout == Layout.Montana ? MountSnowLine : 99999f;
-    Material WallMat => layout == Layout.Cueva ? mCaveRock : layout == Layout.Templo ? mSandPix : mRock;
+    Material WallMat => layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : layout == Layout.Templo ? mSandPix : mRock;
     Material BedMat => layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
 
     void LoadWorldMaterials()

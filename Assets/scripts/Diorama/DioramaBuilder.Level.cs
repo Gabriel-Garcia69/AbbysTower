@@ -27,8 +27,9 @@ public partial class DioramaBuilder
                 case Layout.Lago: return new LevelInfo { title = "PISO 6", subtitle = "El Lago de los Espejos", boss = "La Dama del Lago", next = "Templo", hp = 1.75f };
                 case Layout.Templo: return new LevelInfo { title = "PISO 7", subtitle = "El Templo de Arena", boss = "El Guardián Dorado", next = "Nevado", hp = 1.9f };
                 case Layout.Nevado: return new LevelInfo { title = "PISO 8", subtitle = "La Aldea de la Nieve Eterna", boss = "Escarcha, la Viuda Blanca", next = "Montana", hp = 2.05f };
+                case Layout.Expedicion: return new LevelInfo { title = "PISO 20", subtitle = "La expedición", boss = "", next = "Diorama", hp = 0.8f };
                 case Layout.Montana: return new LevelInfo { title = "PISO 9", subtitle = "La Montaña del Eco", boss = "El Eco de Piedra", next = "Cima", hp = 2.2f };
-                case Layout.Cima: return new LevelInfo { title = "LA CIMA", subtitle = "Sobre las nubes", boss = "El Arquitecto", next = "", hp = 2.4f };
+                case Layout.Cima: return new LevelInfo { title = "PISO 10", subtitle = "Sobre las nubes", boss = "El Guardián del Abismo", next = "", hp = 2.4f };
                 default: return new LevelInfo { title = "PISO 1", subtitle = "El Pueblo del Risco", boss = "Guardián de las Ruinas", next = "Puerto", hp = 1f };
             }
         }
@@ -279,6 +280,7 @@ public partial class DioramaBuilder
                 case Layout.Lago: return -5f;
                 case Layout.Cascadas: return -8f;
                 case Layout.Montana: return -16f;
+                case Layout.Expedicion: return -30f;
                 default: return -6f;
             }
         }
@@ -292,7 +294,7 @@ public partial class DioramaBuilder
         fd.floorTitle = info.title;
         fd.floorSubtitle = info.subtitle;
         fd.nextScene = info.next;
-        fd.returnScene = "Exterior";
+        fd.returnScene = "Intro";
         fd.killY = killY;
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(fd);

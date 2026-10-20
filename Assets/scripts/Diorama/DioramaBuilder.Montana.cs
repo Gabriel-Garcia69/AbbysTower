@@ -138,9 +138,9 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(-52f, 4 * MountStep, 80f), 26, 90f);
         Chest(lvl, new Vector3(52f, 5 * MountStep, 112f), 30, -90f);
         Note(lvl, new Vector3(6f, 0f, -54f), 180f, LoreNote.Kind.Inscripcion, "dio_montana_pie", "Al pie de la montaña",
-             "Grita tu nombre en la cumbre y la montaña te lo devolverá.\nSi te contesta con otra voz, es el Eco de Piedra. No le contestes: pelea.");
+             "Piso 9. El camino sube en zigzag hasta la cumbre, y desde la cumbre se baja al siguiente piso.\nSi la montaña te contesta con otra voz, no le contestes: es una criatura.");
         Note(lvl, hut + new Vector3(-1f, 0f, 4f), 180f, LoreNote.Kind.Diario, "dio_montana_refugio", "Libro del refugio",
-             "Firmé el libro del refugio. Mi nombre ya estaba ahí muchas veces, todas con mi letra y todas diciendo lo mismo: \"esta vez sí llego\".\nAsí que lo escribí otra vez. Esta vez sí llego.", "— A.");
+             "Firmamos el libro del refugio. La lista de expediciones es larga, y casi ninguna firmó de regreso.\nYo escribí tu nombre junto al mío, Abis. Para que la torre sepa que alguien me espera.", "— " + Historia.Hermano);
 
         WalkBoundary(MountWalk);
         var bg = Group("Fondo", root);

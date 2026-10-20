@@ -127,16 +127,16 @@ public partial class DioramaBuilder
         Exit(lvl, new Vector3(top0.x, top0.w, top0.y + 12f), boss);
         Chest(lvl, new Vector3(Isles[0].x + 5f, 0f, Isles[0].y - 3f), 30, 0f);
         Chest(lvl, new Vector3(Isles[3].x - 6f, Isles[3].w, Isles[3].y + 4f), 40, 90f);
-        Note(lvl, new Vector3(Isles[0].x - 4f, 0f, Isles[0].y - 2f), 160f, LoreNote.Kind.Diario, "dio7_diario", "La última página",
-             "Si estás leyendo esto, llegaste otra vez.\nSoy A. Soy tú. Cada vez que caemos, la torre nos regresa al principio, pero las hojas se quedan donde las dejamos.\nEl Arquitecto espera en la azotea. No le pidas nada: derrótalo y rompe la torre.", "— A.");
-        Note(lvl, new Vector3(top0.x + 4f, top0.w, top0.y - 6f), 200f, LoreNote.Kind.Inscripcion, "dio7_arquitecto", "Grabado en la azotea",
-             "Hice esta torre para guardar lo que no quería perder: un pueblo, un puerto, un lago, una montaña.\nMe quedé arriba para cuidarlos y ya no supe bajar.\n— El Arquitecto");
+        Note(lvl, new Vector3(Isles[0].x - 4f, 0f, Isles[0].y - 2f), 160f, LoreNote.Kind.Diario, "dio7_diario", "Diario de la expedición — última página",
+             "Abis: llegamos al piso 15 y seguimos. El capitán dice que mañana bajamos hasta el piso 20.\nNadie sabe qué hay más abajo. Si esta es la última hoja que encuentras, no me busques.\nPero si me buscas... sigue las hojas.", "— " + Historia.Hermano);
+        Note(lvl, new Vector3(top0.x + 4f, top0.w, top0.y - 6f), 200f, LoreNote.Kind.Inscripcion, "dio7_arquitecto", "Grabado en la piedra",
+             "Nadie sabe qué es esta torre, de dónde proviene o por qué apareció.\nCada piso que bajas es más hondo que el anterior. Y el abismo sigue.");
 
         WalkBoundary(SummitWalk);
         var shots = Group("Tomas", root);
         Shot(shots, "Apertura", Vector3.zero, Vector2.one, 20f, 22f, 115f, 32f, 6f, new Vector3(0f, 0f, 5f), 2.6f, 10, intro: 5f);
         Shot(shots, "Nubes", new Vector3(m0.x, m0.w, m0.y), new Vector2(8f, 8f), 10f, 6f, 12f, 46f, 10f, new Vector3(0f, 2f, 5f), 2.2f, 3,
-             "SOBRE LAS NUBES", "La torre termina aquí", still: true);
+             "SOBRE LAS NUBES", "Un cielo en el fondo del abismo", still: true);
         var mid = (new Vector2(Isles[3].x, Isles[3].y) + new Vector2(Isles[4].x, Isles[4].y)) / 2f;
         Shot(shots, "Ascenso", new Vector3(mid.x, 5f, mid.y), new Vector2(6f, 8f), 100f, 14f, 24f, 38f, 6f, new Vector3(0f, 1f, 3f), 1.8f, 2,
              "LA ÚLTIMA SUBIDA", "");

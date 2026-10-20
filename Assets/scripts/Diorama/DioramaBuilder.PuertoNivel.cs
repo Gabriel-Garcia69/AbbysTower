@@ -20,9 +20,9 @@ public partial class DioramaBuilder
         HealShrine(g, new Vector3(4f, 0f, -24f));
         Chest(g, new Vector3(LighthouseX + 4f, 4.5f, LighthouseZ + 2f), 28, 90f);
         Chest(g, new Vector3(-24.4f, 0.1f, 19.6f), 20, 0f);
-        Note(g, new Vector3(-4f, 0f, -24f), 180f, LoreNote.Kind.Diario, "dio2_diario", "El mar de adentro",
-             "La torre también tiene mar. Los barcos están amarrados y nadie los suelta.\nUn pescador me contó que el capitán perdió su barco en este puerto y se quedó a esperarlo en la punta del muelle.\nSi vas para allá, no le des la espalda: ataca en abanico.", "— A.");
-        Note(g, new Vector3(LighthouseX - 3f, 4.5f, LighthouseZ + 3f), 90f, LoreNote.Kind.Libro, "dio2_arquitecto", "Registro del Arquitecto",
-             "Piso dos: el puerto.\nLo hice para los que quieren irse. Pero el mar de la torre no lleva a ningún lado, así que los barcos se quedan amarrados.\nEs mejor así: desde aquí nadie se pierde.");
+        Note(g, new Vector3(-4f, 0f, -24f), 180f, LoreNote.Kind.Diario, "dio2_diario", "Diario de la expedición — día 2",
+             "El piso 2 tiene mar. Barcos amarrados, gaviotas que vuelan en círculos y ni una persona.\nEn la punta del muelle nos atacó algo que se movía como un capitán sin barco. Ataca en abanico: hay que entrarle de lado.", "— " + Historia.Hermano);
+        Note(g, new Vector3(LighthouseX - 3f, 4.5f, LighthouseZ + 3f), 90f, LoreNote.Kind.Libro, "dio2_arquitecto", "Registro del puerto",
+             "Registro militar, piso 2.\nLos barcos no zarpan: más allá de la bahía el mar no lleva a ningún lado.\nPrimer piso donde la pólvora dejó de servir. Desde aquí, solo armas canalizadas.");
     }
 }

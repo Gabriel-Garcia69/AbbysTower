@@ -96,7 +96,7 @@ public partial class DioramaBuilder
         }
         Chest(lvl, hunter + new Vector3(0f, 0f, 6f), 26, 180f);
         Chest(lvl, new Vector3(44f, 0f, GorgeZ0 - 10f), 30, -90f);
-        Note(lvl, hunter + new Vector3(4f, 0f, -6f), 180f, LoreNote.Kind.Nota, "dio6_cazador", "Nota del cazador",
+        Note(lvl, hunter + new Vector3(4f, 0f, -6f), 180f, LoreNote.Kind.Nota, "dio6_cazador", "Nota de un cazador",
              "Salí a revisar las trampas. Si llegaste hasta aquí, sírvete de la fogata.\nNo cruces el lago de noche: algo duerme bajo el hielo y no le gusta que lo despierten.");
     }
 
@@ -182,9 +182,9 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(-52f, 0f, -54f), 30, 45f);
         Chest(lvl, new Vector3(50f, 0f, 56f), 28, 200f);
         Note(lvl, new Vector3(4f, 0f, -56f), 180f, LoreNote.Kind.Inscripcion, "dio6_aldea", "Bienvenidos a la aldea",
-             "En esta aldea siempre es la última noche del invierno.\nCaliéntate en la posada de la plaza y sigue tu camino: aquí nadie se queda mucho.");
-        Note(lvl, new Vector3(-4f, 0f, StreetZ1 - 4f), 180f, LoreNote.Kind.Diario, "dio6_diario", "Campanas",
-             "Dicen que la campana de la capilla suena cada vez que alguien llega a la Cima.\nLa oí una vez desde aquí. Creo que la hice sonar yo, en otra vuelta.", "— A.");
+             "Piso 8. Aquí siempre es la última noche del invierno.\nHay posada en la plaza. Los que siguen bajando deben cruzar la garganta helada.");
+        Note(lvl, new Vector3(-4f, 0f, StreetZ1 - 4f), 180f, LoreNote.Kind.Diario, "dio6_diario", "Diario de la expedición — día 18",
+             "Hace un frío que no se quita. Dormimos en la posada vacía.\nAbis, si algún día lees esto: perdóname por no hacerte caso. Te dije que volvería, y voy a hacer todo para cumplirlo.", "— " + Historia.Hermano);
 
         foreach (float sz in new[] { 0f, 110f, 220f }) { var cl = Group("Clima", root); cl.localPosition = new Vector3(0f, 0f, sz); Snowfall(cl); }
         WalkBoundary(SnowWalk);

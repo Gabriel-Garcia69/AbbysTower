@@ -36,7 +36,7 @@ public class MimicChest : MonoBehaviour
         if (spawned == null && bounty > 0)
         {
             ShardPickup.Drop(transform.position + Vector3.up * 0.4f, bounty);
-            FloorDirector.Banner("MÍMICO DERROTADO", $"+{bounty} fragmentos", new Color(1f, 0.85f, 0.45f), 2f);
+            FloorDirector.Banner("MÍMICO DERROTADO", $"+{bounty} minerales", new Color(1f, 0.85f, 0.45f), 2f);
             bounty = 0;
             enabled = false;
         }

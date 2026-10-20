@@ -12,6 +12,9 @@ using UnityEngine.SceneManagement;
 [DefaultExecutionOrder(-50)]
 public class FloorDirector : MonoBehaviour
 {
+    [Tooltip("Nombre que muestra el HUD sobre la barra de vida.")]
+    public string heroName = "ABIS";
+
     public string floorTitle = "PISO 1";
     public string floorSubtitle = "La Base de la Torre";
     [Tooltip("Escena a la que se vuelve al completar el piso (si no hay siguiente piso todavía).")]
@@ -270,7 +273,7 @@ public class FloorDirector : MonoBehaviour
         {
             var frame = new Rect(u * 3f, u * 3f, u * 34f, u * 4.2f);
             var label = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-            Text(new Rect(frame.x, frame.y - u * 0.2f, frame.width, u * 3f), "ABBY", label, new Color(1f, 0.95f, 0.85f));
+            Text(new Rect(frame.x, frame.y - u * 0.2f, frame.width, u * 3f), heroName, label, new Color(1f, 0.95f, 0.85f));
             var bar = new Rect(frame.x, frame.y + u * 3f, frame.width, u * 2.2f);
             Box(new Rect(bar.x - 2, bar.y - 2, bar.width + 4, bar.height + 4), new Color(0f, 0f, 0f, 0.7f));
             Box(new Rect(bar.x, bar.y, bar.width * shownHealth, bar.height), new Color(1f, 0.85f, 0.55f, 0.9f));
@@ -346,7 +349,7 @@ public class FloorDirector : MonoBehaviour
             string done = floorTitle.StartsWith("PISO") ? $"¡{floorTitle} COMPLETADO!" : floorTitle.StartsWith("LA ") ? $"¡{floorTitle}, CONQUISTADA!" : $"¡{floorTitle} SUPERADO!";
             Text(new Rect(0, sh * 0.28f, sw, u * 12f), done, st, new Color(1f, 0.88f, 0.5f, a));
             var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 3f), fontStyle = FontStyle.Normal };
-            Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}        Fragmentos  {RunState.Fragments} ◆", s2, new Color(1f, 1f, 1f, a));
+            Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}        Minerales  {RunState.Fragments} ◆", s2, new Color(1f, 1f, 1f, a));
             if (endTimer > 1.5f)
             {
                 var s3 = new GUIStyle(s2) { fontSize = Mathf.RoundToInt(u * 2.4f), fontStyle = FontStyle.Italic };

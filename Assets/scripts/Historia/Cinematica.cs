@@ -26,7 +26,7 @@ public class Cinematica : MonoBehaviour
     enum Modo { Nada, Narracion, Dialogo, Tarjeta }
     Modo modo;
     string quien, texto, tarjetaChica;
-    float tTexto, alphaTexto, franjas = 1f, negro = 1f, escHeld;
+    float tTexto, alphaTexto, franjas = 1f, negro = 1f, escHeld, destello;
     bool presionado, terminando;
 
     // ------------------------------------------------------------------ arranque
@@ -68,6 +68,7 @@ public class Cinematica : MonoBehaviour
         escHeld = esc ? escHeld + Time.deltaTime : 0f;
         if (escHeld > 1f && !terminando) { terminando = true; StopAllCoroutines(); StartCoroutine(Salir()); }
         tTexto += Time.deltaTime;
+        destello = Mathf.MoveTowards(destello, 0f, Time.deltaTime * 1.4f);
         if (shake > 0f)
         {
             shake = Mathf.MoveTowards(shake, 0f, Time.deltaTime * 0.6f);
@@ -89,28 +90,14 @@ public class Cinematica : MonoBehaviour
         Vector3 C = ciudad.position, A = abismo.position, B = batalla.position, F = funeral.position, P = plaza.position;
 
         // 1. En el año 2030... la ciudad al atardecer; luego la torre aparece
+        var torreOculta = Buscar(ciudad, "Torre");
+        if (torreOculta != null) torreOculta.gameObject.SetActive(false);   // ni la punta se asoma antes de materializarse
         Clima("atardecer");
-        Toma(C + new Vector3(-190f, 120f, -260f), C + new Vector3(0f, 30f, 0f), C + new Vector3(-150f, 90f, -210f), C + new Vector3(0f, 40f, 0f), 14f, 38f);
+        Toma(C + new Vector3(-250f, 175f, -300f), C + new Vector3(0f, 0f, 0f), C + new Vector3(-205f, 150f, -245f), C + new Vector3(0f, 5f, 0f), 14f, 38f);   // alta: la plaza se ve en medio, sin rozar azoteas
         yield return Fundir(0f, 1.5f);
         yield return Narrar(Historia.Torre[0], 3f);
-        var torre = Buscar(ciudad, "Torre");
-        Toma(C + new Vector3(-70f, 6f, -110f), C + new Vector3(0f, 50f, 0f), C + new Vector3(-80f, 8f, -125f), C + new Vector3(0f, 120f, 0f), 9f, 46f);
-        var polvo = Buscar(ciudad, "Polvo");
-        if (polvo != null) foreach (var ps in polvo.GetComponentsInChildren<ParticleSystem>()) ps.Play();
-        shake = 1.2f;
-        if (torre != null)
-        {
-            Vector3 a = torre.localPosition, b = new Vector3(a.x, 0f, a.z);
-            for (float t = 0f; t < 7f; t += Time.deltaTime)
-            {
-                float k = Mathf.SmoothStep(0f, 1f, t / 7f);
-                torre.localPosition = Vector3.Lerp(a, b, k);
-                if (shake < 0.8f) shake = 0.8f * (1f - k) + 0.2f;
-                yield return null;
-            }
-            torre.localPosition = b;
-        }
-        yield return Esperar(2f);
+        yield return Materializar(ciudad, C);
+        yield return Esperar(1.5f);
 
         // 2. El ejército entra: las escaleras que bajan al abismo
         yield return Fundir(1f, 0.8f);
@@ -189,6 +176,98 @@ public class Cinematica : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ piezas del guion
+
+    /// <summary>
+    /// "Se materializó una torre": un círculo de energía morada se enciende en la plaza mientras todo tiembla, un haz de
+    /// luz sube al cielo con un destello y, dentro del haz, la torre se condensa de una línea de luz a su forma completa.
+    /// Tomas sin edificios en medio: a ras de la plaza, contrapicado siguiendo la torre y una aérea final.
+    /// </summary>
+    IEnumerator Materializar(Transform ciudad, Vector3 C)
+    {
+        var torre = Buscar(ciudad, "Torre");
+        var polvo = Buscar(ciudad, "Polvo");
+        Material energia = null;
+        if (torre != null)
+        {
+            var franja = Buscar(torre, "Franja");
+            if (franja != null) energia = franja.GetComponent<Renderer>().sharedMaterial;
+            torre.localPosition = new Vector3(torre.localPosition.x, 0f, torre.localPosition.z);
+            torre.gameObject.SetActive(false);
+        }
+        // el círculo en el suelo
+        var anillo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        Destroy(anillo.GetComponent<Collider>());
+        anillo.transform.position = C + Vector3.up * 0.08f;
+        anillo.transform.localScale = new Vector3(0.1f, 0.02f, 0.1f);
+        if (energia != null) anillo.GetComponent<Renderer>().sharedMaterial = energia;
+        var luz = new GameObject("LuzTorre").AddComponent<Light>();
+        luz.type = LightType.Point; luz.color = new Color(0.65f, 0.3f, 1f); luz.range = 160f; luz.intensity = 0f; luz.shadows = LightShadows.None;
+        luz.transform.position = C + Vector3.up * 12f;
+
+        // a ras de la plaza: el suelo se enciende
+        Toma(C + new Vector3(-36f, 2.2f, -44f), C + new Vector3(0f, 4f, 0f), C + new Vector3(-31f, 2.6f, -38f), C + new Vector3(0f, 6f, 0f), 5f, 50f);   // adentro del anillo de gente (no la atraviesa)
+        if (polvo != null) foreach (var ps in polvo.GetComponentsInChildren<ParticleSystem>()) ps.Play();
+        for (float t = 0f; t < 4.5f; t += Time.deltaTime)
+        {
+            float k = t / 4.5f;
+            float r = Mathf.Lerp(1f, 50f, Mathf.SmoothStep(0f, 1f, k));
+            anillo.transform.localScale = new Vector3(r, 0.02f, r);
+            luz.intensity = Mathf.Lerp(0f, 4f, k) * (0.8f + 0.2f * Mathf.Sin(t * 18f));
+            shake = Mathf.Max(shake, 0.25f + k * 0.9f);
+            yield return null;
+        }
+
+        // el haz sube al cielo
+        var haz = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        Destroy(haz.GetComponent<Collider>());
+        if (energia != null) haz.GetComponent<Renderer>().sharedMaterial = energia;
+        haz.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        Toma(C + new Vector3(-68f, 4f, -78f), C + new Vector3(0f, 30f, 0f), C + new Vector3(-74f, 5f, -84f), C + new Vector3(0f, 140f, 0f), 7f, 58f);
+        destello = 1f;
+        shake = 1.6f;
+        for (float t = 0f; t < 0.7f; t += Time.deltaTime)
+        {
+            float alto = Mathf.Lerp(5f, 700f, t / 0.7f);
+            haz.transform.position = C + Vector3.up * alto / 2f;
+            haz.transform.localScale = new Vector3(44f, alto / 2f, 44f);
+            yield return null;
+        }
+
+        // dentro del haz, la torre se condensa: de una línea de luz a su forma completa
+        if (torre != null)
+        {
+            torre.gameObject.SetActive(true);
+            torre.localScale = new Vector3(0.02f, 1f, 0.02f);
+        }
+        for (float t = 0f; t < 4f; t += Time.deltaTime)
+        {
+            float k = Mathf.SmoothStep(0f, 1f, t / 4f);
+            if (torre != null) { float w = Mathf.Lerp(0.02f, 1f, k); torre.localScale = new Vector3(w, 1f, w); }
+            float rh = Mathf.Lerp(44f, 8f, k);
+            haz.transform.localScale = new Vector3(rh, 350f, rh);
+            luz.intensity = Mathf.Lerp(6f, 2f, k);
+            shake = Mathf.Max(shake, 0.9f * (1f - k) + 0.15f);
+            yield return null;
+        }
+        if (torre != null) torre.localScale = Vector3.one;
+        destello = 0.8f;
+        Destroy(haz);
+        CameraShakeLocal(0.8f);
+        for (float t = 0f; t < 1.5f; t += Time.deltaTime)
+        {
+            float k = t / 1.5f;
+            anillo.transform.localScale = new Vector3(Mathf.Lerp(50f, 34f, k), 0.02f, Mathf.Lerp(50f, 34f, k));
+            luz.intensity = Mathf.Lerp(2f, 0f, k);
+            yield return null;
+        }
+        Destroy(anillo); Destroy(luz.gameObject);
+
+        // la torre completa, desde el aire
+        Toma(C + new Vector3(300f, 130f, -330f), C + new Vector3(0f, 130f, 0f), C + new Vector3(260f, 150f, -290f), C + new Vector3(0f, 150f, 0f), 6f, 50f);   // lejos: la torre entera, con la aguja y el orbe
+        yield return Esperar(3.5f);
+    }
+
+    void CameraShakeLocal(float s) => shake = Mathf.Max(shake, s);
 
     Transform Set(string name)
     {
@@ -351,6 +430,12 @@ public class Cinematica : MonoBehaviour
         {
             case Modo.Narracion: CuadroNarracion.Narracion(texto, letras, alphaTexto); break;
             case Modo.Dialogo: CuadroNarracion.Dialogo(quien, texto, letras, alphaTexto); break;
+        }
+        if (destello > 0f)   // destello blanco-morado cuando sube el haz
+        {
+            GUI.color = new Color(1f, 0.92f, 1f, destello * 0.85f);
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+            GUI.color = Color.white;
         }
         CuadroNarracion.Negro(negro);
         if (modo == Modo.Tarjeta) CuadroNarracion.Tarjeta(texto, tarjetaChica, alphaTexto);

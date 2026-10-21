@@ -96,12 +96,13 @@ public partial class DioramaBuilder
             Flat(c, "Calle", new Vector3(0f, 0.02f, 30f + k * 60f), 1200f, 14f, mAsfalto, 0.1f);
             Flat(c, "Calle", new Vector3(30f + k * 60f, 0.021f, 0f), 14f, 1200f, mAsfalto, 0.1f);
         }
-        Prim(c, PrimitiveType.Cylinder, "Plaza", new Vector3(0f, 0.03f, 0f), new Vector3(48f, 0.03f, 48f), Plain("Dio_PlazaClara", new Color(0.72f, 0.7f, 0.66f), 0.1f));
+        // plaza grande y abierta (sin edificios alrededor): la torre se ve entera y la cámara no se tapa
+        Prim(c, PrimitiveType.Cylinder, "Plaza", new Vector3(0f, 0.03f, 0f), new Vector3(150f, 0.03f, 150f), Plain("Dio_PlazaClara", new Color(0.72f, 0.7f, 0.66f), 0.1f));
         for (int i = -7; i <= 7; i++)
             for (int j = -7; j <= 7; j++)
             {
-                if (i == 0 && j == 0) continue;
                 int ring = Mathf.Max(Mathf.Abs(i), Mathf.Abs(j));
+                if (ring <= 1) continue;   // la plaza
                 var blk = new Vector3(i * 60f, 0f, j * 60f);
                 int n = rng.Next(1, 4);
                 for (int b = 0; b < n; b++)
@@ -115,14 +116,14 @@ public partial class DioramaBuilder
         for (int k = 0; k < 16; k++)
         {
             float a = k / 16f * Mathf.PI * 2f;
-            PortLamp(c, new Vector3(Mathf.Cos(a) * 26f, 0f, Mathf.Sin(a) * 26f));
+            PortLamp(c, new Vector3(Mathf.Cos(a) * 70f, 0f, Mathf.Sin(a) * 70f));
         }
         for (int k = 0; k < 26; k++)   // coches en las calles cercanas
         {
             bool alongX = k % 2 == 0;
             float along = R(-150f, 150f), lane = (rng.Next(-2, 3)) * 60f + 30f + (rng.NextDouble() < 0.5 ? -3f : 3f);
             var pos = alongX ? new Vector3(along, 0f, lane) : new Vector3(lane, 0f, along);
-            if (pos.magnitude < 40f) continue;
+            if (Mathf.Max(Mathf.Abs(pos.x), Mathf.Abs(pos.z)) < 95f) continue;
             var car = Group("Coche", c);
             car.localPosition = pos;
             car.localRotation = Quaternion.Euler(0f, alongX ? 90f : 0f, 0f);
@@ -133,7 +134,7 @@ public partial class DioramaBuilder
         // la gente que se asoma a la plaza
         for (int k = 0; k < 14; k++)
         {
-            float a = R(0f, Mathf.PI * 2f), r = R(38f, 48f);
+            float a = R(0f, Mathf.PI * 2f), r = R(62f, 74f);   // la gente en la orilla de la plaza, mirando
             var p = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
             float yaw = Mathf.Atan2(-p.x, -p.z) * Mathf.Rad2Deg + 180f;
             Figura(c, "Persona", p, yaw, Persona.Civil(new[] { new Color(0.3f, 0.35f, 0.5f), new Color(0.6f, 0.25f, 0.2f), new Color(0.75f, 0.72f, 0.6f), new Color(0.2f, 0.2f, 0.22f) }[k % 4], new Color(0.12f, 0.08f, 0.05f)));
@@ -145,7 +146,7 @@ public partial class DioramaBuilder
         {
             float a = k / 6f * Mathf.PI * 2f;
             var sm = Group("Nube", polvo);
-            sm.localPosition = new Vector3(Mathf.Cos(a) * 26f, 0.5f, Mathf.Sin(a) * 26f);
+            sm.localPosition = new Vector3(Mathf.Cos(a) * 30f, 0.5f, Mathf.Sin(a) * 30f);
             Smoke(sm, Vector3.zero, new Color(0.6f, 0.55f, 0.5f, 0.6f), false);
         }
         foreach (var ps in polvo.GetComponentsInChildren<ParticleSystem>()) { var mn = ps.main; mn.playOnAwake = false; ps.Stop(); }

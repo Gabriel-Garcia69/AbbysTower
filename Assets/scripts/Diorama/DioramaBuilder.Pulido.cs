@@ -15,6 +15,7 @@ public partial class DioramaBuilder
         Faldones();
         PodarPlantas();
         Hordas();
+        OrdenarFaroles();
         if (layout == Layout.Pueblo || layout == Layout.Puerto) LimiteVisible(Group("LimitesVisibles", root), Walk);   // tienen sus propios bordes
         Entorno();
     }
@@ -117,6 +118,78 @@ public partial class DioramaBuilder
             Wall(g, "Falda", new Vector3(b.min.x, y - h / 2f, b.center.z), Vector3.left, b.size.z, h, WallMat, 0.25f);
             Wall(g, "Falda", new Vector3(b.max.x, y - h / 2f, b.center.z), Vector3.right, b.size.z, h, WallMat, 0.25f);
         }
+    }
+
+    /// <summary>
+    /// Los faroles van donde tiene sentido: no frente a una escalera ni encima de ella, no flotando, hundidos o en el agua,
+    /// no en medio de una arena ni encimados con otro farol. Los que estorban se quitan, y cada escalera queda con un par de
+    /// faroles a los lados de su entrada de abajo (como una escalinata de verdad).
+    /// </summary>
+    void OrdenarFaroles()
+    {
+        var escaleras = new List<Transform>();
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            if (t.Find("Collider_Rampa") != null) escaleras.Add(t);
+        var agua = new List<Bounds>();
+        foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            var m = mr.sharedMaterial;
+            if (m != null && m.shader != null && m.shader.name == "Abby/Water") agua.Add(mr.bounds);
+        }
+        var arenas = root.GetComponentsInChildren<RoomEncounter>(true);
+        var faroles = new List<Transform>();
+        foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t.name == "Farol") faroles.Add(t);
+        var quedan = new List<Vector3>();
+        int quitados = 0;
+        foreach (var f in faroles)
+        {
+            Vector3 p = f.position;
+            bool mal = false;
+            foreach (var e in escaleras)
+            {
+                var rampa = e.Find("Collider_Rampa").GetComponent<BoxCollider>();
+                Vector3 l = rampa.transform.InverseTransformPoint(p);   // en el espacio de la rampa (a lo largo de la escalera)
+                if (Mathf.Abs(l.x) < rampa.size.x / 2f + 1.3f && Mathf.Abs(l.z) < rampa.size.z / 2f + 4f) { mal = true; break; }
+            }
+            if (!mal)
+                foreach (var b in agua)
+                    if (p.x > b.min.x && p.x < b.max.x && p.z > b.min.z && p.z < b.max.z && b.max.y > p.y - 0.3f && Height(p.x, p.z) < b.max.y - 0.05f) { mal = true; break; }
+            if (!mal && TerrainArea.Contains(new Vector2(p.x, p.z)) && f.parent != null && !f.parent.name.StartsWith("Muelle"))
+            {
+                float h = Height(p.x, p.z);
+                if (h > VoidY && Mathf.Abs(h - p.y) > 0.5f && !Physics.Raycast(p + Vector3.up * 0.6f, Vector3.down, 1.2f)) mal = true;   // flota o se hunde
+            }
+            if (!mal)
+                foreach (var a in arenas)
+                {
+                    Vector3 l = a.transform.InverseTransformPoint(p);
+                    if (Mathf.Abs(l.x) < a.size.x * 0.32f && Mathf.Abs(l.z) < a.size.y * 0.32f) { mal = true; break; }   // en medio de la pelea
+                }
+            if (!mal) foreach (var q in quedan) if (Vector3.Distance(q, p) < 3.5f) { mal = true; break; }
+            if (mal) { DestroyImmediate(f.gameObject); quitados++; }
+            else quedan.Add(p);
+        }
+        // un par de faroles flanqueando la entrada de abajo de cada escalera
+        int puestos = 0;
+        foreach (var e in escaleras)
+        {
+            var rampa = e.Find("Collider_Rampa").GetComponent<BoxCollider>();
+            Vector3 pie = rampa.transform.TransformPoint(new Vector3(0f, 0f, -rampa.size.z / 2f - 0.8f));
+            float hPie = Height(pie.x, pie.z);
+            foreach (float sx in new[] { -1f, 1f })
+            {
+                Vector3 w = rampa.transform.TransformPoint(new Vector3(sx * (rampa.size.x / 2f + 1f), 0f, -rampa.size.z / 2f - 0.8f));
+                float h = Height(w.x, w.z);
+                if (Mathf.Abs(h - hPie) > 0.4f || Mathf.Abs(Height(w.x + 0.6f, w.z) - h) > 0.3f) continue;   // al lado no hay suelo plano
+                bool cerca = false;
+                foreach (var q in quedan) if (Vector3.Distance(q, new Vector3(w.x, h, w.z)) < 2.5f) cerca = true;
+                if (cerca) continue;
+                PortLamp(e.parent != null ? e.parent : root, e.parent != null ? e.parent.InverseTransformPoint(new Vector3(w.x, h, w.z)) : new Vector3(w.x, h, w.z));
+                quedan.Add(new Vector3(w.x, h, w.z));
+                puestos++;
+            }
+        }
+        if (quitados + puestos > 0) Debug.Log($"[Diorama] {layout}: faroles: {quitados} quitados (mal puestos), {puestos} a los lados de las escaleras.");
     }
 
     static readonly string[] Plantas = { "Pino", "Arbol", "Arbusto", "Palmera", "PinoValle" };

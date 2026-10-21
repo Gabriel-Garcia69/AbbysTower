@@ -579,7 +579,7 @@ public partial class DioramaBuilder
 
     void TierraPuerto(Transform parent)
     {
-        const float cell = 3f;
+        const float cell = 5f;   // de lejos no se nota y la escena pesa mucho menos
         var a = PortArea;
         float x0 = a.xMin - 300f, x1 = a.xMax + 300f, z0 = a.yMin - 300f, z1 = 90f;
         int nx = Mathf.CeilToInt((x1 - x0) / cell), nz = Mathf.CeilToInt((z1 - z0) / cell);

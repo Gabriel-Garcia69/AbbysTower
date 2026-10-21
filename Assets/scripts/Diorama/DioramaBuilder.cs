@@ -434,7 +434,8 @@ public partial class DioramaBuilder : MonoBehaviour
         for (int i = 0; i < steps; i++)
         {
             float top = (i + 1) * rise;
-            Box(s, "Escalon", new Vector3(0f, top / 2f, StairZ0 + i * depth + depth / 2f), new Vector3(StairW, top, depth), i % 2 == 0 ? mStone : mCobble, false);
+            Box(s, "Escalon", new Vector3(0f, top / 2f - 0.03f, StairZ0 + i * depth + depth / 2f), new Vector3(StairW - 0.04f, top - 0.06f, depth - 0.02f), mCobble, false);
+            Box(s, "Huella", new Vector3(0f, top - 0.04f, StairZ0 + i * depth + depth / 2f - 0.03f), new Vector3(StairW, 0.1f, depth + 0.06f), mStone, false);
         }
         foreach (float sx in new[] { -1f, 1f })
         {

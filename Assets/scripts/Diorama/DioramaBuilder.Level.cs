@@ -237,35 +237,98 @@ public partial class DioramaBuilder
     // ------------------------------------------------------------------ piezas comunes
 
     /// <summary>Escalinata de piedra de 'from' (abajo) a 'to' (arriba), con pretiles y rampa invisible para subir parejo.</summary>
+    /// <summary>Cómo son las escaleras de cada piso (material, alto del escalón y barandal), para que no se repitan.</summary>
+    struct EstiloEscalera { public Material huella, contra, lado; public float alto; public int baranda; public float ancho; }
+    // baranda: 0 pretil de piedra macizo · 1 barandal de madera con postes · 2 sin pretil, peñas a los lados · 3 balaustrada blanca
+
+    EstiloEscalera Estilo(Material mat)
+    {
+        switch (layout)
+        {
+            case Layout.Puerto:   // del muelle: tablones de madera y barandal de postes
+                return new EstiloEscalera { huella = mPlank, contra = mTimber, lado = mTimber, alto = 0.2f, baranda = 1, ancho = 0.85f };
+            case Layout.Cascadas:   // de piedra del río con musgo, peldaños bajos y anchos
+                return new EstiloEscalera { huella = mStoneBrick, contra = mCaveRock != null ? mCaveRock : mRock, lado = mRock, alto = 0.17f, baranda = 2, ancho = 1.1f };
+            case Layout.Acantilado:   // tallada en la roca del risco: peldaños altos, sin pretil
+                return new EstiloEscalera { huella = mRock, contra = mRock, lado = mRock, alto = 0.3f, baranda = 2, ancho = 0.9f };
+            case Layout.Cima:   // mármol blanco con balaustrada
+                return new EstiloEscalera { huella = mWhite, contra = mStoneBrick, lado = mWhite, alto = 0.2f, baranda = 3, ancho = 1f };
+            default:
+                return new EstiloEscalera { huella = mat ?? mStone, contra = mCobble, lado = mStone, alto = 0.22f, baranda = 0, ancho = 1f };
+        }
+    }
+
     void Stairs(Transform parent, string name, Vector3 from, Vector3 to, float width, Material mat = null)
     {
-        if (mat == null) mat = mStone;
+        var st = Estilo(mat);
+        width *= st.ancho;
         var s = Group(name, parent);
         Vector3 flat = to - from; float rise = flat.y; flat.y = 0f;
         float run = flat.magnitude;
         s.localPosition = from;
         s.localRotation = Quaternion.LookRotation(flat.normalized);
-        int steps = Mathf.Max(2, Mathf.RoundToInt(rise / 0.22f));
+        int steps = Mathf.Max(2, Mathf.RoundToInt(rise / st.alto));
         float depth = run / steps, h = rise / steps;
         for (int i = 0; i < steps; i++)
         {
             float top = (i + 1) * h;
-            Box(s, "Escalon", new Vector3(0f, top / 2f - 0.6f, i * depth + depth / 2f), new Vector3(width, top + 1.2f, depth), i % 2 == 0 ? mat : mCobble, false);
+            // cada escalón: un bloque (contrahuella) y encima una huella un poco más ancha y que sobresale; así ninguna cara
+            // queda en el mismo plano que otra (antes los bloques y los costados compartían caras y parpadeaban)
+            Box(s, "Escalon", new Vector3(0f, top / 2f - 0.6f, i * depth + depth / 2f), new Vector3(width - 0.04f, top + 1.2f - 0.06f, depth - 0.02f), st.contra, false);
+            Box(s, "Huella", new Vector3(0f, top - 0.04f, i * depth + depth / 2f - 0.03f), new Vector3(width, 0.1f, depth + 0.06f), st.huella, false);
         }
+        float L = Mathf.Sqrt(run * run + rise * rise), ang = -Mathf.Atan2(rise, run) * Mathf.Rad2Deg;
         foreach (float sx in new[] { -1f, 1f })
         {
-            float L = Mathf.Sqrt(run * run + rise * rise);
-            var rail = Box(s, "Pretil", new Vector3(sx * (width / 2f + 0.25f), rise / 2f + 0.35f, run / 2f), new Vector3(0.5f, 0.6f, L), mStone, false);
-            rail.transform.localRotation = Quaternion.Euler(-Mathf.Atan2(rise, run) * Mathf.Rad2Deg, 0f, 0f);
-            // costado escalonado (sigue a los escalones; un muro rectangular se veía enorme en las rampas largas)
-            int per = Mathf.Max(1, steps / 8);
-            for (int i = 0; i < steps; i += per)
+            float x = sx * (width / 2f + 0.25f);
+            if (st.baranda == 0)
             {
-                int j = Mathf.Min(steps, i + per);
-                float top = j * h;
-                Box(s, "Costado", new Vector3(sx * (width / 2f + 0.25f), top / 2f - 0.6f, (i + j) * depth / 2f), new Vector3(0.5f, top + 1.2f, (j - i) * depth), mStone, false);
+                // pretil más ancho que el costado (sus caras no coinciden) y costado escalonado debajo
+                var rail = Box(s, "Pretil", new Vector3(x, rise / 2f + 0.38f, run / 2f), new Vector3(0.56f, 0.6f, L), st.lado, false);
+                rail.transform.localRotation = Quaternion.Euler(ang, 0f, 0f);
+                int per = Mathf.Max(1, steps / 8);
+                for (int i = 0; i < steps; i += per)
+                {
+                    int j = Mathf.Min(steps, i + per);
+                    float top = j * h;
+                    Box(s, "Costado", new Vector3(x, top / 2f - 0.62f, (i + j) * depth / 2f), new Vector3(0.46f, top + 1.2f, (j - i) * depth - 0.01f), st.lado, false);
+                }
             }
-            SolidBox(s, "Collider_Pretil", new Vector3(sx * (width / 2f + 0.25f), rise / 2f + 1f, run / 2f), new Vector3(0.5f, rise + 2f, run));
+            else if (st.baranda == 1 || st.baranda == 3)
+            {
+                // postes y pasamanos (madera en el puerto, columnitas blancas en la cima)
+                bool blanco = st.baranda == 3;
+                int postes = Mathf.Max(2, Mathf.CeilToInt(run / (blanco ? 0.9f : 1.6f)));
+                for (int i = 0; i <= postes; i++)
+                {
+                    float z = run * i / postes, y = rise * i / postes;
+                    if (blanco) Prim(s, PrimitiveType.Cylinder, "Balaustre", new Vector3(x, y + 0.45f, z), new Vector3(0.18f, 0.45f, 0.18f), st.lado);
+                    else Box(s, "Poste", new Vector3(x, y + 0.5f, z), new Vector3(0.16f, 1f, 0.16f), st.lado, false);
+                }
+                var man = Box(s, "Pasamanos", new Vector3(x, rise / 2f + (blanco ? 0.95f : 1.02f), run / 2f), new Vector3(blanco ? 0.26f : 0.12f, blanco ? 0.12f : 0.1f, L), st.lado, false);
+                man.transform.localRotation = Quaternion.Euler(ang, 0f, 0f);
+                // zanca debajo de los escalones (no se ven huecos al costado)
+                var zanca = Box(s, "Zanca", new Vector3(sx * (width / 2f + 0.06f), rise / 2f - 0.25f, run / 2f), new Vector3(0.1f, 0.7f, L), st.contra, false);
+                zanca.transform.localRotation = Quaternion.Euler(ang, 0f, 0f);
+            }
+            else
+            {
+                // tallada: peñas y matas a los lados en lugar de pretil
+                for (float z = 0.4f; z < run; z += R(1.4f, 2.2f))
+                {
+                    float y = rise * z / run, sz = R(0.6f, 1.2f);
+                    var pena = Prim(s, PrimitiveType.Sphere, "Pena", new Vector3(sx * (width / 2f + R(0.25f, 0.6f)), y + sz * 0.15f, z), new Vector3(sz * 1.3f, sz * 0.8f, sz * 1.1f), mRock);
+                    pena.transform.localRotation = Quaternion.Euler(R(-12f, 12f), R(0f, 360f), R(-12f, 12f));
+                }
+                // costado escalonado al ras de los peldaños (un muro entero se veía como una pared gigante en las rampas)
+                for (int i = 0; i < steps; i += 2)
+                {
+                    int j = Mathf.Min(steps, i + 2);
+                    float top = j * h - 0.08f;
+                    Box(s, "Costado", new Vector3(sx * (width / 2f + 0.25f), top / 2f - 0.6f, (i + j) * depth / 2f), new Vector3(0.46f, top + 1.2f, (j - i) * depth - 0.01f), st.lado, false);
+                }
+            }
+            SolidBox(s, "Collider_Pretil", new Vector3(x, rise / 2f + 1f, run / 2f), new Vector3(0.5f, rise + 2f, run));
         }
         var ramp = new GameObject("Collider_Rampa");
         ramp.transform.SetParent(s, false);
@@ -277,7 +340,7 @@ public partial class DioramaBuilder
         landing.transform.SetParent(s, false);
         landing.transform.localPosition = new Vector3(0f, rise - 0.1f, run + 0.6f);
         landing.AddComponent<BoxCollider>().size = new Vector3(width, 0.2f, 1.6f);
-        Box(s, "Descanso", new Vector3(0f, rise - 0.06f, run + 0.6f), new Vector3(width, 0.12f, 1.6f), mat, false);
+        Box(s, "Descanso", new Vector3(0f, rise + 0.015f, run + 0.6f), new Vector3(width, 0.1f, 1.6f), st.huella, false);   // apenas arriba del suelo: sin parpadeo
         Vector3 c = (from + to) / 2f;
         blocked.Add(new Rect(Mathf.Min(from.x, to.x) - width, Mathf.Min(from.z, to.z) - width, Mathf.Abs(to.x - from.x) + width * 2f, Mathf.Abs(to.z - from.z) + width * 2f));
     }

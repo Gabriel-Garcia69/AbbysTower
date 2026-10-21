@@ -529,29 +529,16 @@ public partial class DioramaBuilder
     void BuildPortBackdrop()
     {
         var g = Group("Fondo", root);
-        float a = PortArea.xMin, b = PortArea.xMax, s = PortArea.yMin;
-        const float far = 2500f;
-        // tierra de afuera a la altura de los bordes (7 m) y su risco hacia el mar
-        Flat(g, "TierraOeste", new Vector3((-far + a + 1f) / 2f, 7f, (-far + 14f) / 2f), a + 1f + far, far + 14f, mGrass, 0.25f);
-        Flat(g, "TierraEste", new Vector3((b - 1f + far) / 2f, 7f, (-far + 6f) / 2f), far - b + 1f, far + 6f, mGrass, 0.25f);
-        Flat(g, "TierraSur", new Vector3((a + b) / 2f, 7f, (-far + s + 1f) / 2f), b - a, far + s + 1f, mGrass, 0.25f);
-        Wall(g, "RiscoOeste", new Vector3((-far + a) / 2f, (7f - 8.3f) / 2f, 14f), Vector3.forward, a + far, 15.3f, mRock, 0.25f);
-        Wall(g, "RiscoEste", new Vector3((b + far) / 2f, (7f - 8.3f) / 2f, 6f), Vector3.forward, far - b, 15.3f, mRock, 0.25f);
-        // lomas en la tierra de afuera (que no sea una planicie)
-        for (int i = 0; i < 16; i++)
+        // tierra de afuera: una sola malla que sigue la misma costa y alturas del mapa (antes eran planos y muros sueltos que
+        // dejaban huecos junto al faro y paredes que por detrás se veían transparentes); lomas que crecen al alejarse
+        TierraPuerto(g);
+        for (int i = 0, tries = 0; i < 420 && tries < 8000; tries++)
         {
-            var hill = Prim(g, PrimitiveType.Sphere, "Loma", new Vector3(R(-260f, 260f), 7f - 4f, R(-260f, -90f)), new Vector3(R(40f, 70f), R(16f, 26f), R(30f, 50f)), mGrass);
-            hill.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        }
-        for (int i = 0, tries = 0; i < 480 && tries < 8000; tries++)
-        {
-            var q = new Vector2(R(-260f, 260f), R(-240f, 12f));
-            float y;
-            if (q.x < a - 1f && q.y < 12f) y = 7f;
-            else if (q.x > b + 1f && q.y < 4f) y = 7f;
-            else if (q.y < s - 1f) y = 7f;
-            else continue;
-            if (rng.NextDouble() < 0.6) Pine(g, q, y, R(1.2f, 2f), false); else Tree(g, q, y, R(1.2f, 2f), false);
+            var q = new Vector2(R(-260f, 260f), R(-240f, 40f));
+            if (PortArea.Contains(q)) continue;
+            float y = PuertoAfuera(q.x, q.y);
+            if (y < 6.5f || Mathf.Abs(PuertoAfuera(q.x + 3f, q.y) - y) > 1.5f || Mathf.Abs(PuertoAfuera(q.x, q.y + 3f) - y) > 1.5f) continue;
+            if (rng.NextDouble() < 0.6) Pine(g, q, y - 0.15f, R(1.2f, 2f), false); else Tree(g, q, y - 0.15f, R(1.2f, 2f), false);
             i++;
         }
         // montañas al sur, detrás del pueblo, y la torre asomando entre ellas
@@ -576,6 +563,48 @@ public partial class DioramaBuilder
             for (int k = 0; k < 12; k++) Pine(g, new Vector2(p.x + R(-22f, 22f), p.z + R(-10f, 10f)), SeaY + 3f, R(2.5f, 4f), false);
         }
         Ship(g, new Vector3(70f, SeaY, 160f), 70f, 26f, 6.5f, false);
+    }
+
+    /// <summary>Altura de la tierra fuera del mapa: la del puerto, más lomas que crecen al alejarse del borde.</summary>
+    float PuertoAfuera(float x, float z)
+    {
+        float h = PortHeight(x, z);
+        if (h < 6.9f) return h;
+        var a = PortArea;
+        float dx = Mathf.Max(0f, Mathf.Max(a.xMin - x, x - a.xMax)), dz = Mathf.Max(0f, a.yMin - z);
+        float d = Mathf.Max(dx, dz);
+        float n = Noise(x * 0.012f + 3f, z * 0.012f), n2 = Noise(x * 0.04f, z * 0.04f + 7f);
+        return h + Mathf.SmoothStep(0f, 1f, (d - 8f) / 160f) * (20f + 45f * n) + (n2 - 0.5f) * 3f * Mathf.SmoothStep(0f, 1f, d / 40f);
+    }
+
+    void TierraPuerto(Transform parent)
+    {
+        const float cell = 3f;
+        var a = PortArea;
+        float x0 = a.xMin - 300f, x1 = a.xMax + 300f, z0 = a.yMin - 300f, z1 = 90f;
+        int nx = Mathf.CeilToInt((x1 - x0) / cell), nz = Mathf.CeilToInt((z1 - z0) / cell);
+        var hh = new float[nx + 1, nz + 1];
+        for (int i = 0; i <= nx; i++) for (int j = 0; j <= nz; j++) hh[i, j] = PuertoAfuera(x0 + i * cell, z0 + j * cell);
+        var v = new System.Collections.Generic.List<Vector3>(); var uv = new System.Collections.Generic.List<Vector2>();
+        var pasto = new System.Collections.Generic.List<int>(); var roca = new System.Collections.Generic.List<int>();
+        var dentro = new Rect(a.xMin + 1f, a.yMin + 1f, a.width - 2f, a.height - 2f);
+        for (int i = 0; i < nx; i++)
+            for (int j = 0; j < nz; j++)
+            {
+                float xa = x0 + i * cell, za = z0 + j * cell;
+                if (dentro.Contains(new Vector2(xa, za)) && dentro.Contains(new Vector2(xa + cell, za + cell))) continue;
+                float h00 = hh[i, j], h10 = hh[i + 1, j], h01 = hh[i, j + 1], h11 = hh[i + 1, j + 1];
+                if (Mathf.Max(Mathf.Max(h00, h10), Mathf.Max(h01, h11)) < -7.5f) continue;   // fondo del mar
+                var p00 = new Vector3(xa, h00, za); var p10 = new Vector3(xa + cell, h10, za); var p01 = new Vector3(xa, h01, za + cell); var p11 = new Vector3(xa + cell, h11, za + cell);
+                SierraTri(v, uv, pasto, roca, p00, p01, p11);
+                SierraTri(v, uv, pasto, roca, p00, p11, p10);
+            }
+        var m = new Mesh { name = "TierraPuerto", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        m.SetVertices(v); m.SetUVs(0, uv);
+        m.subMeshCount = 2; m.SetTriangles(pasto, 0); m.SetTriangles(roca, 1);
+        m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
+        var go = MeshObject(parent, "TierraPuerto", m, mGrass, true);
+        go.GetComponent<MeshRenderer>().sharedMaterials = new[] { mGrass, mRock };
     }
 
     void BuildPortBoundary()

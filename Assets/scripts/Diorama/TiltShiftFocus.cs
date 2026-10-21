@@ -42,8 +42,7 @@ public class TiltShiftFocus : MonoBehaviour
     void LateUpdate()
     {
         if (dof == null || player == null) return;
-        var kb = Keyboard.current;
-        if (kb != null && kb.f7Key.wasPressedThisFrame) dof.active = !dof.active;
+        // (F7 ya no lo cambia: solo quedan F3 y F4 para la cámara)
         dof.aperture.value = aperture;
         float want = Vector3.Distance(transform.position, player.position + Vector3.up * focusHeight);
         focus = Mathf.SmoothDamp(focus, want, ref vel, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);

@@ -250,9 +250,23 @@ public class MouseOrbitCamera : MonoBehaviour
         ApplyStyle(s, false);
     }
 
+    /// <summary>F3: tercera persona con cámara libre (el mouse la gira). No se guarda: cada escena empieza con la del juego.</summary>
+    bool libre;
+
+    /// <summary>F4: de vuelta a la cámara del juego (la de la escena).</summary>
+    void VolverCamaraJuego()
+    {
+        libre = false;
+        sceneStyleActive = useSceneStyle;
+        ApplyStyle(useSceneStyle ? sceneStyle : Style, false);
+        yaw = yawJuego;   // el mismo ángulo que tenía antes de F3
+    }
+
+    float yawJuego;
+
     void ApplyStyle(CameraStyle s, bool instant)
     {
-        if (!sceneStyleActive) Style = s;
+        if (!sceneStyleActive && !libre) Style = s;   // la cámara libre (F3) no se guarda
         appliedStyle = s;
         active = ProfileFor(s);
         if (active == null) active = original;
@@ -283,15 +297,11 @@ public class MouseOrbitCamera : MonoBehaviour
 
         if (kb != null)
         {
-            if (kb.f1Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Original);
-            else if (kb.f2Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Pulido);
-            else if (kb.f3Key.wasPressedThisFrame) ChooseStyle(CameraStyle.TerceraPersona);
-            else if (kb.f4Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Isometrica);
-            else if (kb.f5Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Sala);
-            else if (kb.f6Key.wasPressedThisFrame) ChooseStyle(CameraStyle.Diorama);
+            // solo dos cámaras: F3 = tercera persona con cámara libre (para apreciar el mundo), F4 = la cámara del juego
+            if (kb.f3Key.wasPressedThisFrame && !libre) { yawJuego = yaw; libre = true; sceneStyleActive = false; ApplyStyle(CameraStyle.TerceraPersona, false); }
+            else if (kb.f4Key.wasPressedThisFrame && libre) VolverCamaraJuego();
         }
-        if (pad != null && pad.selectButton.wasPressedThisFrame) ChooseStyle((CameraStyle)(((int)appliedStyle + 1) % StyleCount));
-        if (!sceneStyleActive && appliedStyle != Style) ApplyStyle(Style, false);   // otra escena/objeto lo cambió
+        if (!libre && !sceneStyleActive && appliedStyle != Style) ApplyStyle(Style, false);   // otra escena/objeto lo cambió
 
         if (lockCursor)
         {
@@ -308,10 +318,10 @@ public class MouseOrbitCamera : MonoBehaviour
 
         bool wasPeeking = peeking;
         // GDD: cámara fija que sigue a Abby (el clic derecho es bloquear y E interactuar): sin girar ni asomarse
-        peeking = !CamaraFija && !active.freeOrbit && active.peekHold &&
+        peeking = !CamaraFija && !libre && !active.freeOrbit && active.peekHold &&
                   ((mouseActive && mouse.rightButton.isPressed) || stick.sqrMagnitude > 0.02f);
 
-        if (CamaraFija) { }
+        if (CamaraFija && !libre) { }   // la del juego es fija (GDD); la libre de F3 sí se mueve con el mouse
         else if (active.freeOrbit || peeking)
         {
             yaw += look.x;
@@ -596,8 +606,8 @@ public class MouseOrbitCamera : MonoBehaviour
         if (labelStyle == null)
             labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 20, fontStyle = FontStyle.Bold };
         float a = Mathf.Clamp01(left / 0.5f);
-        string extra = active != null && !active.freeOrbit && !CamaraFija ? "   ·   Q/E giran · clic derecho para asomarte" : "";
-        string text = "Cámara: " + styleNames[(int)appliedStyle] + extra + "\nF1 Original · F2 Pulido · F3 Tercera persona · F4 Isométrica · F5 Sala · F6 Diorama";
+
+        string text = libre ? "Cámara libre · mueve el mouse para mirar alrededor\nF4: volver a la cámara del juego" : "Cámara del juego\nF3: cámara libre";
         var r = new Rect(0f, Screen.height * 0.08f, Screen.width, 60f);
         GUI.color = new Color(0f, 0f, 0f, 0.7f * a);
         GUI.Label(new Rect(r.x + 2f, r.y + 2f, r.width, r.height), text, labelStyle);

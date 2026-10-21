@@ -428,7 +428,7 @@ public class FloorDirector : MonoBehaviour
     }
 
     /// <summary>Barra de controles del GDD (teclado y mouse).</summary>
-    public const string Controles = "WASD  Mover     Clic izq.  Atacar (combo de 3)     Clic der.  Bloquear     Espacio  Saltar     Shift  Impulso     E  Interactuar     Esc  Pausa";
+    public const string Controles = "WASD  Mover     Clic izq.  Atacar (combo de 3)     Clic der.  Bloquear     Espacio  Saltar     Shift  Impulso     E  Interactuar     F3  Cámara libre     Esc  Pausa";
 
     static void Text(Rect r, string text, GUIStyle st, Color c)
     {

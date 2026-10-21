@@ -111,6 +111,46 @@ public class Musica : MonoBehaviour
         return (Mathf.Sin(w) + Mathf.Sin(2f * w) * 0.3f * Mathf.Exp(-t * 3f) + Mathf.Sin(3f * w) * 0.12f * Mathf.Exp(-t * 5f)) * env;
     }
 
+    /// <summary>
+    /// Un violín sintetizado: suma de armónicos (como una onda de diente de sierra, que es lo que hace el arco) cuyo volumen
+    /// lo da la caja del violín (resonancias cerca de 280, 450, 1000 y 2800 Hz) y que se apagan arriba de 5 kHz; vibrato
+    /// de 5.5 Hz que aparece después de 0.25 s, pequeñas variaciones de afinación y el ruido del arco.
+    /// </summary>
+    class Violin
+    {
+        readonly float desafina; readonly System.Random r;
+        double fase; float ruido, deriva;
+        public Violin(float desafina, int semilla) { this.desafina = desafina; r = new System.Random(semilla); }
+
+        static float Caja(float f)
+        {
+            float l = Mathf.Log(f);
+            float g = 0.25f;
+            g += 0.7f * Mathf.Exp(-Sq((l - Mathf.Log(280f)) / 0.18f));
+            g += 0.9f * Mathf.Exp(-Sq((l - Mathf.Log(450f)) / 0.2f));
+            g += 0.45f * Mathf.Exp(-Sq((l - Mathf.Log(1000f)) / 0.25f));
+            g += 1.0f * Mathf.Exp(-Sq((l - Mathf.Log(2800f)) / 0.3f));
+            return g / (1f + Sq(f / 5000f) * Sq(f / 5000f));
+        }
+
+        static float Sq(float x) => x * x;
+
+        public float Muestra(float f, float tNota)
+        {
+            float vib = 0.0045f * Mathf.Sin(2f * Mathf.PI * 5.5f * tNota + desafina * 900f) * Mathf.SmoothStep(0f, 1f, (tNota - 0.25f) / 0.35f);
+            deriva += ((float)r.NextDouble() - 0.5f) * 0.00004f; deriva *= 0.999f;
+            float fr = f * (1f + desafina + vib + deriva);
+            fase += fr / Hz;
+            if (fase > 1000.0) fase -= 1000.0;
+            float w = (float)(2.0 * System.Math.PI * (fase % 1.0));
+            float s = 0f;
+            for (int k = 1; k * fr < 8000f && k <= 24; k++) s += Mathf.Sin(w * k) * Caja(k * fr) / k;
+            // roce del arco: un poco de ruido suave
+            ruido += (((float)r.NextDouble() * 2f - 1f) - ruido) * 0.3f;
+            return s * 0.6f + ruido * 0.035f;
+        }
+    }
+
     static float Nota(int midi) => 440f * Mathf.Pow(2f, (midi - 69) / 12f);
 
     /// <summary>Piano (bajo, acordes y arpegio) y una línea de violín sobre una progresión menor que se repite.</summary>
@@ -144,8 +184,17 @@ public class Musica : MonoBehaviour
             int ac = Mathf.Min(acordes.Length - 1, Mathf.FloorToInt(i * paso / (compas * compasPorAcorde)));
             int raiz = acordes[ac][0] + 24, menor = acordes[ac][1] == 0 ? 3 : 4;
             int[] grados = { 0, menor, 7, 12, menor + 12 };
-            mel[i] = raiz + grados[rng.Next(grados.Length)] - (rng.NextDouble() < 0.3 ? 12 : 0);
+            // la nota del acorde más cercana a la anterior (a veces la siguiente): una línea que canta, sin saltos raros
+            int prev = i > 0 ? mel[i - 1] : raiz + 7, mejor = raiz, dist = 99;
+            foreach (int g in grados)
+                for (int oct = -12; oct <= 0; oct += 12)
+                {
+                    int cand = raiz + g + oct, dd = Mathf.Abs(cand - prev) + (cand == prev ? 3 : 0) + rng.Next(0, 4);
+                    if (cand >= 64 && cand <= 84 && dd < dist) { dist = dd; mejor = cand; }
+                }
+            mel[i] = mejor;
         }
+        var cuerdas = new Violin[] { new Violin(-0.0025f, 1), new Violin(0.0025f, 2) };   // dos violines un pelo desafinados: suena a sección
         for (int i = 0; i < n; i++)
         {
             float t = i / (float)Hz;
@@ -170,13 +219,16 @@ public class Musica : MonoBehaviour
             float ta = tAc - ia * pasoA;
             int[] arp = { 0, tercera, 7, 12, 7, tercera };
             s += Piano(Nota(raiz + 36 + arp[ia % arp.Length]), ta, 3.5f) * (p == Pista.Menu ? 0.16f : 0.12f);
-            // violín: la melodía, casi pura, con vibrato suave y entrada lenta (sin aspereza)
+            // violín: arco con muchos armónicos pasados por la caja de resonancia, roce del arco y vibrato que entra tarde
             int im = Mathf.Min(notas - 1, Mathf.FloorToInt(t / paso));
             float tm = t - im * paso;
-            float fv = Nota(mel[im]) * (1f + 0.004f * Mathf.Sin(2f * Mathf.PI * 5f * t) * Mathf.Min(1f, tm * 2f));
-            float envV = Mathf.SmoothStep(0f, 1f, Mathf.Min(1f, tm / (paso * 0.4f))) * Mathf.Min(1f, (paso - tm) / (paso * 0.25f));
-            float fase = 2f * Mathf.PI * fv * t;
-            s += (Mathf.Sin(fase) * 0.85f + Mathf.Sin(2f * fase) * 0.1f) * envV * (p == Pista.Menu ? 0.07f : 0.055f);
+            float f0 = Nota(mel[im]), fAnt = Nota(mel[Mathf.Max(0, im - 1)]);
+            float fv = Mathf.Lerp(fAnt, f0, Mathf.SmoothStep(0f, 1f, tm / 0.07f));   // se desliza a la nota nueva (legato)
+            // arcada: entra rápido pero suave, crece un poco y al final de la nota baja sin cortarse del todo (ligado)
+            float envV = (0.55f + 0.45f * Mathf.SmoothStep(0f, 1f, tm / Mathf.Min(0.18f, paso * 0.4f))) * (1f - 0.35f * Mathf.SmoothStep(0f, 1f, (tm - paso * 0.75f) / (paso * 0.25f)));
+            if (im == 0) envV *= Mathf.SmoothStep(0f, 1f, tm / 0.3f);
+            float vol = p == Pista.Menu ? 0.085f : 0.06f;
+            foreach (var v in cuerdas) s += v.Muestra(fv, tm) * envV * vol;
             d[i] = Mathf.Clamp(s * 1.1f, -1f, 1f);
         }
         // sin chasquido al dar la vuelta

@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class Musica : MonoBehaviour
 {
-    public enum Pista { Ninguna, Menu, Combate, Jefe }
+    public enum Pista { Ninguna, Menu, Combate, Jefe, Paisaje }
 
     const int Hz = 22050;
     static Musica instancia;
@@ -47,10 +47,22 @@ public class Musica : MonoBehaviour
         PorEscena(SceneManager.GetActiveScene().name);
     }
 
+    /// <summary>Los mapas con río, mar o cascadas: al explorarlos suena "Paisaje" (nostálgica y feliz).</summary>
+    public static bool ConAgua(string n) => n == "Diorama" || n == "Puerto" || n == "Cascadas" || n == "Acantilado";
+
+    /// <summary>Al empezar o terminar una horda: combate mientras se pelea; en los mapas con agua, vuelve el paisaje.</summary>
+    public static void Pelea(bool empieza)
+    {
+        string n = SceneManager.GetActiveScene().name;
+        if (!ConAgua(n)) return;
+        Poner(empieza ? Pista.Combate : Pista.Paisaje);
+    }
+
     static void PorEscena(string n)
     {
         if (n == "Menu" || n == "Intro") Poner(Pista.Menu);
-        else if (n == "Diorama" || n == "Puerto" || n == "Cascadas" || n == "Acantilado" || n == "Cima" || n == "Expedicion") Poner(Pista.Combate);
+        else if (ConAgua(n)) Poner(Pista.Paisaje);
+        else if (n == "Cima" || n == "Expedicion") Poner(Pista.Combate);
         Cinematica(n == "Intro");
     }
 
@@ -163,6 +175,10 @@ public class Musica : MonoBehaviour
             case Pista.Combate:
                 acordes = new[] { new[] { 50, 0 }, new[] { 46, 1 }, new[] { 41, 1 }, new[] { 45, 1 } };   // Rem Sib Fa La
                 bpm = 92f; compasPorAcorde = 2; break;
+            case Pista.Paisaje:
+                // Re mayor: Re · La · Sim · Sol (I-V-vi-IV), lento y luminoso, con un poco de melancolía en el Si menor
+                acordes = new[] { new[] { 50, 1 }, new[] { 45, 1 }, new[] { 47, 0 }, new[] { 43, 1 } };
+                bpm = 78f; compasPorAcorde = 2; break;
             case Pista.Jefe:
                 acordes = new[] { new[] { 45, 0 }, new[] { 43, 1 }, new[] { 41, 1 }, new[] { 40, 1 } };   // Lam Sol Fa Mi
                 bpm = 124f; compasPorAcorde = 2; break;
@@ -176,7 +192,7 @@ public class Musica : MonoBehaviour
         var d = new float[n];
         var rng = new System.Random((int)p * 31 + 5);
         // melodía de violín: grados del acorde, una nota por tiempo (en combate/jefe, a corcheas)
-        float paso = p == Pista.Menu ? tiempo * 2f : p == Pista.Combate ? tiempo : tiempo * 0.5f;
+        float paso = p == Pista.Menu ? tiempo * 2f : p == Pista.Paisaje ? tiempo * 2f : p == Pista.Combate ? tiempo : tiempo * 0.5f;
         int notas = Mathf.CeilToInt(dur / paso);
         var mel = new int[notas];
         for (int i = 0; i < notas; i++)
@@ -217,8 +233,22 @@ public class Musica : MonoBehaviour
             float pasoA = p == Pista.Jefe ? tiempo * 0.25f : tiempo * 0.5f;
             int ia = Mathf.FloorToInt(tAc / pasoA);
             float ta = tAc - ia * pasoA;
-            int[] arp = { 0, tercera, 7, 12, 7, tercera };
-            s += Piano(Nota(raiz + 36 + arp[ia % arp.Length]), ta, 3.5f) * (p == Pista.Menu ? 0.16f : 0.12f);
+            int[] arp = p == Pista.Paisaje ? new[] { 0, 7, 12, tercera + 12, 14, tercera + 12, 12, 7 } : new[] { 0, tercera, 7, 12, 7, tercera };   // en el paisaje, con la novena: corre como agua
+            s += Piano(Nota(raiz + 36 + arp[ia % arp.Length]), ta, p == Pista.Paisaje ? 2.4f : 3.5f) * (p == Pista.Menu ? 0.16f : p == Pista.Paisaje ? 0.13f : 0.12f);
+            if (p == Pista.Paisaje)
+            {
+                // gotas: campanitas agudas sueltas, como agua que cae (posiciones fijas por semilla para que el loop sea igual)
+                float pasoG = tiempo * 0.5f;
+                int ig = Mathf.FloorToInt(t / pasoG);
+                uint h = (uint)(ig * 2654435761u);
+                if ((h >> 7) % 5 == 0)
+                {
+                    float tg = t - ig * pasoG;
+                    int[] gotas = { 12, 14, 16, 19, 21, 24 };
+                    float fg = Nota(raiz + 48 + gotas[(h >> 11) % (uint)gotas.Length] - (raiz % 12 == 7 ? 12 : 0));
+                    s += (Mathf.Sin(2f * Mathf.PI * fg * t) + Mathf.Sin(2f * Mathf.PI * fg * 2.76f * t) * 0.25f) * Mathf.Exp(-tg * 7f) * Mathf.Min(1f, tg * 600f) * 0.045f;
+                }
+            }
             // violín: arco con muchos armónicos pasados por la caja de resonancia, roce del arco y vibrato que entra tarde
             int im = Mathf.Min(notas - 1, Mathf.FloorToInt(t / paso));
             float tm = t - im * paso;
@@ -227,7 +257,7 @@ public class Musica : MonoBehaviour
             // arcada: entra rápido pero suave, crece un poco y al final de la nota baja sin cortarse del todo (ligado)
             float envV = (0.55f + 0.45f * Mathf.SmoothStep(0f, 1f, tm / Mathf.Min(0.18f, paso * 0.4f))) * (1f - 0.35f * Mathf.SmoothStep(0f, 1f, (tm - paso * 0.75f) / (paso * 0.25f)));
             if (im == 0) envV *= Mathf.SmoothStep(0f, 1f, tm / 0.3f);
-            float vol = p == Pista.Menu ? 0.085f : 0.06f;
+            float vol = p == Pista.Menu ? 0.085f : p == Pista.Paisaje ? 0.07f : 0.06f;
             foreach (var v in cuerdas) s += v.Muestra(fv, tm) * envV * vol;
             d[i] = Mathf.Clamp(s * 1.1f, -1f, 1f);
         }

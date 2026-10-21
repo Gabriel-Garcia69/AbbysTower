@@ -137,6 +137,7 @@ public class FloorDirector : MonoBehaviour
     void OnRoomBegan(RoomEncounter room)
     {
         activeRoom = room;
+        if (!room.isBoss) Musica.Pelea(true);
         if (room.isBoss)
         {
             Banner((string.IsNullOrEmpty(room.bossName) ? "Guardián" : room.bossName).ToUpper(), "Derrótalo para abrir el camino", new Color(1f, 0.35f, 0.3f), 3.5f);
@@ -149,6 +150,7 @@ public class FloorDirector : MonoBehaviour
     {
         if (room != activeRoom) return;
         activeRoom = null; boss = null;
+        Musica.Pelea(false);
         if (room.isBoss) Banner("¡JEFE DERROTADO!", "La salida se ha abierto", new Color(1f, 0.85f, 0.45f), 4f);
         else if (room.Total > 0) Banner("SALA DESPEJADA", "Las puertas se abren", new Color(0.5f, 1f, 0.85f), 2f);
     }
@@ -157,6 +159,7 @@ public class FloorDirector : MonoBehaviour
     {
         if (room != activeRoom) return;
         activeRoom = null; boss = null;
+        Musica.Pelea(false);
         Banner("TE ALEJASTE", "Los enemigos volvieron a su guarida", new Color(0.7f, 0.8f, 1f), 1.8f);
     }
 

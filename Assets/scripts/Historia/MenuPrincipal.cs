@@ -23,6 +23,7 @@ public class MenuPrincipal : MonoBehaviour
     {
         // antes de que la cinemática empiece (su Start corre después de todos los Awake)
         foreach (var c in FindObjectsByType<Cinematica>()) Destroy(c);
+        ReintentoJefe.Escena = null;   // empezar de nuevo desde el menú
     }
 
     void Start()
@@ -56,12 +57,12 @@ public class MenuPrincipal : MonoBehaviour
         var kb = Keyboard.current;
         if (kb == null) return;
         int n = Opciones().Length;
-        if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) sel = (sel + 1) % n;
-        if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) sel = (sel + n - 1) % n;
-        if (pagina == Pagina.Configuracion && (sel == 0 || sel == 1))
+        if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) { sel = (sel + 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
+        if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) { sel = (sel + n - 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
+        if (pagina == Pagina.Configuracion && sel <= 2)
         {
             float paso = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame ? 0.1f : kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame ? -0.1f : 0f;
-            if (paso != 0f) { if (sel == 0) Ajustes.General += paso; else Ajustes.Musica += paso; }
+            if (paso != 0f) Ajustar(sel, paso);
         }
         if (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) Elegir(sel);
         if (kb.escapeKey.wasPressedThisFrame) { if (pagina != Pagina.Principal) Ir(Pagina.Principal); else Ir(Pagina.Salir); }
@@ -73,6 +74,7 @@ public class MenuPrincipal : MonoBehaviour
         {
             case Pagina.Configuracion:
                 return new[] { $"Volumen general   ◀ {Mathf.RoundToInt(Ajustes.General * 100f)} % ▶", $"Volumen de música   ◀ {Mathf.RoundToInt(Ajustes.Musica * 100f)} % ▶",
+                               $"Volumen de efectos   ◀ {Mathf.RoundToInt(Ajustes.Efectos * 100f)} % ▶",
                                "Pantalla completa: " + (Screen.fullScreen ? "Sí" : "No"), "Restablecer", "Volver" };
             case Pagina.Salir: return new[] { "No, quedarme", "Sí, salir del juego" };
             default: return new[] { "Jugar", "Configuración", "Salir" };
@@ -81,8 +83,15 @@ public class MenuPrincipal : MonoBehaviour
 
     void Ir(Pagina p) { pagina = p; sel = 0; entrada = 0f; }
 
+    void Ajustar(int i, float paso)
+    {
+        if (i == 0) Ajustes.General += paso; else if (i == 1) Ajustes.Musica += paso; else Ajustes.Efectos += paso;
+        Sonido.Tocar(i == 2 ? Sonido.Efecto.Espada : Sonido.Efecto.Clic, 0.7f);   // se oye cómo queda
+    }
+
     void Elegir(int i)
     {
+        Sonido.Tocar(Sonido.Efecto.Clic);
         switch (pagina)
         {
             case Pagina.Principal:
@@ -91,9 +100,9 @@ public class MenuPrincipal : MonoBehaviour
                 else Ir(Pagina.Salir);
                 break;
             case Pagina.Configuracion:
-                if (i == 2) Screen.fullScreen = !Screen.fullScreen;
-                else if (i == 3) Ajustes.Restablecer();
-                else if (i == 4) Ir(Pagina.Principal);
+                if (i == 3) Screen.fullScreen = !Screen.fullScreen;
+                else if (i == 4) Ajustes.Restablecer();
+                else if (i == 5) Ir(Pagina.Principal);
                 break;
             case Pagina.Salir:
                 if (i == 0) Ir(Pagina.Principal);
@@ -138,11 +147,7 @@ public class MenuPrincipal : MonoBehaviour
             if (ev.type == EventType.MouseDown && ev.button == 0 && r.Contains(ev.mousePosition))
             {
                 sel = i;
-                if (pagina == Pagina.Configuracion && i <= 1)
-                {
-                    float paso = ev.mousePosition.x > r.center.x ? 0.1f : -0.1f;
-                    if (i == 0) Ajustes.General += paso; else Ajustes.Musica += paso;
-                }
+                if (pagina == Pagina.Configuracion && i <= 2) Ajustar(i, ev.mousePosition.x > r.center.x ? 0.1f : -0.1f);
                 else Elegir(i);
                 ev.Use();
             }
@@ -175,7 +180,13 @@ public class MenuPrincipal : MonoBehaviour
 /// </summary>
 public static class Ajustes
 {
-    const float PorDefectoGeneral = 0.8f, PorDefectoMusica = 0.7f;
+    const float PorDefectoGeneral = 0.8f, PorDefectoMusica = 0.7f, PorDefectoEfectos = 0.9f;
+
+    public static float Efectos
+    {
+        get => PlayerPrefs.GetFloat("vol_efectos", PorDefectoEfectos);
+        set { PlayerPrefs.SetFloat("vol_efectos", Mathf.Clamp01(Mathf.Round(value * 10f) / 10f)); PlayerPrefs.Save(); }
+    }
 
     public static float General
     {
@@ -189,7 +200,7 @@ public static class Ajustes
         set { PlayerPrefs.SetFloat("vol_musica", Mathf.Clamp01(Mathf.Round(value * 10f) / 10f)); PlayerPrefs.Save(); }
     }
 
-    public static void Restablecer() { General = PorDefectoGeneral; Musica = PorDefectoMusica; }
+    public static void Restablecer() { General = PorDefectoGeneral; Musica = PorDefectoMusica; Efectos = PorDefectoEfectos; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Aplicar() => AudioListener.volume = General;

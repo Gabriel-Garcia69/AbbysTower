@@ -75,7 +75,7 @@ public partial class TowerEnemy
         public SpriteRenderer sr;
         public Vector3 baseLocal;
         Vector3 ultima;
-        float paso, golpe;
+        float paso, golpe, aura;
         int dir = 6;
 
         void LateUpdate()
@@ -114,6 +114,14 @@ public partial class TowerEnemy
             // sombra viva: tiembla un poco; al enfurecer, un brillo morado
             float pulso = enemigo.Enraged ? 0.08f + 0.06f * Mathf.Sin(Time.time * 12f) : 0f;
             sr.color = new Color(0.16f + pulso, 0.09f, 0.24f + pulso * 2f);
+            // aura de sombra: se le desprende humo morado oscuro (más cuando se enfurece)
+            aura -= Time.deltaTime;
+            if (aura <= 0f && enemigo.enabled)
+            {
+                aura = enemigo.Enraged ? 0.08f : 0.16f;
+                Vector3 p = enemigo.transform.position + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0.3f, 2f), Random.Range(-0.5f, 0.5f));
+                CombatFx.Burst(p, enemigo.Enraged ? new Color(0.55f, 0.15f, 0.8f) : new Color(0.22f, 0.08f, 0.35f), 3, 0.8f, 0.22f, 0.9f, -0.8f);
+            }
         }
     }
 }

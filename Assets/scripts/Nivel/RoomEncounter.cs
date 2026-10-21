@@ -163,6 +163,11 @@ public class RoomEncounter : MonoBehaviour
         int first = isBoss ? queue.Count : Mathf.Min(queue.Count, Mathf.Max(1, maxAlive));
         for (int i = 0; i < first; i++) SpawnAt(queue.Dequeue());
         nextSpawn = Time.time + 1f;
+        if (isBoss && bossKind == TowerEnemy.Kind.Dante)
+        {
+            ReintentoJefe.Escena = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            Musica.Poner(Musica.Pista.Jefe);
+        }
         Began?.Invoke();
     }
 

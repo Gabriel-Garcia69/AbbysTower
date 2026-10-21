@@ -54,6 +54,7 @@ public class HealingShrine : MonoBehaviour
         }
         used = true; Cerca = null;
         health.Heal(health.maxHealth);
+        Sonido.Tocar(Sonido.Efecto.Fuente);
         FloorDirector.Banner("FUENTE DE CURACIÓN", "Tu vida se ha restaurado", new Color(0.5f, 1f, 0.7f), 2.2f);
     }
 }

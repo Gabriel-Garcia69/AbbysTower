@@ -15,6 +15,7 @@ public partial class DioramaBuilder
         Faldones();
         PodarPlantas();
         Hordas();
+        if (layout == Layout.Pueblo || layout == Layout.Puerto) LimiteVisible(Group("LimitesVisibles", root), Walk);   // tienen sus propios bordes
         Entorno();
     }
 

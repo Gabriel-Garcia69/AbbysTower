@@ -21,6 +21,7 @@ public class AbbyBlock : MonoBehaviour
     public float EmptyFlash { get; private set; }
 
     float sinBloquear;
+    bool antes;
     PlayerHealth health;
 
     PlayerMotor motor;
@@ -37,6 +38,8 @@ public class AbbyBlock : MonoBehaviour
         Blocking = held && Stamina >= CostoPorGolpe;
         if (wanted && !Blocking && (ms != null && ms.rightButton.wasPressedThisFrame)) EmptyFlash = 1f;
 
+        if (Blocking && !antes) CombatFx.Ring(transform.position, 1.3f, new Color(0.5f, 0.75f, 1f, 0.8f), 0.18f);   // se cubre
+        antes = Blocking;
         if (Blocking)
         {
             sinBloquear = 0f;
@@ -60,6 +63,7 @@ public class AbbyBlock : MonoBehaviour
         hit.damage *= DanoRecibido;
         hit.knockback *= 0.35f;
         BlockFlash = 1f;
+        Sonido.Tocar(Sonido.Efecto.Bloqueo, 0.9f);
         if (Stamina < CostoPorGolpe) Blocking = false;
         CombatFx.Burst(transform.position + Vector3.up * 0.9f, new Color(0.55f, 0.75f, 1f), 18, 4f, 0.12f, 0.3f);
         CombatFx.Ring(transform.position, 1.6f, new Color(0.5f, 0.75f, 1f, 0.9f), 0.25f);

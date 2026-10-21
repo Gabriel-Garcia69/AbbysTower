@@ -115,6 +115,7 @@ public class AbbyAttack : MonoBehaviour
                         sourcePosition = transform.position, attacker = self,
                     }, Facing);
                     Color col = crit ? new Color(1f, 0.4f, 0.9f) : dashStrike ? new Color(0.5f, 1f, 1f) : last ? new Color(1f, 0.85f, 0.5f) : slashColor;
+                    Sonido.Tocar(Sonido.Efecto.Espada, 0.75f, 1f + i * 0.07f);
                     CombatFx.Slash(transform.position + Vector3.up * 0.75f + Facing * 0.55f, Facing, last || dashStrike || crit ? 2f : 1.5f, col, combo % 2 == 1);
                     if (dashStrike) FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "¡Tajo de impulso!", new Color(0.6f, 1f, 1f));
                     if (crit) FloorDirector.Popup(transform.position + Vector3.up * 2.5f, "¡CRÍTICO!", new Color(1f, 0.5f, 0.95f));

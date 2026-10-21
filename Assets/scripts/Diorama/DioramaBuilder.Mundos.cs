@@ -251,6 +251,40 @@ public partial class DioramaBuilder
         SolidBox(g, "Limite_E", new Vector3(r.xMax + 0.5f, 10f, r.center.y), new Vector3(1f, 60f, r.height));
         SolidBox(g, "Limite_S", new Vector3(r.center.x, 10f, r.yMin - 0.5f), new Vector3(r.width, 60f, 1f));
         SolidBox(g, "Limite_N", new Vector3(r.center.x, 10f, r.yMax + 0.5f), new Vector3(r.width, 60f, 1f));
+        if (EnRutaGDD) LimiteVisible(g, r);
+    }
+
+    /// <summary>
+    /// GDD: los límites del área se distinguen claramente y se ven distintos en cada piso ("energía del Abismo en el
+    /// borde"). Una cortina de energía de 2.6 m que sigue el terreno por el borde del área; solo se enciende cerca de Abby.
+    /// </summary>
+    void LimiteVisible(Transform g, Rect r)
+    {
+        Color c = layout == Layout.Puerto ? new Color(0.3f, 0.95f, 1.1f) : layout == Layout.Cascadas ? new Color(0.45f, 1.1f, 0.6f)
+                : layout == Layout.Acantilado ? new Color(1.2f, 0.6f, 0.3f) : layout == Layout.Cima ? new Color(0.85f, 0.45f, 1.3f) : new Color(0.55f, 0.75f, 1.2f);
+        var mat = Saved("Dio_Limite_" + layout, () => new Material(Shader.Find("Abby/Energia")));
+        mat.SetColor("_Color", c); mat.SetFloat("_Rango", 7f); mat.SetFloat("_Bandas", 1.1f); mat.SetFloat("_Velocidad", 0.5f);
+        var esquinas = new[] { new Vector2(r.xMin, r.yMin), new Vector2(r.xMax, r.yMin), new Vector2(r.xMax, r.yMax), new Vector2(r.xMin, r.yMax), new Vector2(r.xMin, r.yMin) };
+        var v = new System.Collections.Generic.List<Vector3>(); var uv = new System.Collections.Generic.List<Vector2>(); var t = new System.Collections.Generic.List<int>();
+        for (int lado = 0; lado < 4; lado++)
+        {
+            Vector2 a0 = esquinas[lado], a1 = esquinas[lado + 1];
+            int n = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(a0, a1) / 1.5f));
+            int i0 = v.Count;
+            for (int i = 0; i <= n; i++)
+            {
+                var q = Vector2.Lerp(a0, a1, i / (float)n);
+                float h = Height(q.x, q.y);
+                if (h < VoidY + 1f) h = 0f;
+                v.Add(new Vector3(q.x, h - 0.15f, q.y)); v.Add(new Vector3(q.x, h + 2.6f, q.y));
+                float u = i / (float)n;
+                uv.Add(new Vector2(u, 0f)); uv.Add(new Vector2(u, 1f));
+                if (i < n) { int k = i0 + i * 2; t.Add(k); t.Add(k + 1); t.Add(k + 3); t.Add(k); t.Add(k + 3); t.Add(k + 2); }
+            }
+        }
+        var m = new Mesh { name = "LimiteVisible" };
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0); m.RecalculateBounds();
+        MeshObject(g, "LimiteVisible", m, mat, false);
     }
 
     /// <summary>Lo común al final de cada mundo: vegetación, ambiente y tomas.</summary>

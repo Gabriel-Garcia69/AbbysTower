@@ -207,8 +207,10 @@ public class Cinematica : MonoBehaviour
         // a ras de la plaza: el suelo se enciende
         Toma(C + new Vector3(-36f, 2.2f, -44f), C + new Vector3(0f, 4f, 0f), C + new Vector3(-31f, 2.6f, -38f), C + new Vector3(0f, 6f, 0f), 5f, 50f);   // adentro del anillo de gente (no la atraviesa)
         if (polvo != null) foreach (var ps in polvo.GetComponentsInChildren<ParticleSystem>()) ps.Play();
-        for (float t = 0f; t < 4.5f; t += Time.deltaTime)
+        for (float t = 0f, pulso = 0f; t < 4.5f; t += Time.deltaTime)
         {
+            pulso -= Time.deltaTime;
+            if (pulso <= 0f) { pulso = Mathf.Lerp(0.9f, 0.3f, t / 4.5f); Sonido.Tocar(Sonido.Efecto.Alerta, 0.5f + t * 0.1f, 0.8f); }   // el suelo late
             float k = t / 4.5f;
             float r = Mathf.Lerp(1f, 50f, Mathf.SmoothStep(0f, 1f, k));
             anillo.transform.localScale = new Vector3(r, 0.02f, r);
@@ -218,10 +220,25 @@ public class Cinematica : MonoBehaviour
         }
 
         // el haz sube al cielo
+        Sonido.Tocar(Sonido.Efecto.Destello);
         var haz = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         Destroy(haz.GetComponent<Collider>());
-        if (energia != null) haz.GetComponent<Renderer>().sharedMaterial = energia;
         haz.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        // el haz: un núcleo que brilla y, alrededor, energía translúcida con bandas que suben (no un cilindro plano)
+        var ener = Shader.Find("Abby/Energia");
+        if (ener != null)
+        {
+            var mh = new Material(ener);
+            mh.SetColor("_Color", new Color(1.1f, 0.55f, 2.2f)); mh.SetFloat("_Bandas", 0.06f); mh.SetFloat("_Velocidad", 1.6f);
+            haz.GetComponent<Renderer>().sharedMaterial = mh;
+        }
+        else if (energia != null) haz.GetComponent<Renderer>().sharedMaterial = energia;
+        var nucleo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        Destroy(nucleo.GetComponent<Collider>());
+        nucleo.transform.SetParent(haz.transform, false);
+        nucleo.transform.localScale = new Vector3(0.28f, 1f, 0.28f);
+        if (energia != null) nucleo.GetComponent<Renderer>().sharedMaterial = energia;
+        nucleo.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         Toma(C + new Vector3(-68f, 4f, -78f), C + new Vector3(0f, 30f, 0f), C + new Vector3(-74f, 5f, -84f), C + new Vector3(0f, 140f, 0f), 7f, 58f);
         destello = 1f;
         shake = 1.6f;

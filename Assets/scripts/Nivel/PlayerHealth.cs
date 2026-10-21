@@ -34,7 +34,9 @@ public class PlayerHealth : MonoBehaviour, IHittable
         Health = maxHealth;
     }
 
-    void Start() => sprites = GetComponentsInChildren<SpriteRenderer>(true);
+    AbbyBlock bloque;
+
+    void Start() { sprites = GetComponentsInChildren<SpriteRenderer>(true); bloque = GetComponent<AbbyBlock>(); }
 
     void Update()
     {
@@ -50,6 +52,8 @@ public class PlayerHealth : MonoBehaviour, IHittable
         if (hurtFlash > 0f) hurtFlash -= dt;
         Color c = Color.white;
         if (hurtFlash > 0f) c = new Color(1f, 0.35f, 0.35f);
+        else if (bloque != null && bloque.Blocking) c = new Color(0.72f, 0.85f, 1f);   // cubierta: se ve azulada (GDD: efecto breve al bloquear)
+        if (bloque != null && bloque.BlockFlash > 0f) c = Color.Lerp(c, new Color(0.6f, 0.9f, 1f) * 1.6f, bloque.BlockFlash);
         if (invuln > 0f && !IsDead) c.a = Mathf.Repeat(Time.time * 12f, 1f) < 0.5f ? 0.35f : 1f;
         if (sprites != null) foreach (var s in sprites) if (s != null) s.color = c;
     }
@@ -84,6 +88,7 @@ public class PlayerHealth : MonoBehaviour, IHittable
         hurtFlash = bloqueado ? 0f : 0.15f;
         CameraShake.Shake(bloqueado ? 0.08f : 0.22f, 0.25f);
         if (!bloqueado) CombatFx.Burst(transform.position + Vector3.up * 0.8f, new Color(1f, 0.35f, 0.4f), 14, 4f, 0.14f, 0.4f);
+        if (!bloqueado) Sonido.Tocar(Sonido.Efecto.Dano, 0.9f);
         FloorDirector.Popup(transform.position + Vector3.up * 1.8f, "-" + (bloqueado ? hit.damage.ToString("0.#") : Mathf.RoundToInt(hit.damage).ToString()), bloqueado ? new Color(0.7f, 0.85f, 1f) : new Color(1f, 0.4f, 0.4f));
         Damaged?.Invoke(hit.damage);
         if (Health <= 0f) Die();
@@ -110,6 +115,7 @@ public class PlayerHealth : MonoBehaviour, IHittable
     void Die()
     {
         IsDead = true;
+        Sonido.Tocar(Sonido.Efecto.Muerte);
         foreach (var b in GetComponents<MonoBehaviour>())
             if (b is PlayerInputReader || b is AbbyAttack) b.enabled = false;
         CameraShake.Shake(0.4f, 0.5f);

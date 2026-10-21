@@ -7,6 +7,7 @@ Shader "Abby/Energia"
         [HDR] _Color ("Color", Color) = (0.6, 0.3, 1.2, 1)
         _Bandas ("Bandas por metro", Float) = 1.4
         _Velocidad ("Velocidad", Float) = 0.8
+        _Rango ("Visible a esta distancia de Abby (0 = siempre)", Float) = 0
     }
     SubShader
     {
@@ -25,8 +26,9 @@ Shader "Abby/Energia"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _Color;
-                float _Bandas, _Velocidad;
+                float _Bandas, _Velocidad, _Rango;
             CBUFFER_END
+            float4 _AbbyJugador;   // posición de Abby (FloorDirector la pone cada cuadro)
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
             struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; float3 posWS : TEXCOORD1; float fog : TEXCOORD2; };
@@ -57,6 +59,8 @@ Shader "Abby/Energia"
                 // se apaga arriba, abajo y en las orillas
                 float borde = smoothstep(0.0, 0.25, i.uv.y) * smoothstep(1.0, 0.55, i.uv.y) * smoothstep(0.0, 0.08, i.uv.x) * smoothstep(1.0, 0.92, i.uv.x);
                 float a = (0.12 + banda * 0.55 + hilo * 0.6) * borde;
+                // límites del piso: solo se encienden cerca de Abby
+                if (_Rango > 0) a *= saturate(1.0 - distance(i.posWS.xz, _AbbyJugador.xz) / _Rango);
                 float3 c = _Color.rgb * a;
                 c = MixFogColor(c, 0, i.fog);   // aditivo: la niebla lo apaga hacia negro
                 return half4(c, 1);

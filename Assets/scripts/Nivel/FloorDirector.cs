@@ -78,6 +78,7 @@ public class FloorDirector : MonoBehaviour
             var fall = p.GetComponent<FallGuard>(); if (fall == null) fall = p.AddComponent<FallGuard>();
             fall.killY = killY;
             if (p.GetComponent<AbbyBlock>() == null) p.AddComponent<AbbyBlock>();
+            if (p.GetComponent<Pasos>() == null) p.AddComponent<Pasos>();
             if (p.GetComponent<AbbyAttack>() == null) p.AddComponent<AbbyAttack>();
             block = p.GetComponent<AbbyBlock>();
             var anim = p.GetComponentInChildren<AbbySpriteAnimator>(true);
@@ -91,6 +92,22 @@ public class FloorDirector : MonoBehaviour
         if (GetComponent<DanteFinal>() == null) gameObject.AddComponent<DanteFinal>();   // final de la demo (si el piso tiene a Dante)
 
         rooms = FindObjectsByType<RoomEncounter>();
+        // GDD: si Abby cayó peleando con el jefe, se reinicia el combate con el jefe (las hordas ya están limpias)
+        if (ReintentoJefe.Escena == SceneManager.GetActiveScene().name)
+        {
+            RoomEncounter jefe = null;
+            foreach (var r in rooms) { if (r.isBoss) jefe = r; else r.DebugClear(); }
+            if (jefe != null && player != null)
+            {
+                Vector3 pos = jefe.transform.position - jefe.transform.forward * (jefe.size.y / 2f + 2.5f);
+                if (Physics.Raycast(pos + Vector3.up * 20f, Vector3.down, out var hit, 60f)) pos = hit.point + Vector3.up * 0.1f;
+                var cc = player.GetComponent<CharacterController>();
+                if (cc != null) cc.enabled = false;
+                player.position = pos;
+                if (cc != null) cc.enabled = true;
+            }
+            floorSubtitle = "Reintenta contra el jefe";
+        }
         foreach (var r in rooms)
         {
             var room = r;
@@ -193,6 +210,7 @@ public class FloorDirector : MonoBehaviour
     void Update()
     {
         float dt = Time.unscaledDeltaTime;
+        if (player != null) Shader.SetGlobalVector("_AbbyJugador", player.position);   // los límites del piso se encienden cerca de Abby
         bannerTime += dt;
         if (hintTimer > 0f) hintTimer -= dt;
         hurtVignette = Mathf.MoveTowards(hurtVignette, 0f, dt * 2.5f);
@@ -282,6 +300,8 @@ public class FloorDirector : MonoBehaviour
         if (health != null)
         {
             float px = u * 3f, py = u * 3f, ps = u * 10f;
+            // marco del HUD con el mismo estilo de los cuadros de texto (Octopath)
+            CuadroNarracion.Marco(new Rect(px - u * 1.2f, py - u * 1.2f, ps + u * 34.5f, ps + u * 2.4f), 0.82f);
             var marco = new Rect(px, py, ps, ps);
             Box(new Rect(marco.x - 3, marco.y - 3, marco.width + 6, marco.height + 6), new Color(0.75f, 0.6f, 1f, 0.9f));
             Box(marco, new Color(0.08f, 0.06f, 0.14f, 0.92f));

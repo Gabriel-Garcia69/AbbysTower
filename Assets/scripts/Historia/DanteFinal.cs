@@ -75,6 +75,7 @@ public class DanteFinal : MonoBehaviour
             yield return null;
         }
 
+        Musica.Poner(Musica.Pista.Ninguna);   // silencio para la última palabra
         // "Abby…"
         quien = "???"; texto = "Abby…"; textoT = 0f;
         for (float t = 0f; t < 3.6f; t += Time.deltaTime) { textoT += Time.deltaTime; yield return null; }
@@ -86,7 +87,18 @@ public class DanteFinal : MonoBehaviour
         tarjeta = "Continuará…"; subtarjeta = Historia.Titulo;
         for (float t = 0f; t < 4f; t += Time.deltaTime) { tarjetaA = Mathf.Clamp01(Mathf.Min(t / 0.8f, (4f - t) / 0.8f)); yield return null; }
         tarjeta = null;
-        yield return new WaitForSeconds(0.6f);
+        ReintentoJefe.Escena = null;
+        // créditos (GDD: estado Créditos al terminar la demo)
+        Musica.Poner(Musica.Pista.Menu);
+        creditos = true;
+        for (creditosT = 0f; creditosT < DuracionCreditos; creditosT += Time.deltaTime)
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (creditosT > 1.5f && kb != null && (kb.enterKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) break;
+            yield return null;
+        }
+        creditos = false;
+        yield return new WaitForSeconds(0.4f);
         string sig = Application.CanStreamedLevelBeLoaded(escenaAlTerminar) ? escenaAlTerminar : SceneManager.GetSceneByBuildIndex(0).name;
         SceneManager.LoadScene(Application.CanStreamedLevelBeLoaded(sig) ? sig : "Intro");
     }
@@ -137,9 +149,45 @@ public class DanteFinal : MonoBehaviour
         cam.transform.rotation = Quaternion.Slerp(cam.transform.rotation, Quaternion.LookRotation(mira - cam.transform.position), Time.deltaTime * vel * 1.5f);
     }
 
+    bool creditos;
+    float creditosT;
+    const float DuracionCreditos = 22f;
+
+    static readonly string[][] Creditos =
+    {
+        new[] { "ABBY´S TOWER", "" },
+        new[] { "Un proyecto de Estudio 02", "Integradora · IDYGS103 · UT Cancún" },
+        new[] { "Rodrigo Herrera", "Líder · Programación" },
+        new[] { "Gabriel García", "Programación · Sprites" },
+        new[] { "Francisco Uc", "Programación · Música y audio" },
+        new[] { "Ricardo Cetina", "Experiencia de usuario" },
+        new[] { "Karla Damaris", "Pruebas · Experiencia de usuario" },
+        new[] { "Gracias por jugar", "La historia de Abby continuará…" },
+    };
+
+    void DibujarCreditos()
+    {
+        float sw = Screen.width, sh = Screen.height, u = sh / 100f;
+        GUI.color = Color.black; GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
+        var grande = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        var chico = new GUIStyle(grande) { fontSize = Mathf.RoundToInt(u * 2.4f), fontStyle = FontStyle.Italic };
+        float y = sh + u * 4f - creditosT * (sh + Creditos.Length * u * 16f) / DuracionCreditos;
+        for (int i = 0; i < Creditos.Length; i++, y += u * 16f)
+        {
+            float a = Mathf.Clamp01(Mathf.Min((y + u * 10f) / (sh * 0.25f), (sh - y) / (sh * 0.25f)));
+            GUI.color = Color.white;
+            grande.normal.textColor = (i == 0 ? new Color(1f, 0.9f, 0.7f) : Color.white) * new Color(1, 1, 1, a);
+            chico.normal.textColor = new Color(0.8f, 0.72f, 1f, a);
+            GUI.Label(new Rect(0, y, sw, u * 6f), Creditos[i][0], grande);
+            if (Creditos[i][1] != "") GUI.Label(new Rect(0, y + u * 5.5f, sw, u * 4f), Creditos[i][1], chico);
+        }
+        GUI.color = Color.white;
+    }
+
     void OnGUI()
     {
         if (!corriendo) return;
+        if (creditos) { GUI.depth = -960; DibujarCreditos(); return; }
         GUI.depth = -960;
         if (!string.IsNullOrEmpty(texto)) CuadroNarracion.Dialogo(quien, texto, CuadroNarracion.Letras(texto, textoT * 0.6f), 1f);
         CuadroNarracion.Negro(negro);

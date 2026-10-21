@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Música del GDD: melancólica, con teclado, órgano y violín; tres pistas (cinemática y menú, combate, jefe), sin
+/// Música del GDD: melancólica, con teclado (piano) y violín (sin órgano sostenido: sonaba a zumbido); tres pistas (cinemática y menú, combate, jefe), sin
 /// música dinámica: cambia al cambiar de escena (y al empezar la pelea con el jefe). Si existe Resources/Audio/Musica_&lt;pista&gt;
 /// (las de Francisco) se usa esa; si no, suena una provisional sintetizada aquí. Volumen = general × música, más bajo en
 /// la cinemática, y siempre por debajo de los efectos (mezcla del GDD).
@@ -102,9 +102,18 @@ public class Musica : MonoBehaviour
         return c;
     }
 
+    /// <summary>Una nota de piano: fundamental con dos armónicos suaves, ataque inmediato y caída exponencial.</summary>
+    static float Piano(float f, float t, float caida)
+    {
+        if (t < 0f) return 0f;
+        float env = Mathf.Min(1f, t * 400f) * Mathf.Exp(-t * caida);
+        float w = 2f * Mathf.PI * f * t;
+        return (Mathf.Sin(w) + Mathf.Sin(2f * w) * 0.3f * Mathf.Exp(-t * 3f) + Mathf.Sin(3f * w) * 0.12f * Mathf.Exp(-t * 5f)) * env;
+    }
+
     static float Nota(int midi) => 440f * Mathf.Pow(2f, (midi - 69) / 12f);
 
-    /// <summary>Acordes de órgano, un arpegio de teclado y una línea de violín sobre una progresión menor que se repite.</summary>
+    /// <summary>Piano (bajo, acordes y arpegio) y una línea de violín sobre una progresión menor que se repite.</summary>
     static AudioClip Componer(Pista p)
     {
         // progresiones (raíz MIDI y si es menor) y tempo de cada pista
@@ -144,33 +153,31 @@ public class Musica : MonoBehaviour
             float tAc = t - ac * compas * compasPorAcorde, durAc = compas * compasPorAcorde;
             int raiz = acordes[ac][0], tercera = acordes[ac][1] == 0 ? 3 : 4;
             float s = 0f;
-            // órgano: el acorde con armónicos, ataque y caída lentos
-            float envO = Mathf.Min(1f, tAc / 0.6f) * Mathf.Min(1f, (durAc - tAc) / 0.4f);
-            foreach (int iv in new[] { 0, tercera, 7, 12 })
+            // (sin órgano sostenido: el acorde con armónicos y el bajo pulsando sonaban como un zumbido de fondo)
+            // piano: bajo al inicio de cada compás y el acorde suave encima; todo se apaga solo como una tecla
+            float tCompas = Mathf.Repeat(tAc, compas);
+            s += Piano(Nota(raiz + 12), tCompas, 1.6f) * 0.2f;
+            if (p != Pista.Menu)
             {
-                float f = Nota(raiz + 12 + iv);
-                s += (Mathf.Sin(2f * Mathf.PI * f * t) * 0.5f + Mathf.Sin(4f * Mathf.PI * f * t) * 0.22f + Mathf.Sin(6f * Mathf.PI * f * t) * 0.1f) * 0.11f * envO;
+                float medio = tCompas - compas * 0.5f;   // en combate y jefe, el bajo repite a medio compás
+                if (medio >= 0f) s += Piano(Nota(raiz + 12), medio, 2f) * 0.13f;
             }
-            // bajo del órgano (en combate y jefe, pulsando)
-            float fb = Nota(raiz);
-            float pulso = p == Pista.Menu ? 1f : 0.55f + 0.45f * Mathf.Exp(-Mathf.Repeat(t, p == Pista.Jefe ? tiempo * 0.5f : tiempo) * 6f);
-            s += Mathf.Sin(2f * Mathf.PI * fb * t) * 0.22f * envO * pulso;
-            // teclado: arpegio suave (campanita que se apaga)
+            foreach (int iv in new[] { 0, tercera, 7 })
+                s += Piano(Nota(raiz + 24 + iv), tCompas, 1.1f) * 0.07f;
+            // piano: el arpegio
             float pasoA = p == Pista.Jefe ? tiempo * 0.25f : tiempo * 0.5f;
             int ia = Mathf.FloorToInt(tAc / pasoA);
             float ta = tAc - ia * pasoA;
             int[] arp = { 0, tercera, 7, 12, 7, tercera };
-            float fa = Nota(raiz + 24 + arp[ia % arp.Length]);
-            s += Mathf.Sin(2f * Mathf.PI * fa * t) * Mathf.Exp(-ta * 5f) * (p == Pista.Menu ? 0.09f : 0.06f);
-            // violín: la melodía con vibrato y un poco de aspereza
+            s += Piano(Nota(raiz + 36 + arp[ia % arp.Length]), ta, 3.5f) * (p == Pista.Menu ? 0.16f : 0.12f);
+            // violín: la melodía, casi pura, con vibrato suave y entrada lenta (sin aspereza)
             int im = Mathf.Min(notas - 1, Mathf.FloorToInt(t / paso));
             float tm = t - im * paso;
-            float fv = Nota(mel[im]) * (1f + 0.006f * Mathf.Sin(2f * Mathf.PI * 5.5f * t) * Mathf.Min(1f, tm * 3f));
-            float envV = Mathf.Min(1f, tm / (paso * 0.25f)) * Mathf.Min(1f, (paso - tm) / (paso * 0.2f));
+            float fv = Nota(mel[im]) * (1f + 0.004f * Mathf.Sin(2f * Mathf.PI * 5f * t) * Mathf.Min(1f, tm * 2f));
+            float envV = Mathf.SmoothStep(0f, 1f, Mathf.Min(1f, tm / (paso * 0.4f))) * Mathf.Min(1f, (paso - tm) / (paso * 0.25f));
             float fase = 2f * Mathf.PI * fv * t;
-            s += (Mathf.Sin(fase) * 0.6f + Mathf.Sin(2f * fase) * 0.25f + Mathf.Sin(3f * fase) * 0.12f) * envV * (p == Pista.Menu ? 0.13f : 0.1f);
-            if (p == Pista.Jefe) s += Mathf.Sin(2f * Mathf.PI * Nota(raiz + 12) * t) * 0.08f * (0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * 12f * t));   // trémolo de cuerdas
-            d[i] = Mathf.Clamp(s * 0.9f, -1f, 1f);
+            s += (Mathf.Sin(fase) * 0.85f + Mathf.Sin(2f * fase) * 0.1f) * envV * (p == Pista.Menu ? 0.07f : 0.055f);
+            d[i] = Mathf.Clamp(s * 1.1f, -1f, 1f);
         }
         // sin chasquido al dar la vuelta
         int borde = Hz / 20;

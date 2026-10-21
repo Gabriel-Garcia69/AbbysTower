@@ -100,7 +100,7 @@ public class DanteFinal : MonoBehaviour
         var gema = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         gema.SetColor("_BaseColor", new Color(0.2f, 0.1f, 0.3f)); gema.EnableKeyword("_EMISSION");
         gema.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-        gema.SetColor("_EmissionColor", new Color(0.7f, 0.35f, 1f) * 2f);
+        gema.SetColor("_EmissionColor", new Color(0.7f, 0.35f, 1f) * 0.7f);   // brillo suave (con más, el Bloom lo volvía una mancha)
         var disco = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         Destroy(disco.GetComponent<Collider>());
         disco.transform.SetParent(g.transform, false);
@@ -126,7 +126,7 @@ public class DanteFinal : MonoBehaviour
         var l = new GameObject("Brillo").AddComponent<Light>();
         l.transform.SetParent(g.transform, false);
         l.transform.localPosition = Vector3.up * 0.4f;
-        l.type = LightType.Point; l.color = new Color(0.75f, 0.45f, 1f); l.range = 3f; l.intensity = 3f; l.shadows = LightShadows.None;
+        l.type = LightType.Point; l.color = new Color(0.75f, 0.45f, 1f); l.range = 2.5f; l.intensity = 1.2f; l.shadows = LightShadows.None;
         CombatFx.Burst(pos + Vector3.up * 0.2f, new Color(0.8f, 0.6f, 1f), 30, 2f, 0.12f, 0.8f, -0.4f);
         return g;
     }

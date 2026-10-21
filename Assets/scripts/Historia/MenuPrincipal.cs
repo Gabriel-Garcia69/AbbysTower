@@ -11,7 +11,7 @@ public class MenuPrincipal : MonoBehaviour
 {
     public string escenaJugar = "Intro";
     public Vector3 centro = new Vector3(0f, 0f, -1850f);   // la torre en el set de la plaza
-    public float radio = 150f, altura = 28f;
+    public float radio = 260f, altura = 22f;
 
     enum Pagina { Principal, Configuracion, Salir }
     Pagina pagina;
@@ -27,7 +27,17 @@ public class MenuPrincipal : MonoBehaviour
 
     void Start()
     {
-        cam = Camera.main;
+        // sin HUD del piso ni cámara de juego (esa sigue a Abby y pisaría la del menú): una cámara propia, como la cinemática
+        var fd = FindAnyObjectByType<FloorDirector>();
+        if (fd != null) fd.gameObject.SetActive(false);
+        var main = Camera.main;
+        var go = new GameObject("CamaraMenu");
+        cam = go.AddComponent<Camera>();
+        if (main != null) { cam.CopyFrom(main); main.transform.root.gameObject.SetActive(false); }
+        cam.nearClipPlane = 0.3f; cam.farClipPlane = 3000f;
+        go.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing = true;
+        go.AddComponent<AudioListener>();
+        go.tag = "MainCamera";
         Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
         Time.timeScale = 1f;
     }
@@ -41,7 +51,7 @@ public class MenuPrincipal : MonoBehaviour
         {
             float a = t * 0.04f;
             cam.transform.position = centro + new Vector3(Mathf.Sin(a) * radio, altura, -Mathf.Cos(a) * radio);
-            cam.transform.rotation = Quaternion.LookRotation(centro + Vector3.up * 55f - cam.transform.position);
+            cam.transform.rotation = Quaternion.LookRotation(centro + Vector3.up * 75f - cam.transform.position);
         }
         var kb = Keyboard.current;
         if (kb == null) return;

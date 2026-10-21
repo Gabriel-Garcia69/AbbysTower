@@ -22120,8 +22120,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MenuPrincipal
   escenaJugar: Intro
   centro: {x: 0, y: 0, z: -1850}
-  radio: 150
-  altura: 28
+  radio: 260
+  altura: 22
 --- !u!4 &53816965
 Transform:
   m_ObjectHideFlags: 0

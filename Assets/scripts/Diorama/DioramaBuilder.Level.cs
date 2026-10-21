@@ -9,7 +9,10 @@ using UnityEngine;
 public partial class DioramaBuilder
 {
     /// <summary>Orden de la ruta HD-2D (nombre de escena por piso).</summary>
-    public static readonly string[] Route = { "Diorama", "Puerto", "Cascadas", "Acantilado", "Cueva", "Lago", "Templo", "Nevado", "Montana", "Cima" };
+    /// <summary>GDD: la demo tiene 5 pisos; el último es el del jefe final (Dante). Los demás mundos quedan fuera de la ruta.</summary>
+    public static readonly string[] Route = { "Diorama", "Puerto", "Cascadas", "Acantilado", "Cima" };
+    /// <summary>Pisos de la ruta del GDD (4 hordas por piso).</summary>
+    bool EnRutaGDD => layout == Layout.Pueblo || layout == Layout.Puerto || layout == Layout.Cascadas || layout == Layout.Acantilado || layout == Layout.Cima;
 
     public struct LevelInfo { public string title, subtitle, boss, next; public float hp; }
 
@@ -22,14 +25,14 @@ public partial class DioramaBuilder
             {
                 case Layout.Puerto: return new LevelInfo { title = "PISO 2", subtitle = "El Puerto de las Mareas", boss = "Capitán sin Barco", next = "Cascadas", hp = 1.15f };
                 case Layout.Cascadas: return new LevelInfo { title = "PISO 3", subtitle = "El Valle de las Cascadas", boss = "El Señor del Torrente", next = "Acantilado", hp = 1.3f };
-                case Layout.Acantilado: return new LevelInfo { title = "PISO 4", subtitle = "El Sendero del Acantilado", boss = "La Gárgola del Faro Roto", next = "Cueva", hp = 1.45f };
+                case Layout.Acantilado: return new LevelInfo { title = "PISO 4", subtitle = "El Sendero del Acantilado", boss = "La Gárgola del Faro Roto", next = "Cima", hp = 1.45f };
                 case Layout.Cueva: return new LevelInfo { title = "PISO 5", subtitle = "La Gruta de Cristal", boss = "Corazón de Geoda", next = "Lago", hp = 1.6f };
                 case Layout.Lago: return new LevelInfo { title = "PISO 6", subtitle = "El Lago de los Espejos", boss = "La Dama del Lago", next = "Templo", hp = 1.75f };
                 case Layout.Templo: return new LevelInfo { title = "PISO 7", subtitle = "El Templo de Arena", boss = "El Guardián Dorado", next = "Nevado", hp = 1.9f };
                 case Layout.Nevado: return new LevelInfo { title = "PISO 8", subtitle = "La Aldea de la Nieve Eterna", boss = "Escarcha, la Viuda Blanca", next = "Montana", hp = 2.05f };
                 case Layout.Expedicion: return new LevelInfo { title = "PISO 20", subtitle = "La expedición", boss = "", next = "Diorama", hp = 0.8f };
                 case Layout.Montana: return new LevelInfo { title = "PISO 9", subtitle = "La Montaña del Eco", boss = "El Eco de Piedra", next = "Cima", hp = 2.2f };
-                case Layout.Cima: return new LevelInfo { title = "PISO 10", subtitle = "Sobre las nubes", boss = "El Guardián del Abismo", next = "", hp = 2.4f };
+                case Layout.Cima: return new LevelInfo { title = "PISO 5", subtitle = "La cima de la torre", boss = "La Sombra", next = "", hp = 1.6f };
                 default: return new LevelInfo { title = "PISO 1", subtitle = "El Pueblo del Risco", boss = "Guardián de las Ruinas", next = "Puerto", hp = 1f };
             }
         }
@@ -44,6 +47,17 @@ public partial class DioramaBuilder
         {
             var S = TowerEnemy.Kind.Sombra; var B = TowerEnemy.Kind.Bruto; var A = TowerEnemy.Kind.Arquero; var J = TowerEnemy.Kind.Saltador;
             var H = TowerEnemy.Kind.Hechicero; var T = TowerEnemy.Kind.Torbellino; var E = TowerEnemy.Kind.Escudero;
+            var Em = TowerEnemy.Kind.Embestidor;
+            // GDD: un enemigo nuevo por piso. 1 Larva · 2 Acechador y Bruto (golpes fuertes: bloquear) · 3 Embestidor (sombras
+            // alargadas) · 4 Guardián con escudo (rodearlo) · 5 Espectro antes de Dante. Sin enemigos humanos ni a distancia.
+            switch (layout)
+            {
+                case Layout.Pueblo: return new[] { S };
+                case Layout.Puerto: return new[] { S, J, S, B };
+                case Layout.Cascadas: return new[] { S, Em, J, B };
+                case Layout.Acantilado: return new[] { E, S, Em, B, J };
+                case Layout.Cima: return new[] { H, E, Em, B, J };
+            }
             switch (layout)
             {
                 case Layout.Puerto: return new[] { S, A, E, S, A };
@@ -74,6 +88,7 @@ public partial class DioramaBuilder
         enc.healthMultiplier = Info.hp;
         enc.displayName = boss ? Info.boss : name;
         if (boss) enc.bossName = Info.boss;
+        if (boss && layout == Layout.Cima) enc.bossKind = TowerEnemy.Kind.Dante;   // GDD: el jefe final es Dante
         enc.roster = Roster;
         enc.bossStyle = BossStyle;   // cada piso, su jefe con su propio patrón
         enc.leash = boss ? 18f : 20f;   // mundo abierto: persiguen a Abby fuera de la arena (puentes, escaleras)
@@ -122,8 +137,12 @@ public partial class DioramaBuilder
     // ------------------------------------------------------------------ descanso y comercio
 
     /// <summary>Puesto del mercader: mostrador con toldo (tecla E para comprar) y el mercader encapuchado detrás.</summary>
+    /// <summary>GDD: no hay objetos ni coleccionables (solo la fuente de curación): sin mercaderes ni cofres.</summary>
+    static readonly bool SinTiendaNiCofres = true;   // readonly (no const): sin avisos de código inalcanzable
+
     void MerchantPost(Transform parent, Vector3 pos, float yaw)
     {
+        if (SinTiendaNiCofres) return;
         var s = Group("Mercader", parent);
         s.localPosition = pos;
         s.localRotation = Quaternion.Euler(0f, yaw, 0f);
@@ -170,6 +189,7 @@ public partial class DioramaBuilder
     /// <summary>Cofre con fragmentos.</summary>
     void Chest(Transform parent, Vector3 pos, int fragments, float yaw = 0f)
     {
+        if (SinTiendaNiCofres) return;
         var c = Group("Cofre", parent);
         c.localPosition = pos;
         c.localRotation = Quaternion.Euler(0f, yaw, 0f);
@@ -294,7 +314,8 @@ public partial class DioramaBuilder
         fd.floorTitle = info.title;
         fd.floorSubtitle = info.subtitle;
         fd.nextScene = info.next;
-        fd.returnScene = "Intro";
+        fd.heroName = Historia.Protagonista.ToUpper();
+        fd.returnScene = FloorDirector.MenuScene;   // GDD: al final se vuelve al menú principal
         fd.killY = killY;
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(fd);

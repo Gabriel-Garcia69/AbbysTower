@@ -218,7 +218,7 @@ public class MouseOrbitCamera : MonoBehaviour
         if (p != null) { player = p.transform; lastPlayerPos = player.position; moveInput = p.GetComponent<IMoveInput>(); }
         sceneStyleActive = useSceneStyle;
         ApplyStyle(sceneStyleActive ? sceneStyle : Style, instant: true);
-        labelUntil = Time.unscaledTime + 4f;   // recuerda las teclas al entrar a la escena
+        // (sin el letrero de estilos de cámara al entrar: es de desarrollo; F1-F6 lo siguen mostrando al cambiar)
         if (lockCursor) Lock(true);
     }
 
@@ -264,7 +264,7 @@ public class MouseOrbitCamera : MonoBehaviour
         // desde adentro nada se oculta: la cámara se acerca al chocar
         OccluderFade.Suspended = active.interior || active.keepOccluders;
         if (cutaway != null) cutaway.enabled = !active.interior;
-        labelUntil = Time.unscaledTime + 2.5f;
+        if (!instant) labelUntil = Time.unscaledTime + 2.5f;   // solo al cambiar de estilo a mano
 
         if (instant)
         {
@@ -307,10 +307,12 @@ public class MouseOrbitCamera : MonoBehaviour
         look += stick * stickSpeed * Time.deltaTime;
 
         bool wasPeeking = peeking;
-        peeking = !active.freeOrbit && active.peekHold &&
+        // GDD: cámara fija que sigue a Abby (el clic derecho es bloquear y E interactuar): sin girar ni asomarse
+        peeking = !CamaraFija && !active.freeOrbit && active.peekHold &&
                   ((mouseActive && mouse.rightButton.isPressed) || stick.sqrMagnitude > 0.02f);
 
-        if (active.freeOrbit || peeking)
+        if (CamaraFija) { }
+        else if (active.freeOrbit || peeking)
         {
             yaw += look.x;
             pitch += invertY ? look.y : -look.y;
@@ -582,6 +584,9 @@ public class MouseOrbitCamera : MonoBehaviour
     }
 
     static readonly string[] styleNames = { "Original", "Pulido", "Tercera persona", "Isométrica", "Sala (HD-2D)", "Diorama" };
+    /// <summary>GDD: la cámara solo sigue a Abby (sin giro manual ni asomarse).</summary>
+    public static bool CamaraFija = true;
+
     GUIStyle labelStyle;
 
     void OnGUI()
@@ -591,7 +596,7 @@ public class MouseOrbitCamera : MonoBehaviour
         if (labelStyle == null)
             labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 20, fontStyle = FontStyle.Bold };
         float a = Mathf.Clamp01(left / 0.5f);
-        string extra = active != null && !active.freeOrbit ? "   ·   Q/E giran · clic derecho para asomarte" : "";
+        string extra = active != null && !active.freeOrbit && !CamaraFija ? "   ·   Q/E giran · clic derecho para asomarte" : "";
         string text = "Cámara: " + styleNames[(int)appliedStyle] + extra + "\nF1 Original · F2 Pulido · F3 Tercera persona · F4 Isométrica · F5 Sala · F6 Diorama";
         var r = new Rect(0f, Screen.height * 0.08f, Screen.width, 60f);
         GUI.color = new Color(0f, 0f, 0f, 0.7f * a);

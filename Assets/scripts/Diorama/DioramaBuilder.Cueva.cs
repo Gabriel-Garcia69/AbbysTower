@@ -134,7 +134,7 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(-33f, 0f, 18f), 30, 90f);
         Chest(lvl, new Vector3(36f, 0f, 22f), 24, -90f);
         Note(lvl, new Vector3(-3.8f, 3.5f, -38f), 90f, LoreNote.Kind.Diario, "dio4_diario", "Diario de la expedición — día 9",
-             "El piso 5 es una gruta llena de cristales. Brillan con la misma energía que usamos en las armas.\nAquí los minerales salen más grandes. Con lo de este piso pagaríamos todas las deudas, Abis. Todas.", "— " + Historia.Hermano);
+             "El piso 5 es una gruta llena de cristales. Brillan con la misma energía que usamos en las armas.\nAquí los minerales salen más grandes. Con lo de este piso pagaríamos todas las deudas, Abby. Todas.", "— " + Historia.Hermano);
         Note(lvl, new Vector3(5.5f, 0.6f, CaveI2.y - 3f), -90f, LoreNote.Kind.Inscripcion, "dio4_geoda", "Grabado en la piedra azul",
              "Al fondo de la gruta, una piedra que late como un corazón.\nLos canalizadores dicen que la energía de la torre sale de aquí, o pasa por aquí. Nadie lo ha confirmado.");
 

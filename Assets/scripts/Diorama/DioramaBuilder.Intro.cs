@@ -280,12 +280,12 @@ public partial class DioramaBuilder
         var i2 = Persona.Civil(luto, new Color(0.55f, 0.5f, 0.45f)); i2.abrigo = true; i2.peloLargo = true;
         Figura(invitadas, "Invitada1", new Vector3(-0.6f, 0f, 0f), 120f, i1);
         Figura(invitadas, "Invitada2", new Vector3(0.6f, 0f, 0.2f), -120f, i2);
-        // Abis (12 años) y su hermano (17), frente al ataúd
+        // Abby (12 años) y su hermano (17), frente al ataúd
         var herm = Group("Hermanos", fu);
         herm.localPosition = new Vector3(0f, 0f, 0.5f);
         var hermano = Persona.Civil(luto, new Color(0.1f, 0.07f, 0.05f), 0.98f); hermano.abrigo = true;
         var hf = Figura(herm, "Hermano", new Vector3(0.6f, 0f, 0f), 180f, hermano);
-        var brazo = hf.Find("BrazoI"); if (brazo != null) brazo.localRotation = Quaternion.Euler(0f, 0f, -35f);   // la mano en el hombro de Abis
+        var brazo = hf.Find("BrazoI"); if (brazo != null) brazo.localRotation = Quaternion.Euler(0f, 0f, -35f);   // la mano en el hombro de Abby
 #if UNITY_EDITOR
         AbisSprite(herm, new Vector3(-0.5f, 0f, 0f), 0.82f, "north");
 #endif
@@ -353,7 +353,7 @@ public partial class DioramaBuilder
                 foreach (float wx in new[] { -1.2f, 1.2f }) foreach (float wz in new[] { -2.6f, 0f, 2.6f })
                     Prim(tr, PrimitiveType.Cylinder, "Rueda", new Vector3(wx, 0.55f, wz), new Vector3(1.1f, 0.2f, 1.1f), Plain("Dio_Llanta", new Color(0.06f, 0.06f, 0.06f), 0.2f)).transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
             }
-        // la despedida: Abis (17) y su hermano listo para la expedición, junto a un camión
+        // la despedida: Abby (17) y su hermano listo para la expedición, junto a un camión
         var desp = Group("Despedida", pl);
         desp.localPosition = new Vector3(44f, 0f, 8f);
         var hExp = Persona.Cazador(new Color(0.35f, 0.8f, 1f)); hExp.escala = 1.02f;

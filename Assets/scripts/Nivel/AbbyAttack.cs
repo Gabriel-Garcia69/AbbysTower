@@ -9,13 +9,13 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(Hitbox))]
 public class AbbyAttack : MonoBehaviour
 {
-    public float[] damage = { 14f, 14f, 26f };
+    public float[] damage = { 10f, 10f, 15f };   // GDD: combo de 3 con clics seguidos, 10 / 10 / 15
     public float[] knockback = { 5f, 5f, 11f };
     public float windup = 0.05f;
     public float active = 0.12f;
     public float recover = 0.16f;
     [Tooltip("Tiempo después de un golpe para encadenar el siguiente.")]
-    public float comboWindow = 0.35f;
+    public float comboWindow = 0.6f;   // GDD: si pasan más de 0.6 s entre clics, el combo vuelve a empezar
     [Tooltip("Pasito hacia adelante en cada golpe (m/s mientras está activo).")]
     public float lunge = 5f;
     public Color slashColor = new Color(0.6f, 0.95f, 1f, 1f);
@@ -43,11 +43,13 @@ public class AbbyAttack : MonoBehaviour
         cc = GetComponent<CharacterController>();
         self = GetComponent<IHittable>();
         dash = GetComponent<AbbyDash>();
+        block = GetComponent<AbbyBlock>();
     }
 
     void Start()
     {
         if (dash == null) dash = GetComponent<AbbyDash>();
+        if (block == null) block = GetComponent<AbbyBlock>();
         var health = GetComponent<PlayerHealth>();
         if (health != null) health.PerfectDodge += OnPerfectDodge;
     }
@@ -68,6 +70,7 @@ public class AbbyAttack : MonoBehaviour
     }
 
     AbbyDash dash;
+    AbbyBlock block;
     float critUntil;
 
     void OnDisable() { hitbox.End(); phase = Phase.None; }
@@ -78,7 +81,8 @@ public class AbbyAttack : MonoBehaviour
         if (dash != null && dash.IsDashing) Facing = dash.Direction;
         else if (motor != null && motor.WorldMoveDirection.sqrMagnitude > 0.01f) Facing = motor.WorldMoveDirection;
 
-        if (!PauseMenu.IsPaused && Pressed())
+        bool cubierta = block != null && block.Blocking;   // bloqueando no ataca
+        if (!PauseMenu.IsPaused && !cubierta && Pressed())
         {
             if (phase == Phase.None) Begin();
             else queued = true;

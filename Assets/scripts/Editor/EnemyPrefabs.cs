@@ -22,6 +22,7 @@ public static class EnemyPrefabs
         if (!AssetDatabase.IsValidFolder(MatDir)) AssetDatabase.CreateFolder("Assets/Materials", "Enemigos");
         int made = 0;
         foreach (TowerEnemy.Kind k in System.Enum.GetValues(typeof(TowerEnemy.Kind)))
+            if (k != TowerEnemy.Kind.Dante)   // Dante usa los sprites de Abby (sin prefab)
         {
             string path = PrefabDir + "/" + k + ".prefab";
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) continue;

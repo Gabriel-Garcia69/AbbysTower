@@ -15,6 +15,8 @@ public class PlayerHealth : MonoBehaviour, IHittable
     public float knockDecay = 22f;
 
     public float Health { get; private set; }
+    /// <summary>Tutorial: la vida no baja de 1 (no se puede perder ahí).</summary>
+    [System.NonSerialized] public bool noMorir;
     public bool IsDead { get; private set; }
     public float Normalized => Health / Mathf.Max(1f, maxHealth);
     public event Action<float> Damaged;
@@ -71,15 +73,18 @@ public class PlayerHealth : MonoBehaviour, IHittable
             return false;
         }
         if (invuln > 0f) return false;
-        hit.damage *= Difficulty.Active.damageTaken;
-        Health = Mathf.Max(0f, Health - hit.damage);
+        // GDD: el daño enemigo a Abby es de 8 a 15 por golpe; bloqueando recibe el 8 % y gasta stamina
+        hit.damage = Mathf.Clamp(hit.damage, 8f, 15f);
+        var block = GetComponent<AbbyBlock>();
+        bool bloqueado = block != null && block.TryBlock(ref hit);
+        Health = Mathf.Max(noMorir ? 1f : 0f, Health - hit.damage);
         Vector3 away = transform.position - hit.sourcePosition; away.y = 0f;
         knock = (away.sqrMagnitude > 0.001f ? away.normalized : -transform.forward) * hit.knockback;
-        invuln = invulnTime;
-        hurtFlash = 0.15f;
-        CameraShake.Shake(0.22f, 0.25f);
-        CombatFx.Burst(transform.position + Vector3.up * 0.8f, new Color(1f, 0.35f, 0.4f), 14, 4f, 0.14f, 0.4f);
-        FloorDirector.Popup(transform.position + Vector3.up * 1.8f, "-" + Mathf.RoundToInt(hit.damage), new Color(1f, 0.4f, 0.4f));
+        invuln = bloqueado ? 0.25f : invulnTime;
+        hurtFlash = bloqueado ? 0f : 0.15f;
+        CameraShake.Shake(bloqueado ? 0.08f : 0.22f, 0.25f);
+        if (!bloqueado) CombatFx.Burst(transform.position + Vector3.up * 0.8f, new Color(1f, 0.35f, 0.4f), 14, 4f, 0.14f, 0.4f);
+        FloorDirector.Popup(transform.position + Vector3.up * 1.8f, "-" + (bloqueado ? hit.damage.ToString("0.#") : Mathf.RoundToInt(hit.damage).ToString()), bloqueado ? new Color(0.7f, 0.85f, 1f) : new Color(1f, 0.4f, 0.4f));
         Damaged?.Invoke(hit.damage);
         if (Health <= 0f) Die();
         return true;
@@ -96,7 +101,6 @@ public class PlayerHealth : MonoBehaviour, IHittable
     public void Heal(float amount)
     {
         if (IsDead) return;
-        amount *= Difficulty.Active.healing;
         Health = Mathf.Min(maxHealth, Health + amount);
         CombatFx.Burst(transform.position + Vector3.up * 0.6f, new Color(0.4f, 1f, 0.6f), 30, 3f, 0.16f, 0.9f, -0.3f);
         FloorDirector.Popup(transform.position + Vector3.up * 1.8f, "+" + Mathf.RoundToInt(amount), new Color(0.5f, 1f, 0.6f));

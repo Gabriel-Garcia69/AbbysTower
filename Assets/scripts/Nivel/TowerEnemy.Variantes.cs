@@ -195,6 +195,7 @@ public partial class TowerEnemy
 
     bool ChooseExtra(float dist)
     {
+        if (kind == Kind.Dante) return ChooseDante(dist);
         if (kind == Kind.Jefe)
         {
             if (bossStyle == 0) return false;

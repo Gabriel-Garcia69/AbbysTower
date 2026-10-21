@@ -9,6 +9,8 @@ using UnityEngine.SceneManagement;
 public class FloorExit : MonoBehaviour
 {
     public RoomEncounter unlockedBy;   // vacío = siempre activa
+    [Tooltip("GDD: la salida se abre al limpiar todas estas hordas (además de unlockedBy).")]
+    public RoomEncounter[] requiere = new RoomEncounter[0];
     public string nextScene = "";
     public float radius = 1.3f;
     public Transform player;           // vacío = busca el tag "Player"
@@ -22,7 +24,15 @@ public class FloorExit : MonoBehaviour
     bool used, wasUnlocked;
     float messageTimer, fadeT = -1f;
 
-    bool Unlocked => unlockedBy == null || unlockedBy.IsCleared;
+    bool Unlocked
+    {
+        get
+        {
+            if (unlockedBy != null && !unlockedBy.IsCleared) return false;
+            if (requiere != null) foreach (var r in requiere) if (r != null && !r.IsCleared) return false;
+            return true;
+        }
+    }
 
     void Start()
     {

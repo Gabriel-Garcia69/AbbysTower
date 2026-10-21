@@ -8,15 +8,17 @@ public static class Historia
     // ------------------------------------------------------------------ datos "a definir" en el guion
     /// <summary>Ciudad donde aparece la torre ("la ciudad [a definir]").</summary>
     public const string Ciudad = "Cancún";
-    /// <summary>Nombre del hermano de Abis ("[Nombre del hermano de Abis]").</summary>
-    public const string Hermano = "Iker";
-    /// <summary>Nombre del capitán de la expedición ("Capitán [Nombre aún por definir]").</summary>
-    public const string CapitanNombre = "Duarte";
+    /// <summary>Nombre del hermano de Abby ("[Nombre del hermano de Abby]"). Definido en el GDD 0.6.0: Dante.</summary>
+    public const string Hermano = "Dante";
+    /// <summary>Nombre del capitán de la expedición ("Capitán [Nombre aún por definir]"). GDD 0.6.0: Elías Vargas.</summary>
+    public const string CapitanNombre = "Elías Vargas";
+    /// <summary>El padre (su funeral abre la historia). GDD 0.6.0: Angelo.</summary>
+    public const string Padre = "Angelo";
     public const string Capitan = "Capitán " + CapitanNombre;
     /// <summary>Profesión del hermano ("[nombre de profesión a definir]").</summary>
     public const string Profesion = "cazador del abismo";
 
-    public const string Protagonista = "Abis";
+    public const string Protagonista = "Abby";
 
     // ------------------------------------------------------------------ contexto y presentación de la torre
     public static readonly string[] Torre =
@@ -37,14 +39,14 @@ public static class Historia
         "Al morir las criaturas dejaban caer minerales raros nunca antes vistos en la tierra, la humanidad no tardó en descubrir su valor y comenzó a utilizarlos en joyería, energía, industrialización. Estos minerales se volvieron el nuevo centro de la economía global.",
     };
 
-    // ------------------------------------------------------------------ presentación y contexto de Abis
+    // ------------------------------------------------------------------ presentación y contexto de Abby
     public struct Linea { public string quien, texto; public Linea(string q, string t) { quien = q; texto = t; } }
 
     public static readonly Linea[] Funeral =
     {
         new Linea("Invitada 1", "Pobrecitos. Huérfanos a tan corta edad."),
         new Linea("Invitada 2", "Su padre murió cumpliendo su deber cuando apareció esa misteriosa torre."),
-        new Linea("Invitada 1", Hermano + " solo tiene 17 como va a mantener a su hermana ahora que su padre no está y Abis solo tiene 12 años. ¡Qué futuro les aguarda?"),
+        new Linea("Invitada 1", Hermano + " solo tiene 17 como va a mantener a su hermana ahora que su padre no está y Abby solo tiene 12 años. ¡Qué futuro les aguarda?"),
     };
 
     public const string Anio2035 = "Año 2035";
@@ -61,7 +63,7 @@ public static class Historia
     public static readonly Linea[] Despedida =
     {
         new Linea(Protagonista, "Hermano, no te vayas, no tienes que ser un " + Profesion + ". Buscaremos otra forma, buscaré otro trabajo, dejaré de estudiar para ayudarte a pagar nuestras deudas, pero por favor, no vayas a la expedición, es muy peligroso..."),
-        new Linea(Hermano, "No Abis!, no puedes abandonar tus estudios, tienes que salir adelante. No te preocupes por nada más, la paga es buena y el capitán " + CapitanNombre + " liderará la expedición, con el al frente estaremos bien. Volveré..."),
+        new Linea(Hermano, "No Abby!, no puedes abandonar tus estudios, tienes que salir adelante. No te preocupes por nada más, la paga es buena y el capitán " + CapitanNombre + " liderará la expedición, con el al frente estaremos bien. Volveré..."),
     };
 
     /// <summary>Nombre del juego en pantalla (título del proyecto entregado).</summary>

@@ -68,8 +68,12 @@ public class PlayerInputReader : MonoBehaviour, IMoveInput
         if (_jump.WasPressedThisFrame())
             _jumpBufferedUntil = Time.time + jumpBufferTime;
 
-        if (_rotLeft.WasPressedThisFrame()) CameraRotateRequested?.Invoke(-1);
-        if (_rotRight.WasPressedThisFrame()) CameraRotateRequested?.Invoke(1);
+        // GDD: cámara fija (Q/E ya no la giran; E es interactuar)
+        if (!MouseOrbitCamera.CamaraFija)
+        {
+            if (_rotLeft.WasPressedThisFrame()) CameraRotateRequested?.Invoke(-1);
+            if (_rotRight.WasPressedThisFrame()) CameraRotateRequested?.Invoke(1);
+        }
     }
 
     /// <summary>Devuelve true una sola vez por pulsación (con buffer de salto).</summary>

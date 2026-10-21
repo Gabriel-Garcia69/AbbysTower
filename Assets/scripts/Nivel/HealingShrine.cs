@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Santuario de la sala de descanso: un cristal flotante que cura a Abby por completo una sola vez
-/// (solo se gasta si le falta vida). Al usarse se apaga su brillo.
+/// Fuente de curación (GDD): un punto fijo del piso que restaura el 100 % de la vida de Abby. Se activa con E y se puede
+/// usar una sola vez (solo se gasta si le falta vida). Brilla para verse de lejos; al usarse se apaga.
 /// </summary>
 public class HealingShrine : MonoBehaviour
 {
@@ -15,6 +15,9 @@ public class HealingShrine : MonoBehaviour
     PlayerHealth health;
     bool used;
     float baseY, t, hintCooldown;
+    public bool Usada => used;
+    /// <summary>Abby está cerca y puede usarla (el HUD muestra "E  Usar la fuente").</summary>
+    public static HealingShrine Cerca { get; private set; }
 
     void Start()
     {
@@ -34,19 +37,23 @@ public class HealingShrine : MonoBehaviour
         if (glow != null) glow.intensity = Mathf.MoveTowards(glow.intensity, used ? 0.6f : 5f + Mathf.Sin(t * 3f), Time.deltaTime * 6f);
         if (hintCooldown > 0f) hintCooldown -= Time.deltaTime;
 
+        if (Cerca == this) Cerca = null;
         if (used || player == null) return;
         if (health == null) health = player.GetComponent<PlayerHealth>();
         if (health == null) return;
         Vector3 d = player.position - transform.position; d.y = 0f;
-        if (d.magnitude > radius) return;
+        if (d.magnitude > radius + 0.6f) return;
+        Cerca = this;
 
+        var kb = UnityEngine.InputSystem.Keyboard.current;
+        if (kb == null || !kb.eKey.wasPressedThisFrame || PauseMenu.IsPaused || LoreNote.Open != null) return;
         if (health.Health >= health.maxHealth)
         {
-            if (hintCooldown <= 0f) { FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "Vida al máximo", new Color(0.6f, 1f, 0.8f)); hintCooldown = 2f; }
+            if (hintCooldown <= 0f) { FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "Vida al máximo", new Color(0.6f, 1f, 0.8f)); hintCooldown = 1f; }
             return;
         }
-        used = true;
-        health.Heal(amount);
-        FloorDirector.Banner("SANTUARIO", "Tu vida se ha restaurado", new Color(0.5f, 1f, 0.7f), 2.2f);
+        used = true; Cerca = null;
+        health.Heal(health.maxHealth);
+        FloorDirector.Banner("FUENTE DE CURACIÓN", "Tu vida se ha restaurado", new Color(0.5f, 1f, 0.7f), 2.2f);
     }
 }

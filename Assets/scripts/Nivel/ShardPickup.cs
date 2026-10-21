@@ -17,8 +17,12 @@ public class ShardPickup : MonoBehaviour
     bool magnet;
 
     /// <summary>Suelta 'total' fragmentos repartidos en varias piezas.</summary>
+    /// <summary>GDD: sin coleccionables; las criaturas ya no sueltan minerales (siguen existiendo en la historia).</summary>
+    public static bool Activo = false;
+
     public static void Drop(Vector3 pos, int total)
     {
+        if (!Activo) return;
         int pieces = Mathf.Clamp(total, 1, 8);
         int each = Mathf.Max(1, total / pieces), rest = total - each * pieces;
         for (int i = 0; i < pieces; i++)

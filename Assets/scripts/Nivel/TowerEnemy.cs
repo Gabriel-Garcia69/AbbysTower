@@ -13,7 +13,8 @@ using UnityEngine;
 /// </summary>
 public partial class TowerEnemy : MonoBehaviour, IHittable
 {
-    public enum Kind { Sombra, Bruto, Jefe, Arquero, Saltador, Hechicero, Torbellino, Escudero }
+    // (al final los nuevos: los números de los que ya existían no cambian en escenas guardadas)
+    public enum Kind { Sombra, Bruto, Jefe, Arquero, Saltador, Hechicero, Torbellino, Escudero, Embestidor, Dante }
 
     public Kind kind;
     public float maxHealth = 40f;
@@ -36,7 +37,9 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
 
     public float Health { get; private set; }
     public float Normalized => Health / Mathf.Max(1f, maxHealth);
-    public bool IsBoss => kind == Kind.Jefe;
+    public bool IsBoss => kind == Kind.Jefe || kind == Kind.Dante;
+    /// <summary>Dante al llegar a 0: no muere, cae (la escena final del GDD toma el control).</summary>
+    public static event Action<TowerEnemy> DanteDerrotado;
     public bool Enraged { get; private set; }
     public float LastHitTime { get; private set; } = -10f;
     public string customName;
@@ -46,7 +49,24 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
 
     /// <summary>Colores del piso actual (los pone FloorDirector según el pecado). null = colores de siempre.</summary>
     public static Color? ThemeBody, ThemeEye;
-    public string DisplayName => !string.IsNullOrEmpty(customName) ? customName : kind == Kind.Jefe ? "Guardián de la Base" : kind.ToString();
+    public string DisplayName => !string.IsNullOrEmpty(customName) ? customName : NombreGDD(kind);
+
+    /// <summary>Nombres de los enemigos del GDD (Larva del Abismo, Acechador, Bruto, Embestidor, Guardián, Espectro).</summary>
+    public static string NombreGDD(Kind k)
+    {
+        switch (k)
+        {
+            case Kind.Sombra: return "Larva del Abismo";
+            case Kind.Saltador: return "Acechador";
+            case Kind.Bruto: return "Bruto";
+            case Kind.Embestidor: return "Embestidor";
+            case Kind.Escudero: return "Guardián";
+            case Kind.Hechicero: return "Espectro";
+            case Kind.Dante: return "La Sombra";
+            case Kind.Jefe: return "Guardián de la Base";
+            default: return k.ToString();
+        }
+    }
 
     /// <summary>Multiplica la vida (pisos más altos = enemigos más duros).</summary>
     public void ScaleHealth(float mult)
@@ -105,6 +125,18 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
                 telegraph = 0.85f; lungeSpeed = 9f; lungeTime = 0.32f; recover = 1.1f; poise = 25f; knockTaken = 0.35f;
                 eyeColor = new Color(1f, 0.5f, 0.15f); bodyColor = new Color(0.22f, 0.08f, 0.06f);
                 break;
+            case Kind.Embestidor:
+                // GDD: embiste en línea recta y su sombra en el suelo es larga (piso 3: leer sombras alargadas)
+                maxHealth = 70f; moveSpeed = 2.3f; radius = 0.55f; damage = 13f; attackRange = 10f;
+                telegraph = 0.85f; lungeSpeed = 21f; lungeTime = 0.45f; recover = 1.25f; poise = 18f; knockTaken = 0.6f;
+                eyeColor = new Color(1f, 0.3f, 0.2f); bodyColor = new Color(0.16f, 0.06f, 0.08f);
+                break;
+            case Kind.Dante:
+                // GDD: humanoide cubierto de sombra; combo de 3, embestida y golpe de área señalado con sombra; acelera al 50 %
+                maxHealth = 480f; moveSpeed = 3.3f; radius = 0.55f; damage = 12f; attackRange = 4.2f;
+                telegraph = 0.6f; lungeSpeed = 14f; lungeTime = 0.2f; recover = 0.85f; poise = 99999f; knockTaken = 0.12f;
+                eyeColor = new Color(0.75f, 0.35f, 1f); bodyColor = new Color(0.05f, 0.03f, 0.08f);
+                break;
             case Kind.Jefe:
                 maxHealth = 650f; moveSpeed = 2.5f; radius = 1.4f; damage = 22f; attackRange = 4.5f;
                 telegraph = 0.75f; lungeSpeed = 15f; lungeTime = 0.36f; recover = 0.9f; poise = 99999f; knockTaken = 0.08f;
@@ -130,7 +162,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         hitbox.halfExtents = new Vector3(0.55f, 0.6f, 0.55f) * Scale + new Vector3(radius * 0.4f, 0f, radius * 0.4f);
     }
 
-    float Scale => kind == Kind.Jefe ? 2.6f : kind == Kind.Bruto || kind == Kind.Escudero ? 1.35f : kind == Kind.Torbellino ? 1.1f : 0.95f;
+    float Scale => kind == Kind.Jefe ? 2.6f : kind == Kind.Dante ? 1.15f : kind == Kind.Embestidor ? 1.1f : kind == Kind.Bruto || kind == Kind.Escudero ? 1.35f : kind == Kind.Torbellino ? 1.1f : 0.95f;
 
     static Material litMat, eyeMat;
 
@@ -149,6 +181,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         }
         mpb = new MaterialPropertyBlock();
         float s = Scale;
+        if (kind == Kind.Dante && !ForceProceduralVisual && DanteVisual()) return;   // Dante usa la silueta de Abby, no un prefab
         if (!ForceProceduralVisual && UsePrefabVisual()) return;
 
         visual = new GameObject("Visual").transform;
@@ -335,7 +368,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
                 {
                     hitbox.End();
                     foreach (var e in eyes) SetColor(e, eyeColor * 4f);
-                    if (Enraged && IsBoss && chain > 0 && playerAlive)
+                    if (((Enraged && IsBoss) || kind == Kind.Dante) && chain > 0 && playerAlive)
                     {
                         chain--;
                         lungeDir = toPlayer.sqrMagnitude > 0.01f ? toPlayer.normalized : lungeDir;
@@ -355,13 +388,13 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
                 if (timer >= tel)
                 {
                     visual.localPosition = Vector3.zero;
-                    const float slamRadius = 5.2f;
+                    float slamRadius = kind == Kind.Dante ? 4.6f : 5.2f;
                     CameraShake.Shake(0.5f, 0.45f);
                     CombatFx.Burst(transform.position + Vector3.up * 0.3f, eyeColor, 60, 9f, 0.25f, 0.6f, 1.5f);
                     CombatFx.Ring(transform.position, slamRadius, eyeColor, 0.25f);
                     if (playerAlive && dist < slamRadius && ph != null)
                         ph.ReceiveHit(new HitInfo { damage = 28f, knockback = 14f, hitStop = 0.06f, sourcePosition = transform.position, attacker = this });
-                    if (Enraged) FireBolts(10);
+                    if (Enraged && kind != Kind.Dante) FireBolts(10);
                     Go(State.Recover);
                 }
                 break;
@@ -484,9 +517,9 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
 
     void CheckBossPhases()
     {
-        if (!summoned66 && Normalized < 0.66f) { summoned66 = true; Summon(2); }
-        if (!summoned33 && Normalized < 0.33f) { summoned33 = true; Summon(3); }
-        if (!Enraged && Normalized < 0.4f)
+        if (kind != Kind.Dante && !summoned66 && Normalized < 0.66f) { summoned66 = true; Summon(2); }
+        if (kind != Kind.Dante && !summoned33 && Normalized < 0.33f) { summoned33 = true; Summon(3); }
+        if (!Enraged && Normalized < (kind == Kind.Dante ? 0.5f : 0.4f))
         {
             Enraged = true;
             CameraShake.Shake(0.35f, 0.8f);
@@ -559,6 +592,17 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
 
     void Die()
     {
+        if (kind == Kind.Dante)
+        {
+            // GDD: al bajar su vida a cero la pelea se interrumpe y el jefe cae (DanteFinal hace la escena)
+            hitbox.End();
+            GetComponent<Collider>().enabled = false;
+            if (telegraphFx != null) Destroy(telegraphFx);
+            Health = 0f;
+            enabled = false;
+            DanteDerrotado?.Invoke(this);
+            return;
+        }
         hitbox.End();
         GetComponent<Collider>().enabled = false;
         Go(State.Dying);

@@ -236,7 +236,7 @@ public partial class DioramaBuilder
         Note(lvl, new Vector3(18f, 0f, -50f), 180f, LoreNote.Kind.Inscripcion, "dio_cascadas_valle", "Piedra del valle",
              "Piso 3. El río baja cuatro bancales desde las cascadas del fondo.\nLos exploradores marcaron el camino: sube contra la corriente, la salida está donde el agua cae más fuerte.");
         Note(lvl, new Vector3(-40f, 12f, 204f), 180f, LoreNote.Kind.Diario, "dio_cascadas_diario", "Diario de la expedición — día 4",
-             "Aquí no se oye la torre, solo el agua. Descansamos en el campamento de la ladera.\nPensé en ti, Abis. Te gustaría este lugar. Me prometí que vas a seguir estudiando aunque yo no esté para verlo.", "— " + Historia.Hermano);
+             "Aquí no se oye la torre, solo el agua. Descansamos en el campamento de la ladera.\nPensé en ti, Abby. Te gustaría este lugar. Me prometí que vas a seguir estudiando aunque yo no esté para verlo.", "— " + Historia.Hermano);
 
         WalkBoundary(FallsWalk);
         var bg = Group("Fondo", root);

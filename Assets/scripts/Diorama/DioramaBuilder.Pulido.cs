@@ -14,6 +14,7 @@ public partial class DioramaBuilder
         if (root == null || layout == Layout.Intro) return;
         Faldones();
         PodarPlantas();
+        Hordas();
         Entorno();
     }
 

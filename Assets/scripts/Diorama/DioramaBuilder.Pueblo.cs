@@ -16,7 +16,7 @@ public partial class DioramaBuilder
         Note(g, new Vector3(-3.2f, 0f, -24.5f), 180f, LoreNote.Kind.Inscripcion, "dio1_bienvenida", "Placa a la entrada del piso 1",
              "PISO 1. Asegurado por el ejército en 2031.\nLas criaturas de este piso son las más débiles de la torre. Cuanto más abajo, más fuertes.\nTodo mineral recuperado se entrega en el puesto de comercio.");
         Note(g, new Vector3(-27f, 0f, 9f), 0f, LoreNote.Kind.Diario, "dio1_diario", "Diario de la expedición — día 1",
-             "Abis: entramos hoy. El piso 1 parece un pueblo de verdad, con río y casas, pero no hay nadie.\nEl capitán dice que la torre copia lugares, que nadie sabe de dónde.\nVoy a ir dejando estas hojas. Si un día bajas, no lo hagas. Pero si bajas, que te sirvan.", "— " + Historia.Hermano);
+             "Abby: entramos hoy. El piso 1 parece un pueblo de verdad, con río y casas, pero no hay nadie.\nEl capitán dice que la torre copia lugares, que nadie sabe de dónde.\nVoy a ir dejando estas hojas. Si un día bajas, no lo hagas. Pero si bajas, que te sirvan.", "— " + Historia.Hermano);
         Exit(g, new Vector3(0f, TerraceY, Terrace.yMax - 4.5f), townBoss);
     }
 }

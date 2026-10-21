@@ -41,6 +41,10 @@ public class RoomEncounter : MonoBehaviour
     public TowerEnemy.Kind[] roster = new TowerEnemy.Kind[0];
     [Tooltip("Patrón del jefe: 0 Guardián, 1 Capitán, 2 Gárgola, 3 Geoda, 4 Guardián Dorado, 5 Escarcha, 6 Arquitecto.")]
     public int bossStyle;
+    [Tooltip("Qué jefe aparece en la sala del jefe (Jefe = los guardianes de siempre; Dante = jefe final del GDD).")]
+    public TowerEnemy.Kind bossKind = TowerEnemy.Kind.Jefe;
+    [Tooltip("No empieza hasta que estas salas estén limpias (GDD: el jefe final llega después de las 4 hordas).")]
+    public RoomEncounter[] esperaA = new RoomEncounter[0];
     [Tooltip("Pisos abiertos: cuántos metros pueden salir los enemigos de la arena persiguiendo a Abby (siguen el suelo: " +
              "suben escaleras y puentes). 0 = sala cerrada de la torre, se quedan dentro.")]
     public float leash;
@@ -87,7 +91,12 @@ public class RoomEncounter : MonoBehaviour
         switch (Current)
         {
             case State.Esperando:
-                if (player != null && PlayerInside()) Begin();
+                if (player != null && PlayerInside() && Listo()) Begin();
+                else if (player != null && PlayerInside() && Time.time > avisoListo)
+                {
+                    avisoListo = Time.time + 4f;
+                    FloorDirector.Banner("AÚN NO", "Quedan hordas por derrotar en este piso", new Color(0.8f, 0.7f, 1f), 2.2f);
+                }
                 break;
 
             case State.Combate:
@@ -101,6 +110,14 @@ public class RoomEncounter : MonoBehaviour
                 else if (leash > 0f && player != null) CheckEscape();
                 break;
         }
+    }
+
+    float avisoListo;
+
+    bool Listo()
+    {
+        if (esperaA != null) foreach (var r in esperaA) if (r != null && !r.IsCleared) return false;
+        return true;
     }
 
     bool PlayerInside()
@@ -157,7 +174,7 @@ public class RoomEncounter : MonoBehaviour
             alive.Add(Instantiate(enemyPrefab, sp.position, sp.rotation, transform));
             return;
         }
-        var kind = isBoss ? TowerEnemy.Kind.Jefe
+        var kind = isBoss ? bossKind
                  : roster != null && roster.Length > 0 ? roster[index % roster.Length]
                  : (index % 3 == 2 ? TowerEnemy.Kind.Bruto : TowerEnemy.Kind.Sombra);
         var e = TowerEnemy.Create(kind, sp.position, transform, this, player, isBoss ? bossStyle : 0);

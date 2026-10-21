@@ -189,7 +189,7 @@ public partial class DioramaBuilder
         Note(lvl, new Vector3(4f, 0f, -50f), 180f, LoreNote.Kind.Inscripcion, "dio_lago_pueblo", "Piedra de los pescadores",
              "Piso 6. El lago refleja un cielo que no es el de afuera.\nLos que se asoman dicen ver su casa. Mejor no quedarse mucho tiempo mirando.");
         Note(lvl, look + new Vector3(-2f, 0f, -1f), 180f, LoreNote.Kind.Diario, "dio_lago_diario", "Diario de la expedición — día 12",
-             "Me asomé al lago y vi nuestra casa, Abis. La ventana de tu cuarto, con la luz prendida.\nEl capitán nos sacó de ahí a gritos. Dice que la torre te muestra lo que extrañas para que te quedes.", "— " + Historia.Hermano);
+             "Me asomé al lago y vi nuestra casa, Abby. La ventana de tu cuarto, con la luz prendida.\nEl capitán nos sacó de ahí a gritos. Dice que la torre te muestra lo que extrañas para que te quedes.", "— " + Historia.Hermano);
 
         WalkBoundary(LakeWalk);
         var bg = Group("Fondo", root);

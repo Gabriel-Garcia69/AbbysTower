@@ -132,7 +132,7 @@ public partial class DioramaBuilder
         Chest(lvl, new Vector3(Isles[0].x + 5f, 0f, Isles[0].y - 3f), 30, 0f);
         Chest(lvl, new Vector3(Isles[3].x - 6f, Isles[3].w, Isles[3].y + 4f), 40, 90f);
         Note(lvl, new Vector3(Isles[0].x - 4f, 0f, Isles[0].y - 2f), 160f, LoreNote.Kind.Diario, "dio7_diario", "Diario de la expedición — última página",
-             "Abis: llegamos al piso 15 y seguimos. El capitán dice que mañana bajamos hasta el piso 20.\nNadie sabe qué hay más abajo. Si esta es la última hoja que encuentras, no me busques.\nPero si me buscas... sigue las hojas.", "— " + Historia.Hermano);
+             "Abby: llegamos al piso 15 y seguimos. El capitán dice que mañana bajamos hasta el piso 20.\nNadie sabe qué hay más abajo. Si esta es la última hoja que encuentras, no me busques.\nPero si me buscas... sigue las hojas.", "— " + Historia.Hermano);
         Note(lvl, new Vector3(top0.x + 4f, top0.w, top0.y - 6f), 200f, LoreNote.Kind.Inscripcion, "dio7_arquitecto", "Grabado en la piedra",
              "Nadie sabe qué es esta torre, de dónde proviene o por qué apareció.\nCada piso que bajas es más hondo que el anterior. Y el abismo sigue.");
 

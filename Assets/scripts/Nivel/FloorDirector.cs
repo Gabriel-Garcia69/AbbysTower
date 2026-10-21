@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 public class FloorDirector : MonoBehaviour
 {
     [Tooltip("Nombre que muestra el HUD sobre la barra de vida.")]
-    public string heroName = "ABIS";
+    public string heroName = "ABBY";
 
     public string floorTitle = "PISO 1";
     public string floorSubtitle = "La Base de la Torre";
@@ -35,6 +35,8 @@ public class FloorDirector : MonoBehaviour
 
     Transform player;
     PlayerHealth health;
+    AbbyBlock block;
+    Sprite retrato;
     RoomEncounter[] rooms;
     RoomEncounter activeRoom;
     TowerEnemy boss;
@@ -51,6 +53,7 @@ public class FloorDirector : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        if (heroName == "ABIS") heroName = Historia.Protagonista.ToUpper();   // escenas guardadas antes del GDD
         if (fxMaterial != null) CombatFx.sourceMaterial = fxMaterial;
         if (theme != FloorTheme.Base)
         {
@@ -70,17 +73,22 @@ public class FloorDirector : MonoBehaviour
             player = p.transform;
             health = p.GetComponent<PlayerHealth>();
             if (health == null) health = p.AddComponent<PlayerHealth>();
-            health.SetMaxHealth(playerMaxHealth + RunState.MaxHealthBonus, true);   // mejoras compradas al mercader
+            health.SetMaxHealth(playerMaxHealth, true);   // GDD: vida 100, sin mejoras
             if (p.GetComponent<AbbyDash>() == null) p.AddComponent<AbbyDash>();
             var fall = p.GetComponent<FallGuard>(); if (fall == null) fall = p.AddComponent<FallGuard>();
             fall.killY = killY;
+            if (p.GetComponent<AbbyBlock>() == null) p.AddComponent<AbbyBlock>();
             if (p.GetComponent<AbbyAttack>() == null) p.AddComponent<AbbyAttack>();
+            block = p.GetComponent<AbbyBlock>();
+            var anim = p.GetComponentInChildren<AbbySpriteAnimator>(true);
+            if (anim != null && anim.idle != null && anim.idle.Length > 6) retrato = anim.idle[6];
             health.Died += OnPlayerDied;
             health.Damaged += _ => hurtVignette = 1f;
             shownHealth = health.Normalized;
         }
 
         if (GetComponent<PauseMenu>() == null) gameObject.AddComponent<PauseMenu>();
+        if (GetComponent<DanteFinal>() == null) gameObject.AddComponent<DanteFinal>();   // final de la demo (si el piso tiene a Dante)
 
         rooms = FindObjectsByType<RoomEncounter>();
         foreach (var r in rooms)
@@ -145,12 +153,10 @@ public class FloorDirector : MonoBehaviour
     void OnPlayerDied()
     {
         dead = true; endTimer = 0f;
-        int before = RunState.Fragments;
-        RunState.OnDeath();
-        lostFragments = before - RunState.Fragments;
     }
 
-    int lostFragments;
+    /// <summary>Escena del menú principal (Esc en la pantalla de derrota).</summary>
+    public const string MenuScene = "Menu";
 
     /// <summary>Lo llama FloorExit al pisar la salida del jefe (sin siguiente escena asignada).</summary>
     public void CompleteFloor(string next = null)
@@ -205,7 +211,10 @@ public class FloorDirector : MonoBehaviour
         {
             endTimer += dt;
             fade = dead ? Mathf.Clamp01((endTimer - 1.5f) / 1.2f) : Mathf.Min(0.75f, endTimer / 1.5f);
-            if (dead && endTimer > 3f) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            // GDD: pantalla de derrota → Reintentar reinicia el piso actual (o el jefe)
+            if (dead && endTimer > 1.6f && Continue()) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            if (dead && endTimer > 1.6f && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame && Application.CanStreamedLevelBeLoaded(MenuScene))
+                SceneManager.LoadScene(MenuScene);
             if (completed && endTimer > 1.5f && Continue())
             {
                 bool hasNext = !string.IsNullOrEmpty(nextScene) && Application.CanStreamedLevelBeLoaded(nextScene);
@@ -227,6 +236,7 @@ public class FloorDirector : MonoBehaviour
 
     void OnGUI()
     {
+        if (DanteFinal.Activo) return;   // la escena final usa toda la pantalla
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         var tex = Texture2D.whiteTexture;
         Color prev = GUI.color;
@@ -268,26 +278,46 @@ public class FloorDirector : MonoBehaviour
             Box(new Rect(0, 0, sw, vw * 0.6f), vc); Box(new Rect(0, sh - vw * 0.6f, sw, vw * 0.6f), vc);
         }
 
-        // vida de Abby
+        // GDD: retrato de Abby arriba a la izquierda, barra de vida y barra de stamina
         if (health != null)
         {
-            var frame = new Rect(u * 3f, u * 3f, u * 34f, u * 4.2f);
+            float px = u * 3f, py = u * 3f, ps = u * 10f;
+            var marco = new Rect(px, py, ps, ps);
+            Box(new Rect(marco.x - 3, marco.y - 3, marco.width + 6, marco.height + 6), new Color(0.75f, 0.6f, 1f, 0.9f));
+            Box(marco, new Color(0.08f, 0.06f, 0.14f, 0.92f));
+            if (retrato != null)
+            {
+                var tr = retrato.textureRect; var tx = retrato.texture;
+                // el retrato es la cabeza y el torso (la mitad de arriba del sprite)
+                var uv = new Rect(tr.x / tx.width, (tr.y + tr.height * 0.45f) / tx.height, tr.width / tx.width, tr.height * 0.55f / tx.height);
+                GUI.color = Color.white;
+                GUI.DrawTextureWithTexCoords(new Rect(marco.x + u * 0.5f, marco.y + u * 0.5f, marco.width - u, marco.height - u), tx, uv, true);
+            }
             var label = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-            Text(new Rect(frame.x, frame.y - u * 0.2f, frame.width, u * 3f), heroName, label, new Color(1f, 0.95f, 0.85f));
-            var bar = new Rect(frame.x, frame.y + u * 3f, frame.width, u * 2.2f);
+            float bx = marco.xMax + u * 1.5f, bw = u * 30f;
+            Text(new Rect(bx, py - u * 0.4f, bw, u * 3f), heroName, label, new Color(1f, 0.95f, 0.85f));
+            var bar = new Rect(bx, py + u * 3f, bw, u * 2.4f);
+            bool baja = health.Normalized < 0.3f && !health.IsDead;
+            float parpadeo = baja ? 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 10f) : 1f;   // vida baja: la barra parpadea
             Box(new Rect(bar.x - 2, bar.y - 2, bar.width + 4, bar.height + 4), new Color(0f, 0f, 0f, 0.7f));
             Box(new Rect(bar.x, bar.y, bar.width * shownHealth, bar.height), new Color(1f, 0.85f, 0.55f, 0.9f));
             Color hc = Color.Lerp(new Color(1f, 0.25f, 0.3f), new Color(0.45f, 1f, 0.6f), health.Normalized);
-            Box(new Rect(bar.x, bar.y, bar.width * health.Normalized, bar.height), hc);
+            Box(new Rect(bar.x, bar.y, bar.width * health.Normalized, bar.height), new Color(hc.r, hc.g, hc.b, parpadeo));
             var num = new GUIStyle(label) { fontSize = Mathf.RoundToInt(u * 1.8f), alignment = TextAnchor.MiddleCenter };
-            Text(bar, $"{Mathf.CeilToInt(health.Health)} / {Mathf.RoundToInt(health.maxHealth)}", num, Color.white);
-
-            // fragmentos (moneda) y mejoras
-            var frag = new GUIStyle(label) { fontSize = Mathf.RoundToInt(u * 2.4f) };
-            float pulse = Mathf.Clamp01(fragPulse);
-            string ups = (RunState.DamageLevel > 0 ? $"   Filo +{RunState.DamageLevel * 25}%" : "") + (RunState.HeartLevel > 0 ? $"   Corazón +{RunState.HeartLevel * 25}" : "");
-            Text(new Rect(bar.x, bar.yMax + u * 0.8f, u * 60f, u * 3.5f), $"◆ {RunState.Fragments}" + ups, frag,
-                 Color.Lerp(new Color(0.55f, 0.95f, 1f), Color.white, pulse));
+            Text(bar, $"VIDA  {Mathf.CeilToInt(health.Health)} / {Mathf.RoundToInt(health.maxHealth)}", num, Color.white);
+            if (block != null)
+            {
+                var sb = new Rect(bx, bar.yMax + u * 1.2f, bw * 0.8f, u * 1.6f);
+                // stamina baja (no alcanza para bloquear otro golpe): cambia de color; si intentó bloquear sin stamina, parpadea
+                bool poca = block.Stamina < AbbyBlock.CostoPorGolpe * 2f;
+                Color sc = block.Stamina < AbbyBlock.CostoPorGolpe ? new Color(1f, 0.35f, 0.25f) : poca ? new Color(1f, 0.7f, 0.25f) : new Color(0.45f, 0.75f, 1f);
+                if (block.Blocking) sc = Color.Lerp(sc, Color.white, 0.35f);
+                Box(new Rect(sb.x - 2, sb.y - 2, sb.width + 4, sb.height + 4), new Color(0f, 0f, 0f, 0.7f + block.EmptyFlash * 0.3f));
+                Box(new Rect(sb.x, sb.y, sb.width * block.Normalized, sb.height), sc);
+                var sn = new GUIStyle(num) { fontSize = Mathf.RoundToInt(u * 1.4f) };
+                Text(sb, "STAMINA", sn, new Color(1f, 1f, 1f, 0.9f));
+                if (block.BlockFlash > 0f) Box(new Rect(marco.x - 3, marco.y - 3, marco.width + 6, marco.height + 6), new Color(0.6f, 0.8f, 1f, 0.5f * block.BlockFlash));
+            }
         }
 
         // enemigos restantes
@@ -323,12 +353,18 @@ public class FloorDirector : MonoBehaviour
             if (!string.IsNullOrEmpty(bannerBottom)) Text(new Rect(-slide, sh * 0.2f + u * 7.5f, sw, u * 4f), bannerBottom, small, new Color(1f, 1f, 1f, a * 0.85f));
         }
 
-        // controles
-        if (hintTimer > 0f && !dead && !completed)
+        // GDD: controles siempre visibles en la parte inferior (y la tecla de la fuente cuando Abby está junto a una)
+        if (!dead && !completed)
         {
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2f), alignment = TextAnchor.LowerCenter };
-            Text(new Rect(0, sh - u * 6f, sw, u * 4f), "WASD mover  ·  Espacio saltar  ·  Shift impulso  ·  Clic / J atacar (3 golpes)  ·  E comerciar  ·  Mouse cámara",
-                 st, new Color(1f, 1f, 1f, 0.75f * Mathf.Clamp01(hintTimer)));
+            Box(new Rect(0, sh - u * 4.4f, sw, u * 4.4f), new Color(0f, 0f, 0f, 0.45f));
+            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 1.9f), alignment = TextAnchor.MiddleCenter };
+            Text(new Rect(0, sh - u * 4.4f, sw, u * 4.4f), Controles, st, new Color(1f, 1f, 1f, 0.85f));
+            if (HealingShrine.Cerca != null)
+            {
+                var big = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 2.8f), fontStyle = FontStyle.Bold };
+                float blink = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f);
+                Text(new Rect(0, sh - u * 11f, sw, u * 5f), "E  ·  Usar la fuente de curación", big, new Color(0.6f, 1f, 0.75f, blink));
+            }
         }
 
         // negro (inicio, muerte, final)
@@ -337,9 +373,15 @@ public class FloorDirector : MonoBehaviour
         if (dead)
         {
             var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            Text(new Rect(0, sh * 0.38f, sw, u * 12f), "CAÍSTE", st, new Color(1f, 0.35f, 0.35f, Mathf.Clamp01(endTimer / 0.8f)));
+            Text(new Rect(0, sh * 0.36f, sw, u * 12f), "DERROTA", st, new Color(1f, 0.35f, 0.35f, Mathf.Clamp01(endTimer / 0.8f)));
             var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Italic };
-            Text(new Rect(0, sh * 0.38f + u * 11f, sw, u * 4f), "La torre te devuelve a la entrada del piso..." + (lostFragments > 0 ? $"   (perdiste {lostFragments} ◆)" : ""), s2, new Color(1f, 1f, 1f, Mathf.Clamp01((endTimer - 0.6f) / 0.8f)));
+            Text(new Rect(0, sh * 0.36f + u * 11f, sw, u * 4f), "Abby cayó.", s2, new Color(1f, 1f, 1f, Mathf.Clamp01((endTimer - 0.6f) / 0.8f)));
+            if (endTimer > 1.6f)
+            {
+                var s3 = new GUIStyle(s2) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Bold };
+                float blink = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 4f);
+                Text(new Rect(0, sh * 0.36f + u * 18f, sw, u * 4f), "Enter  ·  Reintentar el piso          Esc  ·  Menú principal", s3, new Color(1f, 1f, 1f, blink));
+            }
         }
 
         if (completed)
@@ -349,7 +391,7 @@ public class FloorDirector : MonoBehaviour
             string done = floorTitle.StartsWith("PISO") ? $"¡{floorTitle} COMPLETADO!" : floorTitle.StartsWith("LA ") ? $"¡{floorTitle}, CONQUISTADA!" : $"¡{floorTitle} SUPERADO!";
             Text(new Rect(0, sh * 0.28f, sw, u * 12f), done, st, new Color(1f, 0.88f, 0.5f, a));
             var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 3f), fontStyle = FontStyle.Normal };
-            Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}        Minerales  {RunState.Fragments} ◆", s2, new Color(1f, 1f, 1f, a));
+            Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}", s2, new Color(1f, 1f, 1f, a));
             if (endTimer > 1.5f)
             {
                 var s3 = new GUIStyle(s2) { fontSize = Mathf.RoundToInt(u * 2.4f), fontStyle = FontStyle.Italic };
@@ -361,6 +403,9 @@ public class FloorDirector : MonoBehaviour
 
         void Box(Rect r, Color c) { GUI.color = c; GUI.DrawTexture(r, tex); }
     }
+
+    /// <summary>Barra de controles del GDD (teclado y mouse).</summary>
+    public const string Controles = "WASD  Mover     Clic izq.  Atacar (combo de 3)     Clic der.  Bloquear     Espacio  Saltar     Shift  Impulso     E  Interactuar     Esc  Pausa";
 
     static void Text(Rect r, string text, GUIStyle st, Color c)
     {

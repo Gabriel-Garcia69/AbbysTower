@@ -140,7 +140,7 @@ public partial class DioramaBuilder
         Note(lvl, new Vector3(6f, 0f, -54f), 180f, LoreNote.Kind.Inscripcion, "dio_montana_pie", "Al pie de la montaña",
              "Piso 9. El camino sube en zigzag hasta la cumbre, y desde la cumbre se baja al siguiente piso.\nSi la montaña te contesta con otra voz, no le contestes: es una criatura.");
         Note(lvl, hut + new Vector3(-1f, 0f, 4f), 180f, LoreNote.Kind.Diario, "dio_montana_refugio", "Libro del refugio",
-             "Firmamos el libro del refugio. La lista de expediciones es larga, y casi ninguna firmó de regreso.\nYo escribí tu nombre junto al mío, Abis. Para que la torre sepa que alguien me espera.", "— " + Historia.Hermano);
+             "Firmamos el libro del refugio. La lista de expediciones es larga, y casi ninguna firmó de regreso.\nYo escribí tu nombre junto al mío, Abby. Para que la torre sepa que alguien me espera.", "— " + Historia.Hermano);
 
         WalkBoundary(MountWalk);
         var bg = Group("Fondo", root);

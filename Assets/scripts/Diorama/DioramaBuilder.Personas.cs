@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Personas para las cinemáticas y el tutorial: figuras de bloques al estilo maqueta (piernas, torso, brazos, cabeza,
-/// pelo y accesorios: casco, gorra, mochila, rifle, arma de energía, linterna, paraguas). Abis va con su sprite.
+/// pelo y accesorios: casco, gorra, mochila, rifle, arma de energía, linterna, paraguas). Abby va con su sprite.
 /// </summary>
 public partial class DioramaBuilder
 {
@@ -117,10 +117,10 @@ public partial class DioramaBuilder
     }
 
 #if UNITY_EDITOR
-    /// <summary>Abis con su sprite de frente (el mismo personaje que se juega), en un billboard que mira a la cámara.</summary>
+    /// <summary>Abby con su sprite de frente (el mismo personaje que se juega), en un billboard que mira a la cámara.</summary>
     Transform AbisSprite(Transform parent, Vector3 pos, float escala, string dir = "south")
     {
-        var t = Group("Abis", parent);
+        var t = Group("Abby", parent);
         t.localPosition = pos;
         var vis = new GameObject("Visual");
         vis.transform.SetParent(t, false);

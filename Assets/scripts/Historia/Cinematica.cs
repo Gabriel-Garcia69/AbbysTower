@@ -4,9 +4,9 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Cinemática inicial (guion "Contexto y presentación de la torre" + "Presentación y contexto de Abis"):
+/// Cinemática inicial (guion "Contexto y presentación de la torre" + "Presentación y contexto de Abby"):
 /// la torre aparece en la ciudad, el ejército frente al abismo, los canalizadores contra las criaturas, los minerales,
-/// el funeral (2030), el discurso del capitán (2035) y la despedida de Abis y su hermano. Al final pasa al tutorial.
+/// el funeral (2030), el discurso del capitán (2035) y la despedida de Abby y su hermano. Al final pasa al tutorial.
 /// Los sets los arma DioramaBuilder (layout Intro); aquí solo se mueve la cámara y se muestran los cuadros de texto.
 /// Espacio / Enter / clic: avanzar el texto. Mantener Esc: saltar la cinemática.
 /// </summary>
@@ -167,7 +167,7 @@ public class Cinematica : MonoBehaviour
             yield return Decir(Historia.Discurso[i]);
         }
 
-        // 7. Abis se despide de su hermano
+        // 7. Abby se despide de su hermano
         yield return Fundir(1f, 1f);
         var desp = Buscar(plaza, "Despedida");
         Vector3 d = desp != null ? desp.position : P;

@@ -5,10 +5,10 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Tutorial en el piso 20 (propuesta del guion): se juega con el hermano de Abis dentro de la expedición del capitán.
+/// Tutorial en el piso 20 (propuesta del guion): se juega con el hermano de Abby dentro de la expedición del capitán.
 /// Enseña a moverse, girar la cámara, saltar, atacar, recoger minerales y usar el impulso; la expedición pelea al lado.
 /// Al llegar al borde del abismo aparece una criatura enorme y la expedición es derrotada. Después empieza el juego de
-/// Abis (piso 1).
+/// Abby (piso 1).
 /// </summary>
 public class ExpedicionPiso20 : MonoBehaviour
 {
@@ -37,7 +37,7 @@ public class ExpedicionPiso20 : MonoBehaviour
         player = p.transform;
         health = p.GetComponent<PlayerHealth>();
         input = p.GetComponent<PlayerInputReader>();
-        // se juega con el hermano de Abis (mismo cuerpo, otro color y un poco más alto, hasta que haya sprite propio)
+        // se juega con el hermano de Abby (mismo cuerpo, otro color y un poco más alto, hasta que haya sprite propio)
         foreach (var sr in p.GetComponentsInChildren<SpriteRenderer>()) sr.color = new Color(0.72f, 0.82f, 1f);
         var fd = FindAnyObjectByType<FloorDirector>();
         if (fd != null) fd.heroName = Historia.Hermano.ToUpper();
@@ -60,8 +60,8 @@ public class ExpedicionPiso20 : MonoBehaviour
         if ((kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) || (mouse != null && mouse.leftButton.wasPressedThisFrame)
             || (pad != null && pad.buttonSouth.wasPressedThisFrame)) presionado = true;
         tTexto += Time.deltaTime;
-        // en el tutorial no se muere: la expedición cura a quien se queda sin vida (hasta el final)
-        if (!cinematica && health != null && !health.IsDead && health.Normalized < 0.35f) health.Heal(health.maxHealth * 0.4f);
+        // en el tutorial no se muere (la vida no baja de 1 hasta el final); la vida solo se cura en la fuente (GDD)
+        if (health != null) health.noMorir = !cinematica;
     }
 
     // ------------------------------------------------------------------ guion del tutorial
@@ -75,27 +75,23 @@ public class ExpedicionPiso20 : MonoBehaviour
         // moverse
         Vector3 inicio = player.position;
         yield return Pista("WASD / stick izquierdo: moverte", () => Vector3.Distance(Plano(player.position), Plano(inicio)) > 4f);
-        // cámara
-        float t0 = Time.time;
-        yield return Pista("Q / E: girar la cámara   ·   clic derecho sostenido: asomarte",
-            () => (Keyboard.current != null && (Keyboard.current.qKey.wasPressedThisFrame || Keyboard.current.eKey.wasPressedThisFrame)) || Time.time - t0 > 8f);
         Mover(-36f);
         // saltar
         yield return Pista("Espacio: saltar. Sube al escalón", () => player.position.y > 0.7f && player.position.z > -30f);
         // atacar
         Mover(-10f);
         yield return Pista("Sigue a la expedición", () => entrenamiento != null && entrenamiento.Current != RoomEncounter.State.Esperando);
-        yield return Pista("Clic izquierdo / J: atacar (encadena 3 golpes)", () => entrenamiento == null || entrenamiento.IsCleared);
-        yield return Pista("Las criaturas sueltan minerales: pasa sobre ellos para recogerlos", null, 4f);
-        // impulso
-        Mover(16f);
-        yield return Hablar(Historia.Capitan, "Una barrera de energía. Crúcenla con impulso.");
-        yield return Pista("Shift: impulso. Atraviesa la barrera de energía", () => player.position.z > 5.5f);
+        yield return Pista("Clic izquierdo: atacar   ·   tres clics seguidos: combo (el tercer golpe pega más)", () => entrenamiento == null || entrenamiento.IsCleared);
+        // la fuente de curación (E): la única forma de recuperar vida
+        Mover(38f);
+        yield return Pista("Las fuentes de curación restauran toda tu vida. Acércate y presiona E (cada fuente sirve una vez)",
+            () => health == null || health.Normalized >= 0.999f && FuenteUsadaOLlena(), 3f);
         // la oleada, junto a la expedición
         Mover(66f);
         yield return Pista("Sigue a la expedición", () => oleada != null && oleada.Current != RoomEncounter.State.Esperando);
         StartCoroutine(ExpedicionPelea());
-        yield return Pista("Usa el impulso justo antes de un golpe: esquiva perfecta (el siguiente ataque es crítico)", () => oleada == null || oleada.IsCleared);
+        yield return Pista("Clic derecho sostenido: bloquear. Recibes solo el 8 % del daño, pero gasta stamina. Las sombras rojas del suelo avisan cada ataque",
+            () => oleada == null || oleada.IsCleared);
         yield return Hablar(Historia.Capitan, "Bien hecho. Sigamos hasta el borde.");
         Mover(112f);
         yield return Pista("Acércate al borde del abismo", () => player.position.z > 116f);
@@ -182,6 +178,13 @@ public class ExpedicionPiso20 : MonoBehaviour
         var rs = coloso.GetComponentsInChildren<Renderer>();
         foreach (var r in rs) if (r.name == "Ojo") return new Vector3(coloso.position.x, r.bounds.center.y, r.bounds.center.z);
         return coloso.position + Vector3.up * 16f;
+    }
+
+    /// <summary>Ya usó la fuente del campamento, o no le falta vida (no hay nada que enseñar).</summary>
+    bool FuenteUsadaOLlena()
+    {
+        var f = FindAnyObjectByType<HealingShrine>();
+        return f == null || f.Usada || health == null || health.Normalized >= 0.999f;
     }
 
     // ------------------------------------------------------------------ la expedición

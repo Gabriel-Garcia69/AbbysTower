@@ -111,18 +111,6 @@ public partial class DioramaBuilder
         Box(sign, "Tabla", new Vector3(0f, 1.7f, -0.05f), new Vector3(1.4f, 0.6f, 0.08f), mPlank, false);
         Box(sign, "Marca", new Vector3(0f, 1.7f, -0.1f), new Vector3(1f, 0.25f, 0.02f), Glow("Dio_MarcaPiso", new Color(1f, 0.8f, 0.4f), 1.2f), false);
 
-        // la barrera de energía (solo se cruza con impulso)
-        var veil = new GameObject("VeloDeFase");
-        veil.transform.SetParent(lvl, false);
-        veil.transform.localPosition = new Vector3(0f, 3f, ExpVeilZ);
-        veil.AddComponent<BoxCollider>().size = new Vector3(48f, 8f, 0.4f);
-        // una cortina de energía translúcida (antes era una pared rosa opaca)
-        var energia = Saved("Dio_VeloEnergia", () => new Material(Shader.Find("Abby/Energia")));
-        energia.SetColor("_Color", new Color(0.55f, 0.3f, 1.4f));
-        var face = Prim(veil.transform, PrimitiveType.Quad, "Cortina", new Vector3(0f, 1.5f, 0f), new Vector3(44f, 9f, 1f), energia, false);
-        face.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        AddLight(veil.transform, new Vector3(0f, -1f, -1.5f), new Color(0.6f, 0.35f, 1f), 14f, 2.5f);
-        veil.AddComponent<PhaseVeil>();
 
         // el borde del abismo y la oscuridad de abajo
         for (int i = 0; i < 9; i++) Crystals(g, new Vector3(-16f + i * 4f, 0f, ExpEdgeZ - 1.2f), R(0.4f, 0.7f), true, i % 3 == 0);
@@ -155,6 +143,9 @@ public partial class DioramaBuilder
             if (i == 3) pe.arma = 3;
             Figura(exp, "Miembro" + i, new Vector3(-8f + i * 3f, 0f, -52f + (i % 2) * 2f), 0f, pe);
         }
+
+        // la fuente de curación (GDD): entre el entrenamiento y la barrera; el tutorial enseña a usarla con E
+        HealShrine(lvl, new Vector3(7f, 0f, 42f));
 
         // combate del tutorial: entrenamiento y la oleada con la expedición
         var a1 = Arena(lvl, "Entrenamiento", new Vector3(0f, 0f, 30f), new Vector2(30f, 18f), 3);

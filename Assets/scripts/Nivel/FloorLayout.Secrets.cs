@@ -120,8 +120,8 @@ public partial class FloorLayout
             case 3: return new RelicSpec { room = 1, stand = new Vector2(-5f, -3f), yaw = 135f, id = "gato", name = "Gato Dormilón", desc = "Bajó solo a la torre, como todos. Ronronea. No piensa moverse." };
             case 4: return new RelicSpec { room = 3, stand = new Vector2(4f, -3f), yaw = 225f, id = "pastel", name = "Pastel del 20 de Noviembre", desc = "Alguien lo horneó para un día especial. Huele a demo." };
             case 5: return new RelicSpec { room = 4, stand = new Vector2(-5f, 3f), yaw = 90f, id = "peso", name = "Moneda de un Peso", desc = "No alcanza para nada, pero es tuya." };
-            case 6: return new RelicSpec { room = 1, stand = new Vector2(5f, 3f), yaw = 270f, id = "espejo", name = "Espejo de Mano Rajado", desc = "En el reflejo, la otra Abis sonríe. Tú no." };
-            case 7: return new RelicSpec { room = 4, stand = new Vector2(-5f, -3f), yaw = 180f, id = "carta", name = "Carta sin Enviar", desc = "Dice \"para Abis\". La letra es la de su hermano." };
+            case 6: return new RelicSpec { room = 1, stand = new Vector2(5f, 3f), yaw = 270f, id = "espejo", name = "Espejo de Mano Rajado", desc = "En el reflejo, la otra Abby sonríe. Tú no." };
+            case 7: return new RelicSpec { room = 4, stand = new Vector2(-5f, -3f), yaw = 180f, id = "carta", name = "Carta sin Enviar", desc = "Dice \"para Abby\". La letra es la de su hermano." };
             case 8: return new RelicSpec { room = 5, stand = new Vector2(5f, -3f), yaw = 45f, id = "patito", name = "Patito de Hule Ignífugo", desc = "Sobrevivió a la lava. Respeto." };
             default: return new RelicSpec { room = 3, stand = new Vector2(-5f, 3f), yaw = 315f, id = "placa", name = "Placa del Estudio 02", desc = "Hecho por Rodrigo, Gabriel, Francisco, Ricardo y Karla — UT Cancún, IDYGS103." };
         }

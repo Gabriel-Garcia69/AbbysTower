@@ -139,11 +139,11 @@ public class PauseMenu : MonoBehaviour
         items.Clear();
         string current = SceneManager.GetActiveScene().name;
         bool outside = current == exteriorScene;
+        // GDD: pausa con Esc; continuar, reiniciar el piso, volver al menú principal o salir (sin dificultad ni mapas de prueba)
         items.Add(new Item { label = "Continuar", action = Resume });
-        items.Add(new Item { label = "Opciones", action = () => OpenPage(Page.Options, (int)Difficulty.Current) });
         items.Add(new Item { label = outside ? "Reiniciar exterior" : "Reiniciar piso", action = () => Load(current) });
-        if (!outside && Application.CanStreamedLevelBeLoaded(exteriorScene))
-            items.Add(new Item { label = "Volver al exterior", action = () => Load(exteriorScene) });
+        if (Application.CanStreamedLevelBeLoaded(FloorDirector.MenuScene))
+            items.Add(new Item { label = "Menú principal", action = () => Load(FloorDirector.MenuScene) });
         items.Add(new Item { label = "Salir del juego", action = Quit });
     }
 

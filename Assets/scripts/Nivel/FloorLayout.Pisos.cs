@@ -10,7 +10,7 @@ using UnityEditor;
 ///
 /// La historia (guion entregado): en 2030 la torre apareció en la ciudad; dentro, escaleras enormes bajan a un
 /// abismo y, entre más profundo, más fuertes las criaturas. En 2035 la expedición del capitán bajó más allá del piso
-/// 15 y nunca regresó. Abis baja a buscar a su hermano: sus notas firman "A."; los registros son de la expedición.
+/// 15 y nunca regresó. Abby baja a buscar a su hermano: sus notas firman "A."; los registros son de la expedición.
 /// </summary>
 public partial class FloorLayout
 {
@@ -319,7 +319,7 @@ public partial class FloorLayout
                 list.Add(L(2, -11f, -9f, LoreNote.Kind.Libro, "Bitácora del capitán (copia)",
                     "Han pasado 5 años desde que la torre apareció y aún no sabemos qué es, de dónde proviene o por qué apareció.\n\nBajaremos más allá del piso 15. Si esta bitácora regresa sin nosotros, que nadie venga a buscarnos."));
                 list.Add(L(8, 0f, 2.6f, LoreNote.Kind.Diario, "La última nota",
-                    "Encontré su letra en la pared, Abis. Decía \"volveré\".\n\nYa no me importa lo que dijo el capitán. Voy a bajar hasta donde haga falta.\n\nSi alguien encuentra esto: mi hermano se llama " + Historia.Hermano + ". Díganle que lo estoy buscando.", "— A."));
+                    "Encontré su letra en la pared, Abby. Decía \"volveré\".\n\nYa no me importa lo que dijo el capitán. Voy a bajar hasta donde haga falta.\n\nSi alguien encuentra esto: mi hermano se llama " + Historia.Hermano + ". Díganle que lo estoy buscando.", "— A."));
                 break;
         }
         return list;

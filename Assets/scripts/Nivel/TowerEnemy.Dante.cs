@@ -96,7 +96,15 @@ public partial class TowerEnemy
 
             Sprite s = null;
             bool atacando = enemigo.state == State.Telegraph || enemigo.state == State.Lunge || enemigo.state == State.Slam;
-            if (atacando && fuente.dashFrames != null && fuente.dashFrames.Length > dir && fuente.dashFrames[dir] != null && fuente.dashFrames[dir].Has)
+            bool tajo = enemigo.state == State.Slam || enemigo.lungeSpeed < 15f;   // la embestida larga (22 m/s) usa la pose del dash
+            if (atacando && tajo && fuente.slash != null && fuente.slash.Length > dir && fuente.slash[dir] != null && fuente.slash[dir].Has)
+            {
+                // el espadazo de Abby: se queda arriba mientras avisa y corta al lanzarse
+                golpe = enemigo.state == State.Telegraph ? 0f : golpe + Time.deltaTime;
+                var fr = fuente.slash[dir].frames;
+                s = fr[Mathf.Clamp(enemigo.state == State.Telegraph ? 2 : 3 + Mathf.FloorToInt(golpe / 0.05f), 1, fr.Length - 1)];
+            }
+            else if (atacando && fuente.dashFrames != null && fuente.dashFrames.Length > dir && fuente.dashFrames[dir] != null && fuente.dashFrames[dir].Has)
             {
                 golpe += Time.deltaTime;
                 var fr = fuente.dashFrames[dir].frames;

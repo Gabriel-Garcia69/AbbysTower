@@ -21,6 +21,10 @@ public class AbbyAttack : MonoBehaviour
     public Color slashColor = new Color(0.6f, 0.95f, 1f, 1f);
 
     public bool Busy => phase != Phase.None;
+    /// <summary>Cuenta cada tajo (sube al empezar cada golpe del combo): el sprite reinicia el espadazo con él.</summary>
+    public int Swings { get; private set; }
+    /// <summary>Lo que dura un tajo completo (preparación + golpe + recuperación).</summary>
+    public float SwingLength => windup + active + recover;
     public Vector3 Facing { get; private set; } = Vector3.forward;
 
     enum Phase { None, Windup, Active, Recover }
@@ -126,7 +130,7 @@ public class AbbyAttack : MonoBehaviour
                 if (timer >= active) { hitbox.End(); phase = Phase.Recover; timer = 0f; }
                 break;
             case Phase.Recover:
-                if (queued && combo < damage.Length - 1) { combo++; queued = false; phase = Phase.Windup; timer = 0f; }
+                if (queued && combo < damage.Length - 1) { combo++; queued = false; phase = Phase.Windup; timer = 0f; Swings++; }
                 else if (timer >= recover)
                 {
                     phase = Phase.None; queued = false;
@@ -166,7 +170,7 @@ public class AbbyAttack : MonoBehaviour
 
     void Begin()
     {
-        phase = Phase.Windup; timer = 0f; queued = false;
+        phase = Phase.Windup; timer = 0f; queued = false; Swings++;
     }
 
     static bool Pressed()

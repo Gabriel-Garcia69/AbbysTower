@@ -182,6 +182,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         mpb = new MaterialPropertyBlock();
         float s = Scale;
         if (kind == Kind.Dante && !ForceProceduralVisual && DanteVisual()) return;   // Dante usa la silueta de Abby, no un prefab
+        if (!ForceProceduralVisual && SpriteVisual()) return;   // pixel art de PixelLab (Resources/EnemigosSprites)
         if (!ForceProceduralVisual && UsePrefabVisual()) return;
 
         visual = new GameObject("Visual").transform;

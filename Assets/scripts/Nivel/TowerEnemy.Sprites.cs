@@ -15,9 +15,11 @@ public partial class TowerEnemy
     {
         var sprites = new Sprite[8];
         bool any = false;
+        // el jefe de cada piso tiene su dibujo (por escena: el patrón de ataque se repite entre pisos)
+        string carpeta = kind == Kind.Jefe ? "Jefe_" + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name : kind.ToString();
         for (int i = 0; i < 8; i++)
         {
-            sprites[i] = Resources.Load<Sprite>($"EnemigosSprites/{kind}/{SpriteDirs[i]}");
+            sprites[i] = Resources.Load<Sprite>($"EnemigosSprites/{carpeta}/{SpriteDirs[i]}");
             any |= sprites[i] != null;
         }
         if (!any) return false;
@@ -35,6 +37,15 @@ public partial class TowerEnemy
         sr.sprite = sprites[6] != null ? sprites[6] : System.Array.Find(sprites, s => s != null);
         body = null;
         eyes = new Renderer[0];
+        if (IsBoss)
+        {
+            // el jefe trae su propia luz (late al enfurecerse, ver Update)
+            var l = new GameObject("Brillo").AddComponent<Light>();
+            l.transform.SetParent(visual, false);
+            l.transform.localPosition = new Vector3(0f, 2.2f, 0.8f);
+            l.type = LightType.Point; l.color = eyeColor; l.range = 9f; l.intensity = 6f; l.shadows = LightShadows.None;
+            glow = l;
+        }
         visual.localScale = Vector3.one * 0.05f;
         return true;
     }
@@ -58,6 +69,68 @@ public partial class TowerEnemy
         public SpriteRenderer sr;
         public Sprite[] sprites;
         int dir = 6;
+        Vector3 ultima, vel;
+        float paso, sacudida, fase = -1f;
+        bool listo;
+
+        /// <summary>
+        /// Movimiento del sprite (sin cuadros de animación): respira quieto, rebota y se inclina al caminar, se agacha al
+        /// avisar el ataque y se estira al lanzarse, tiembla al recibir un golpe. Escala y giro sobre el eje de la vista.
+        /// </summary>
+        void Mover(Vector3 f, Vector3 r, out Vector3 escala, out Vector3 offset, out float giro)
+        {
+            float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+            Vector3 p = enemigo.transform.position;
+            if (!listo) { ultima = p; listo = true; fase = Random.Range(0f, 10f); }
+            Vector3 v = (p - ultima) / dt; v.y = 0f; ultima = p;
+            vel = Vector3.Lerp(vel, v, 1f - Mathf.Exp(-12f * dt));
+            float rapidez = vel.magnitude;
+            escala = Vector3.one; offset = Vector3.zero; giro = 0f;
+            float t = Time.time + fase;   // cada uno a su ritmo
+
+            switch (enemigo.state)
+            {
+                case State.Telegraph:
+                {
+                    float k = Mathf.Clamp01(enemigo.timer / Mathf.Max(0.1f, enemigo.telegraph));
+                    escala = new Vector3(1f + 0.12f * k, 1f - 0.14f * k, 1f);   // se agacha, cargando
+                    giro = -Vector3.Dot(enemigo.facing, r) * 10f * k;            // se echa para atrás
+                    offset = new Vector3(Mathf.Sin(t * 60f) * 0.02f * k, 0f, 0f);
+                    break;
+                }
+                case State.Lunge:
+                    escala = new Vector3(0.88f, 1.12f, 1f);                       // se estira al lanzarse
+                    giro = Vector3.Dot(enemigo.facing, r) * 14f;
+                    break;
+                case State.Recover:
+                    escala = new Vector3(1.04f, 0.97f, 1f);
+                    break;
+                default:
+                    if (rapidez > 0.3f)
+                    {
+                        // camina: rebote a cada paso y se inclina hacia donde va
+                        paso += dt * Mathf.Lerp(6f, 11f, Mathf.Clamp01(rapidez / 6f));
+                        float b = Mathf.Abs(Mathf.Sin(paso));
+                        escala = new Vector3(1f + 0.04f * (1f - b), 1f - 0.04f * (1f - b) + 0.03f * b, 1f);
+                        offset = Vector3.up * b * 0.06f;
+                        giro = -Vector3.Dot(vel.normalized, r) * Mathf.Clamp01(rapidez / 4f) * 7f + Mathf.Sin(paso) * 2.5f;
+                    }
+                    else
+                    {
+                        float s2 = Mathf.Sin(t * 2.2f);
+                        escala = new Vector3(1f - 0.015f * s2, 1f + 0.025f * s2, 1f);   // respira
+                    }
+                    break;
+            }
+            // golpe recibido: tiembla un instante
+            if (enemigo.flash > 0f) sacudida = 0.18f;
+            if (sacudida > 0f)
+            {
+                sacudida -= dt;
+                offset += new Vector3(Mathf.Sin(Time.time * 90f) * 0.06f * (sacudida / 0.18f), 0f, 0f);
+                escala = Vector3.Scale(escala, new Vector3(1.06f, 0.94f, 1f));
+            }
+        }
 
         void LateUpdate()
         {
@@ -66,7 +139,11 @@ public partial class TowerEnemy
             Vector3 f = cam.transform.forward; f.y = 0f;
             if (f.sqrMagnitude < 0.0001f) return;
             f.Normalize();
-            transform.rotation = Quaternion.LookRotation(f, Vector3.up);   // de frente a la cámara, derecho
+            Vector3 rr = cam.transform.right; rr.y = 0f; rr.Normalize();
+            Mover(f, rr, out var escala, out var offset, out float giro);
+            transform.rotation = Quaternion.LookRotation(f, Vector3.up) * Quaternion.Euler(0f, 0f, giro);   // de frente a la cámara
+            transform.localScale = escala;
+            transform.localPosition = Quaternion.Inverse(transform.parent.rotation) * (rr * offset.x + Vector3.up * offset.y);
 
             Vector3 mira = enemigo.facing.sqrMagnitude > 0.01f ? enemigo.facing : -f;
             Vector3 r = cam.transform.right; r.y = 0f; r.Normalize();
@@ -82,6 +159,7 @@ public partial class TowerEnemy
                 float k = Mathf.Clamp01((enemigo.timer - GrietaAbre) / GrietaSube);
                 c = Color.Lerp(new Color(0.12f, 0.04f, 0.2f), Color.white, k * k);
             }
+            else if (enemigo.state == State.Dying) c = Color.Lerp(new Color(1f, 0.6f, 0.6f), new Color(0.15f, 0.05f, 0.25f), Mathf.Clamp01(enemigo.timer / 0.3f));   // se hace sombra
             else if (enemigo.flash > 0f) c = new Color(1f, 0.45f, 0.45f);
             else if (enemigo.state == State.Telegraph || enemigo.state == State.Slam)
                 c = Color.Lerp(Color.white, new Color(0.85f, 0.55f, 1f), 0.5f + 0.5f * Mathf.Sin(Time.time * 30f));

@@ -25,6 +25,8 @@ public class AbbyAttack : MonoBehaviour
     public int Swings { get; private set; }
     /// <summary>Lo que dura un tajo completo (preparación + golpe + recuperación).</summary>
     public float SwingLength => windup + active + recover;
+    /// <summary>Golpe del combo en curso (0, 1, 2): el tercero es el fuerte.</summary>
+    public int ComboIndex => combo;
     public Vector3 Facing { get; private set; } = Vector3.forward;
 
     enum Phase { None, Windup, Active, Recover }

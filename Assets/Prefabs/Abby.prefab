@@ -345,6 +345,24 @@ MonoBehaviour:
     - {fileID: 21300000, guid: b9597c3219adaab40aa4d0564bb95843, type: 3}
     - {fileID: 21300000, guid: f963f89e0575eb54b8d76f872e5f3ed3, type: 3}
     - {fileID: 21300000, guid: 86d8c8f22acbd3548b0c37f43f88927b, type: 3}
+  guardia:
+  - {fileID: 21300000, guid: fbb65e4ff39a4c9b8232b0296b26dd35, type: 3}
+  - {fileID: 21300000, guid: 0e88b2cf3c2e48c5ba0df2792ccf8440, type: 3}
+  - {fileID: 21300000, guid: 487182496f334ad480a54a42820775ab, type: 3}
+  - {fileID: 21300000, guid: b5687dc2e06c45febc78b48987f26fd3, type: 3}
+  - {fileID: 21300000, guid: bed7135798964b118e409dee15bb5bac, type: 3}
+  - {fileID: 21300000, guid: 6811dc6dc1a5417f8f1e9a793d7fd120, type: 3}
+  - {fileID: 21300000, guid: d1e300dde55142a5ab05a9a99c722e30, type: 3}
+  - {fileID: 21300000, guid: 90fe8ba0fba1432b9d9bfc49948f8831, type: 3}
+  golpePose:
+  - {fileID: 21300000, guid: c885582d020a44578a991001aa3f2eb4, type: 3}
+  - {fileID: 21300000, guid: 91a428c7278a4eff89cd0119ff21f833, type: 3}
+  - {fileID: 21300000, guid: 97f92e0729d44ecab629f6c092c72ab6, type: 3}
+  - {fileID: 21300000, guid: 8eb80926c9f9447e8779ce2f026671e0, type: 3}
+  - {fileID: 21300000, guid: 74274b2af55b4548a6dcf4444905efae, type: 3}
+  - {fileID: 21300000, guid: 4476019ec4174fefb68d0735cdbc2b5b, type: 3}
+  - {fileID: 21300000, guid: c536d72c00544922946d6cfaaa882a9c, type: 3}
+  - {fileID: 21300000, guid: be085536ef3f447ab3c8df7f7a1e4319, type: 3}
   walkFps: 12
   attackPoseFrom: 2
   attackPoseTo: 5

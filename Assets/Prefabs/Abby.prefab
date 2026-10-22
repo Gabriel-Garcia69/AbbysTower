@@ -363,6 +363,24 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 4476019ec4174fefb68d0735cdbc2b5b, type: 3}
   - {fileID: 21300000, guid: c536d72c00544922946d6cfaaa882a9c, type: 3}
   - {fileID: 21300000, guid: be085536ef3f447ab3c8df7f7a1e4319, type: 3}
+  rodilla:
+  - {fileID: 21300000, guid: 10185244784a451c863293fb2d9a7ebe, type: 3}
+  - {fileID: 21300000, guid: 3d2a63ca570943a1962eaa7b91daede2, type: 3}
+  - {fileID: 21300000, guid: 8058b58b4382492dae36191242049991, type: 3}
+  - {fileID: 21300000, guid: 97f26e060c71415ea6a42ec5054b4dde, type: 3}
+  - {fileID: 21300000, guid: 704e507a589b4eecb3c610aaaf915a26, type: 3}
+  - {fileID: 21300000, guid: 42928f3d4d9d417eb3e9f29ac3ec04ff, type: 3}
+  - {fileID: 21300000, guid: 2f70dba5bd104622a9d12b5f3a1bab79, type: 3}
+  - {fileID: 21300000, guid: bd44606d31684ebfba8f4d06ec6f4aa9, type: 3}
+  tendida:
+  - {fileID: 21300000, guid: 146c2c541c814fcd800005c9026fdff0, type: 3}
+  - {fileID: 21300000, guid: e12581a9f0764ab290bea2a6ae3eece0, type: 3}
+  - {fileID: 21300000, guid: 1375e2c9dc1a4565b729eb0c7d7ac783, type: 3}
+  - {fileID: 21300000, guid: 47d92680a820462ebef1c9e246842280, type: 3}
+  - {fileID: 21300000, guid: b47a05ca581848d4afba850104249248, type: 3}
+  - {fileID: 21300000, guid: c51004b64b304cae8adc7c1f87b13667, type: 3}
+  - {fileID: 21300000, guid: 17c9e259af4c499b93c0f77ee7001906, type: 3}
+  - {fileID: 21300000, guid: e1b513292abd47688817ad4e707c24f6, type: 3}
   walkFps: 12
   attackPoseFrom: 2
   attackPoseTo: 5

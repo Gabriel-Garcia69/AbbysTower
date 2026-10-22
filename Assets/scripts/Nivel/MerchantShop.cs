@@ -119,7 +119,7 @@ public class MerchantShop : MonoBehaviour
 
         if (near && !open)
         {
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             GUI.color = new Color(0f, 0f, 0f, 0.55f);
             GUI.DrawTexture(new Rect(sw / 2f - u * 14f, sh * 0.72f, u * 28f, u * 5f), tex);
             GUI.color = Color.white;
@@ -137,10 +137,10 @@ public class MerchantShop : MonoBehaviour
             GUI.DrawTexture(new Rect(panel.x, panel.yMax - 3, panel.width, 3), tex);
             GUI.color = Color.white;
 
-            var title = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            var title = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             title.normal.textColor = new Color(1f, 0.85f, 0.5f);
             GUI.Label(new Rect(panel.x, panel.y + u * 2f, panel.width, u * 6f), "EL MERCADER", title);
-            var sub = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.2f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
+            var sub = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.2f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
             sub.normal.textColor = new Color(1f, 1f, 1f, 0.75f);
             GUI.Label(new Rect(panel.x, panel.y + u * 7.5f, panel.width, u * 4f), $"\"Los minerales del abismo valen oro allá afuera...\"     Tienes: {RunState.Fragments} ◆", sub);
 
@@ -153,9 +153,9 @@ public class MerchantShop : MonoBehaviour
             };
             int[] costs = { potionCost, DamageCost, HeartCost };
             bool[] maxed = { false, RunState.DamageLevel >= maxLevel, RunState.HeartLevel >= maxLevel };
-            var nameSt = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.8f), fontStyle = FontStyle.Bold };
-            var descSt = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.1f) };
-            var btn = new GUIStyle(GUI.skin.button) { fontSize = Mathf.RoundToInt(u * 2.4f), fontStyle = FontStyle.Bold };
+            var nameSt = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Bold };
+            var descSt = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.1f) };
+            var btn = new GUIStyle(GUI.skin.button) { fontSize = FuentePixel.Tam(u * 2.4f), fontStyle = FontStyle.Bold };
             for (int i = 0; i < 3; i++)
             {
                 var row = new Rect(panel.x + u * 4f, panel.y + u * (14f + i * 9.5f), panel.width - u * 8f, u * 8f);

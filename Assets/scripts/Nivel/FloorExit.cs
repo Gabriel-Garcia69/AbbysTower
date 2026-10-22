@@ -85,7 +85,7 @@ public class FloorExit : MonoBehaviour
             GUI.color = prev;
         }
         if (messageTimer <= 0f) return;
-        var style = new GUIStyle(GUI.skin.label) { fontSize = 32, alignment = TextAnchor.MiddleCenter };
+        var style = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(32), alignment = TextAnchor.MiddleCenter };
         GUI.Label(new Rect(0, Screen.height * 0.4f, Screen.width, 60), "¡Piso completado!", style);
     }
 }

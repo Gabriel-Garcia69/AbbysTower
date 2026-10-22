@@ -400,7 +400,7 @@ public class PauseMenu : MonoBehaviour
 
     void Text(Rect r, string s, float size, bool bold, TextAnchor anchor, Color c, bool wrap = false)
     {
-        text.fontSize = Mathf.Max(8, Mathf.RoundToInt(size));
+        text.fontSize = Mathf.Max(8, FuentePixel.Tam(size));
         text.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
         text.alignment = anchor;
         text.wordWrap = wrap;
@@ -420,7 +420,7 @@ public class PauseMenu : MonoBehaviour
         var content = new GUIContent(s);
         while (size > 8f)
         {
-            text.fontSize = Mathf.RoundToInt(size);
+            text.fontSize = FuentePixel.Tam(size);
             if (text.CalcSize(content).x <= width) break;
             size -= 1f;
         }

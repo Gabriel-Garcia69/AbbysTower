@@ -266,14 +266,14 @@ public class FloorDirector : MonoBehaviour
         // números de daño
         if (cam != null)
         {
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 3.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             foreach (var p in popups)
             {
                 Vector3 sp = cam.WorldToScreenPoint(p.pos + new Vector3(p.drift, Mathf.Min(p.t, 0.7f) * 1.2f, 0f));
                 if (sp.z < 0f) continue;
                 float a = 1f - Mathf.Clamp01((p.t - (p.life - 0.4f)) / 0.4f);
                 float pop = 1f + Mathf.Max(0f, 0.25f - p.t) * 2f;
-                st.fontSize = Mathf.RoundToInt(u * 3.2f * pop);
+                st.fontSize = FuentePixel.Tam(u * 3.2f * pop);
                 Text(new Rect(sp.x - 400, sh - sp.y - 20, 800, 40), p.text, st, new Color(p.color.r, p.color.g, p.color.b, a));
             }
 
@@ -316,7 +316,7 @@ public class FloorDirector : MonoBehaviour
                 GUI.color = Color.white;
                 GUI.DrawTextureWithTexCoords(new Rect(marco.x + u * 0.5f, marco.y + u * 0.5f, marco.width - u, marco.height - u), tx, uv, true);
             }
-            var label = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
+            var label = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
             float bx = marco.xMax + u * 1.5f, bw = u * 30f;
             Text(new Rect(bx, py - u * 0.4f, bw, u * 3f), heroName, label, new Color(1f, 0.95f, 0.85f));
             var bar = new Rect(bx, py + u * 3f, bw, u * 2.4f);
@@ -326,7 +326,7 @@ public class FloorDirector : MonoBehaviour
             Box(new Rect(bar.x, bar.y, bar.width * shownHealth, bar.height), new Color(1f, 0.85f, 0.55f, 0.9f));
             Color hc = Color.Lerp(new Color(1f, 0.25f, 0.3f), new Color(0.45f, 1f, 0.6f), health.Normalized);
             Box(new Rect(bar.x, bar.y, bar.width * health.Normalized, bar.height), new Color(hc.r, hc.g, hc.b, parpadeo));
-            var num = new GUIStyle(label) { fontSize = Mathf.RoundToInt(u * 1.8f), alignment = TextAnchor.MiddleCenter };
+            var num = new GUIStyle(label) { fontSize = FuentePixel.Tam(u * 1.8f), alignment = TextAnchor.MiddleCenter };
             Text(bar, $"VIDA  {Mathf.CeilToInt(health.Health)} / {Mathf.RoundToInt(health.maxHealth)}", num, Color.white);
             if (block != null)
             {
@@ -337,7 +337,7 @@ public class FloorDirector : MonoBehaviour
                 if (block.Blocking) sc = Color.Lerp(sc, Color.white, 0.35f);
                 Box(new Rect(sb.x - 2, sb.y - 2, sb.width + 4, sb.height + 4), new Color(0f, 0f, 0f, 0.7f + block.EmptyFlash * 0.3f));
                 Box(new Rect(sb.x, sb.y, sb.width * block.Normalized, sb.height), sc);
-                var sn = new GUIStyle(num) { fontSize = Mathf.RoundToInt(u * 1.4f) };
+                var sn = new GUIStyle(num) { fontSize = FuentePixel.Tam(u * 1.4f) };
                 Text(sb, "STAMINA", sn, new Color(1f, 1f, 1f, 0.9f));
                 if (block.BlockFlash > 0f) Box(new Rect(marco.x - 3, marco.y - 3, marco.width + 6, marco.height + 6), new Color(0.6f, 0.8f, 1f, 0.5f * block.BlockFlash));
             }
@@ -346,7 +346,7 @@ public class FloorDirector : MonoBehaviour
         // enemigos restantes
         if (activeRoom != null && !activeRoom.isBoss && activeRoom.Current == RoomEncounter.State.Combate)
         {
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperRight };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperRight };
             Text(new Rect(sw - u * 43f, u * 3f, u * 40f, u * 4f), $"Enemigos: {activeRoom.Remaining}", st, new Color(1f, 0.75f, 0.55f));
         }
 
@@ -355,7 +355,7 @@ public class FloorDirector : MonoBehaviour
         {
             float w = sw * 0.55f, h = u * 2.4f;
             var bar = new Rect((sw - w) / 2f, sh - u * 9f, w, h);
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerCenter };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.LowerCenter };
             Text(new Rect(bar.x, bar.y - u * 4.2f, bar.width, u * 4f), boss.DisplayName.ToUpper() + (boss.Enraged ? "  ·  FURIA" : ""), st, new Color(1f, 0.8f, 0.75f));
             Box(new Rect(bar.x - 3, bar.y - 3, bar.width + 6, bar.height + 6), new Color(0f, 0f, 0f, 0.75f));
             Box(new Rect(bar.x, bar.y, bar.width * boss.Normalized, bar.height), boss.Enraged ? new Color(1f, 0.2f, 0.15f) : new Color(0.75f, 0.2f, 0.3f));
@@ -370,8 +370,8 @@ public class FloorDirector : MonoBehaviour
             Box(new Rect(0, sh * 0.2f - u * 1.5f, sw, u * 14f), new Color(0f, 0f, 0f, 0.5f * a));
             Box(new Rect(sw * 0.2f, sh * 0.2f - u * 1.5f, sw * 0.6f, u * 0.25f), new Color(bannerColor.r, bannerColor.g, bannerColor.b, 0.8f * a));
             Box(new Rect(sw * 0.2f, sh * 0.2f + u * 12.25f, sw * 0.6f, u * 0.25f), new Color(bannerColor.r, bannerColor.g, bannerColor.b, 0.8f * a));
-            var big = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 6.5f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            var small = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
+            var big = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 6.5f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            var small = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
             Text(new Rect(slide, sh * 0.2f, sw, u * 8f), bannerTop, big, new Color(bannerColor.r, bannerColor.g, bannerColor.b, a));
             if (!string.IsNullOrEmpty(bannerBottom)) Text(new Rect(-slide, sh * 0.2f + u * 7.5f, sw, u * 4f), bannerBottom, small, new Color(1f, 1f, 1f, a * 0.85f));
         }
@@ -380,11 +380,11 @@ public class FloorDirector : MonoBehaviour
         if (!dead && !completed)
         {
             Box(new Rect(0, sh - u * 4.4f, sw, u * 4.4f), new Color(0f, 0f, 0f, 0.45f));
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 1.9f), alignment = TextAnchor.MiddleCenter };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 1.9f), alignment = TextAnchor.MiddleCenter };
             Text(new Rect(0, sh - u * 4.4f, sw, u * 4.4f), Controles, st, new Color(1f, 1f, 1f, 0.85f));
             if (HealingShrine.Cerca != null)
             {
-                var big = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 2.8f), fontStyle = FontStyle.Bold };
+                var big = new GUIStyle(st) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Bold };
                 float blink = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f);
                 Text(new Rect(0, sh - u * 11f, sw, u * 5f), "E  ·  Usar la fuente de curación", big, new Color(0.6f, 1f, 0.75f, blink));
             }
@@ -395,13 +395,13 @@ public class FloorDirector : MonoBehaviour
 
         if (dead)
         {
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             Text(new Rect(0, sh * 0.36f, sw, u * 12f), "DERROTA", st, new Color(1f, 0.35f, 0.35f, Mathf.Clamp01(endTimer / 0.8f)));
-            var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Italic };
+            var s2 = new GUIStyle(st) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Italic };
             Text(new Rect(0, sh * 0.36f + u * 11f, sw, u * 4f), "Abby cayó.", s2, new Color(1f, 1f, 1f, Mathf.Clamp01((endTimer - 0.6f) / 0.8f)));
             if (endTimer > 1.6f)
             {
-                var s3 = new GUIStyle(s2) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Bold };
+                var s3 = new GUIStyle(s2) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Bold };
                 float blink = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 4f);
                 Text(new Rect(0, sh * 0.36f + u * 18f, sw, u * 4f), "Enter  ·  Reintentar el piso          Esc  ·  Menú principal", s3, new Color(1f, 1f, 1f, blink));
             }
@@ -410,14 +410,14 @@ public class FloorDirector : MonoBehaviour
         if (completed)
         {
             float a = Mathf.Clamp01(endTimer / 1f);
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             string done = floorTitle.StartsWith("PISO") ? $"¡{floorTitle} COMPLETADO!" : floorTitle.StartsWith("LA ") ? $"¡{floorTitle}, CONQUISTADA!" : $"¡{floorTitle} SUPERADO!";
             Text(new Rect(0, sh * 0.28f, sw, u * 12f), done, st, new Color(1f, 0.88f, 0.5f, a));
-            var s2 = new GUIStyle(st) { fontSize = Mathf.RoundToInt(u * 3f), fontStyle = FontStyle.Normal };
+            var s2 = new GUIStyle(st) { fontSize = FuentePixel.Tam(u * 3f), fontStyle = FontStyle.Normal };
             Text(new Rect(0, sh * 0.28f + u * 13f, sw, u * 5f), $"Tiempo  {completeTime}        Enemigos derrotados  {kills}", s2, new Color(1f, 1f, 1f, a));
             if (endTimer > 1.5f)
             {
-                var s3 = new GUIStyle(s2) { fontSize = Mathf.RoundToInt(u * 2.4f), fontStyle = FontStyle.Italic };
+                var s3 = new GUIStyle(s2) { fontSize = FuentePixel.Tam(u * 2.4f), fontStyle = FontStyle.Italic };
                 float blink = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 4f);
                 Text(new Rect(0, sh * 0.28f + u * 21f, sw, u * 4f), "Enter / Espacio para continuar", s3, new Color(1f, 1f, 1f, blink));
             }

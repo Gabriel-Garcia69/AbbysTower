@@ -39,6 +39,10 @@ public class AbbySpriteAnimator : MonoBehaviour
     [Header("Poses (un solo dibujo por dirección, mismo personaje): golpe y guardia")]
     public Sprite[] golpePose = new Sprite[8];
     public Sprite[] guardia = new Sprite[8];
+    [Header("Derrota: cae de rodillas y luego queda tendida")]
+    public Sprite[] rodilla = new Sprite[8];
+    public Sprite[] tendida = new Sprite[8];
+    public float tiempoRodilla = 0.8f;
     public AbbyBlock block;
     public PlayerHealth health;
 
@@ -57,6 +61,7 @@ public class AbbySpriteAnimator : MonoBehaviour
     int dir = 6;
     float walkTime, dashTime, attackTime, idleTime, blockTime, hurtLeft;
     int lastSwing;
+    float muerteTime;
     bool subscribed;
     Vector3 baseScale, basePos;
     Quaternion baseRot;
@@ -108,7 +113,23 @@ public class AbbySpriteAnimator : MonoBehaviour
         else dashTime = 0f;
 
         float giro = 0f; Vector3 empuje = Vector3.zero; Color tinte = Color.white;
-        if (s == null && attacking && golpePose != null && golpePose.Length > dir && golpePose[dir] != null)
+        if (health != null && health.IsDead)
+        {
+            // derrota: de rodillas un momento y luego tendida en el suelo (mirando hacia donde miraba)
+            muerteTime += dt;
+            var poses = muerteTime < tiempoRodilla ? rodilla : tendida;
+            if (poses != null && poses.Length > dir && poses[dir] != null) s = poses[dir];
+            else if (rodilla != null && rodilla.Length > dir && rodilla[dir] != null) s = rodilla[dir];
+            if (s != null)
+            {
+                float k = Mathf.Clamp01(muerteTime / 0.25f);
+                stretch = muerteTime < tiempoRodilla ? 1f - 0.06f * (1f - k) : 1f;
+                tinte = Color.Lerp(new Color(1f, 0.55f, 0.55f), new Color(0.82f, 0.78f, 0.9f), Mathf.Clamp01(muerteTime / 1.5f));
+            }
+        }
+        else muerteTime = 0f;
+        if (s != null) { }
+        else if (attacking && golpePose != null && golpePose.Length > dir && golpePose[dir] != null)
         {
             // pose de golpe: un instante de carga (se encoge con el dibujo de pie) y luego el tajo, sin voltear la espada
             if (attack.Swings != lastSwing) { lastSwing = attack.Swings; attackTime = 0f; }

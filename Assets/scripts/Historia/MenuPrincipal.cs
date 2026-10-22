@@ -123,9 +123,9 @@ public class MenuPrincipal : MonoBehaviour
         GUI.depth = -900;
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         // título
-        var titulo = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 9f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 9f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         Sombra(new Rect(0, sh * 0.1f, sw, u * 12f), "ABBY´S TOWER", titulo, new Color(1f, 0.92f, 0.75f));
-        var sub = new GUIStyle(titulo) { fontSize = Mathf.RoundToInt(u * 2.6f), fontStyle = FontStyle.Italic };
+        var sub = new GUIStyle(titulo) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Italic };
         Sombra(new Rect(0, sh * 0.1f + u * 11f, sw, u * 4f), "La torre del abismo", sub, new Color(0.85f, 0.78f, 1f));
 
         var ops = Opciones();
@@ -135,10 +135,10 @@ public class MenuPrincipal : MonoBehaviour
         CuadroNarracion.Marco(caja, 0.92f * a);
         if (pagina == Pagina.Salir)
         {
-            var q = new GUIStyle(sub) { fontStyle = FontStyle.Bold, fontSize = Mathf.RoundToInt(u * 2.8f) };
+            var q = new GUIStyle(sub) { fontStyle = FontStyle.Bold, fontSize = FuentePixel.Tam(u * 2.8f) };
             Sombra(new Rect(caja.x, caja.y - u * 6f, caja.width, u * 5f), "¿Salir del juego?", q, Color.white);
         }
-        var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.9f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+        var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.9f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         var ev = Event.current;
         for (int i = 0; i < ops.Length; i++)
         {
@@ -159,7 +159,7 @@ public class MenuPrincipal : MonoBehaviour
             }
             Sombra(r, (on ? "›  " : "") + ops[i] + (on ? "  ‹" : ""), st, on ? new Color(1f, 0.85f, 0.5f, a) : new Color(1f, 1f, 1f, 0.85f * a));
         }
-        var ayuda = new GUIStyle(sub) { fontSize = Mathf.RoundToInt(u * 1.8f), fontStyle = FontStyle.Normal };
+        var ayuda = new GUIStyle(sub) { fontSize = FuentePixel.Tam(u * 1.8f), fontStyle = FontStyle.Normal };
         Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), "↑ ↓  elegir     Enter  aceptar     ← →  ajustar volumen     Esc  regresar", ayuda, new Color(1f, 1f, 1f, 0.7f));
         GUI.color = Color.white;
     }

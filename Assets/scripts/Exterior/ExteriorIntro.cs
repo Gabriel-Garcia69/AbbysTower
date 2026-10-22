@@ -291,21 +291,21 @@ public class ExteriorIntro : MonoBehaviour
 
         if (!done && index < shots.Count && captionAlpha > 0f && shots[index].caption != null)
         {
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(sh / 26f), fontStyle = FontStyle.Italic, alignment = TextAnchor.LowerLeft };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(sh / 26f), fontStyle = FontStyle.Italic, alignment = TextAnchor.LowerLeft };
             Shadowed(new Rect(sw * 0.06f, sh * 0.70f, sw * 0.6f, sh * 0.12f), shots[index].caption, st, captionAlpha);
         }
 
         if (!done && titleAlpha > 0f)
         {
-            var big = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(sh / 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            var small = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(sh / 28f), alignment = TextAnchor.MiddleCenter };
+            var big = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(sh / 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            var small = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(sh / 28f), alignment = TextAnchor.MiddleCenter };
             Shadowed(new Rect(0, sh * 0.30f, sw, sh * 0.2f), title, big, titleAlpha);
             Shadowed(new Rect(0, sh * 0.48f, sw, sh * 0.08f), subtitle, small, titleAlpha);
         }
 
         if (!done && skippable)
         {
-            var hint = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(sh / 48f), alignment = TextAnchor.LowerRight };
+            var hint = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(sh / 48f), alignment = TextAnchor.LowerRight };
             Shadowed(new Rect(0, sh - sh * 0.1f, sw - sw * 0.03f, sh * 0.08f), "Enter / Espacio: saltar", hint, 0.6f * Mathf.Clamp01(totalT - 1f));
         }
 

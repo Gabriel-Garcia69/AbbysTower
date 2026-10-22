@@ -62,7 +62,7 @@ public static class CuadroNarracion
     }
 
     static GUIStyle Estilo(float tam, FontStyle fs = FontStyle.Normal, TextAnchor a = TextAnchor.UpperLeft)
-        => new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(Screen.height / 100f * tam), fontStyle = fs, alignment = a, wordWrap = true, richText = false };
+        => new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(Screen.height / 100f * tam), fontStyle = fs, alignment = a, wordWrap = true, richText = false };
 
     static void Texto(Rect r, string s, GUIStyle st, Color c)
     {

@@ -79,7 +79,7 @@ public class LoreNote : MonoBehaviour
             if (cam == null) return;
             Vector3 sp = cam.WorldToScreenPoint(transform.position + Vector3.up * 1.2f);
             if (sp.z < 0f) return;
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.2f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.2f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
             string verb = kind == Kind.Inscripcion ? "Examinar" : "Leer";
             var r = new Rect(sp.x - u * 12f, sh - sp.y - u * 2.5f, u * 24f, u * 4f);
             st.normal.textColor = new Color(0f, 0f, 0f, 0.7f);
@@ -97,7 +97,7 @@ public class LoreNote : MonoBehaviour
 
         // hoja: pergamino (o piedra si es inscripción)
         float pw = Mathf.Min(sw - 6f * u, 80f * u);
-        var measure = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.25f), wordWrap = true, richText = true };
+        var measure = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.25f), wordWrap = true, richText = true };
         float needed = measure.CalcHeight(new GUIContent(text), pw - 14f * u) + 26f * u;   // la hoja crece con el texto
         float ph = Mathf.Clamp(needed, 40f * u, sh - 10f * u);
         var page = new Rect((sw - pw) / 2f, (sh - ph) / 2f, pw, ph);
@@ -114,14 +114,14 @@ public class LoreNote : MonoBehaviour
         GUI.DrawTexture(new Rect(page.x, page.yMax - 2f * u, page.width, 2f * u), Texture2D.whiteTexture);
         GUI.color = Color.white;
 
-        var titleSt = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 3.4f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        var titleSt = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.4f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
         titleSt.normal.textColor = ink;
         GUI.Label(new Rect(page.x + 4f * u, page.y + 3f * u, page.width - 8f * u, 6f * u), title, titleSt);
-        var kindSt = new GUIStyle(titleSt) { fontSize = Mathf.RoundToInt(u * 1.7f), fontStyle = FontStyle.Italic };
+        var kindSt = new GUIStyle(titleSt) { fontSize = FuentePixel.Tam(u * 1.7f), fontStyle = FontStyle.Italic };
         kindSt.normal.textColor = new Color(ink.r, ink.g, ink.b, 0.6f);
         GUI.Label(new Rect(page.x, page.y + 9f * u, page.width, 3f * u), kind == Kind.Libro ? "— libro —" : kind == Kind.Diario ? "— página de diario —" : kind == Kind.Inscripcion ? "— inscripción en la piedra —" : "— nota —", kindSt);
 
-        var body = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.25f), wordWrap = true, alignment = TextAnchor.UpperLeft, richText = true };
+        var body = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.25f), wordWrap = true, alignment = TextAnchor.UpperLeft, richText = true };
         body.normal.textColor = ink;
         var area = new Rect(page.x + 6f * u, page.y + 13.5f * u, page.width - 12f * u, page.height - 23f * u);
         float textH = body.CalcHeight(new GUIContent(text), area.width - 2f * u);

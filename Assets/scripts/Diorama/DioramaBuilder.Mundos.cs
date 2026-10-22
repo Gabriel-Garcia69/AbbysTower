@@ -243,6 +243,8 @@ public partial class DioramaBuilder
         var v = new System.Collections.Generic.List<Vector3>(); var uv = new System.Collections.Generic.List<Vector2>(); var t = new System.Collections.Generic.List<int>();
         for (int lado = 0; lado < 4; lado++)
         {
+            // el lado sur queda siempre entre la cámara (que mira al norte) y Abby: ahí la cortina tapaba la vista
+            if (lado == 0) continue;
             Vector2 a0 = esquinas[lado], a1 = esquinas[lado + 1];
             int n = Mathf.Max(1, Mathf.CeilToInt(Vector2.Distance(a0, a1) / 1.5f));
             int i0 = v.Count;

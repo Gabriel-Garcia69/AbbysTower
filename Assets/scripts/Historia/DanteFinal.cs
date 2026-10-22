@@ -169,8 +169,8 @@ public class DanteFinal : MonoBehaviour
     {
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         GUI.color = Color.black; GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
-        var grande = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        var chico = new GUIStyle(grande) { fontSize = Mathf.RoundToInt(u * 2.4f), fontStyle = FontStyle.Italic };
+        var grande = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        var chico = new GUIStyle(grande) { fontSize = FuentePixel.Tam(u * 2.4f), fontStyle = FontStyle.Italic };
         float y = sh + u * 4f - creditosT * (sh + Creditos.Length * u * 16f) / DuracionCreditos;
         for (int i = 0; i < Creditos.Length; i++, y += u * 16f)
         {

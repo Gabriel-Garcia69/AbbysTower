@@ -305,7 +305,7 @@ public class ExpedicionPiso20 : MonoBehaviour
         float sw = Screen.width, u = Screen.height / 100f;
         if (!string.IsNullOrEmpty(pista) && pistaAlpha > 0f)
         {
-            var st = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(u * 2.3f), alignment = TextAnchor.MiddleCenter, wordWrap = true };
+            var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.3f), alignment = TextAnchor.MiddleCenter, wordWrap = true };
             float w = Mathf.Min(sw * 0.6f, st.CalcSize(new GUIContent(pista)).x + u * 8f);
             var r = new Rect((sw - w) / 2f, u * 12f, w, u * 6f);
             CuadroNarracion.Marco(r, pistaAlpha * 0.95f);

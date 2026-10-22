@@ -604,7 +604,7 @@ public class MouseOrbitCamera : MonoBehaviour
         float left = labelUntil - Time.unscaledTime;
         if (left <= 0f) return;
         if (labelStyle == null)
-            labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 20, fontStyle = FontStyle.Bold };
+            labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = FuentePixel.Tam(20), fontStyle = FontStyle.Bold };
         float a = Mathf.Clamp01(left / 0.5f);
 
         string text = libre ? "Cámara libre · mueve el mouse para mirar alrededor\nF4: volver a la cámara del juego" : "Cámara del juego\nF3: cámara libre";

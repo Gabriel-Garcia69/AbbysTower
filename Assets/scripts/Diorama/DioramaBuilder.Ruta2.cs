@@ -15,13 +15,13 @@ public partial class DioramaBuilder
     /// escalón (ahí van escaleras o puentes). Árboles y arbustos no se ponen encima ni entre el sendero y la cámara.</summary>
     void Trail(Transform parent, float width, params Vector2[] pts)
     {
-        var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>();
-        float dist = 0f;
+        var piso = PisoSendero();
         for (int i = 0; i + 1 < pts.Length; i++)
         {
             Vector2 a = pts[i], b = pts[i + 1];
             float len = Vector2.Distance(a, b);
             if (len < 0.01f) continue;
+            AnotarTramo(piso, a, b, width);   // la malla se arma al final, unida (CaminosMalla)
             int n = Mathf.Max(1, Mathf.CeilToInt(len / 0.7f));
             Vector2 dir = (b - a) / len, right = new Vector2(dir.y, -dir.x) * (width / 2f);
             for (int k = 0; k < n; k++)
@@ -29,25 +29,9 @@ public partial class DioramaBuilder
                 Vector2 p0 = Vector2.Lerp(a, b, k / (float)n), p1 = Vector2.Lerp(a, b, (k + 1) / (float)n);
                 trail.Add(p0);
                 if (k % 3 == 0) blocked.Add(new Rect(p0.x - width / 2f - 0.6f, p0.y - width / 2f - 0.6f, width + 1.2f, width + 1.2f));
-                float h0 = Height(p0.x, p0.y), d0 = dist;
-                dist += Vector2.Distance(p0, p1);
-                // escalón, escalera, agua o puente: ahí no va franja (cada orilla al mismo nivel)
-                if (Mathf.Abs(Height(p1.x, p1.y) - h0) > 0.05f) continue;
-                if (Mathf.Abs(Height(p0.x + right.x, p0.y + right.y) - h0) > 0.05f || Mathf.Abs(Height(p0.x - right.x, p0.y - right.y) - h0) > 0.05f) continue;
-                int s = v.Count; float y = h0 + 0.015f;
-                v.Add(new Vector3(p0.x - right.x, y, p0.y - right.y)); v.Add(new Vector3(p0.x + right.x, y, p0.y + right.y));
-                v.Add(new Vector3(p1.x - right.x, y, p1.y - right.y)); v.Add(new Vector3(p1.x + right.x, y, p1.y + right.y));
-                uv.Add(new Vector2(0f, d0 * 0.5f)); uv.Add(new Vector2(width * 0.5f, d0 * 0.5f));
-                uv.Add(new Vector2(0f, dist * 0.5f)); uv.Add(new Vector2(width * 0.5f, dist * 0.5f));
-                t.AddRange(new[] { s, s + 2, s + 3, s, s + 3, s + 1 });
             }
         }
         trail.Add(pts[pts.Length - 1]);
-        var m = new Mesh { name = "Sendero", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
-        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
-        m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
-        var go = MeshObject(parent, "Sendero", m, mDirt, false);
-        go.GetComponent<MeshRenderer>().receiveShadows = true;
     }
 
     /// <summary>¿Algo alto en q taparía el sendero desde la cámara? (la cámara ve al norte desde el sur)</summary>

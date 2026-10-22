@@ -73,6 +73,7 @@ public partial class DioramaBuilder : MonoBehaviour
         Clear();
         rng = new System.Random(seed);
         blocked.Clear();
+        tramos.Clear();
         LoadMaterials();
         LoadWorldMaterials();
         root = Group(Prefix + "Mapa", transform);
@@ -159,7 +160,7 @@ public partial class DioramaBuilder : MonoBehaviour
         var p = Group("Caminos", root);
         Strip(p, new Vector2(0f, -29f), new Vector2(0f, -FenceZ - 0.6f), 5f);
         Strip(p, new Vector2(0f, FenceZ + 0.6f), new Vector2(0f, StairZ0), 5f);
-        Flat(p, "PlazaRuinas", new Vector3(0f, 0.013f, (FenceZ + StairZ0) / 2f + 0.3f), 16f, StairZ0 - FenceZ - 1.2f, mDirt, 0.5f);
+        AnotarPlaza(PisoSendero(), new Vector2(0f, (FenceZ + StairZ0) / 2f + 0.3f), new Vector2(16f, StairZ0 - FenceZ - 1.2f));
         Strip(p, new Vector2(-31f, -13f), new Vector2(27f, -13f), 4.2f);
         Strip(p, new Vector2(-29f, -13f), new Vector2(-29f, -3.4f), 3.6f);
         Strip(p, new Vector2(-29f, 3.4f), new Vector2(-29f, 16f), 3.6f);
@@ -168,7 +169,7 @@ public partial class DioramaBuilder : MonoBehaviour
         Strip(p, new Vector2(2.5f, 16f), new Vector2(LookoutX, 16f), 3.6f);
         Strip(p, new Vector2(LookoutX, 16f), new Vector2(LookoutX, CliffFenceZ), 3.6f);
         // plazuela del mercado
-        Flat(p, "Plazuela", new Vector3(6f, 0.012f, -17.5f), 12f, 5f, mCobble, 0.5f);
+        AnotarPlaza(mCobble, new Vector2(6f, -17.5f), new Vector2(12f, 5f));
         blocked.Add(new Rect(0f, -20.5f, 12f, 6f));
     }
 
@@ -179,7 +180,7 @@ public partial class DioramaBuilder : MonoBehaviour
         float len = d.magnitude;
         bool alongZ = Mathf.Abs(d.y) > Mathf.Abs(d.x);
         Vector2 c = (a + b) / 2f;
-        Flat(parent, "Camino", new Vector3(c.x, 0.01f, c.y), alongZ ? width : len, alongZ ? len : width, mDirt, 0.5f);
+        AnotarPlaza(PisoSendero(), c, alongZ ? new Vector2(width, len) : new Vector2(len, width));   // se une al final (CaminosMalla)
         var rect = alongZ ? new Rect(c.x - width / 2f - 0.4f, Mathf.Min(a.y, b.y), width + 0.8f, len) : new Rect(Mathf.Min(a.x, b.x), c.y - width / 2f - 0.4f, len, width + 0.8f);
         blocked.Add(rect);
         // matas de pasto que se comen el borde del camino
@@ -581,16 +582,7 @@ public partial class DioramaBuilder : MonoBehaviour
 
     void Brazier(Transform parent, Vector3 pos)
     {
-        var b = Group("Brasero", parent);
-        b.localPosition = pos;
-        Prim(b, PrimitiveType.Cylinder, "Pie", new Vector3(0f, 0.5f, 0f), new Vector3(0.25f, 0.5f, 0.25f), mMetal);
-        Prim(b, PrimitiveType.Cylinder, "Cuenco", new Vector3(0f, 1.05f, 0f), new Vector3(0.9f, 0.1f, 0.9f), mMetal);
-        var fire = Prim(b, PrimitiveType.Sphere, "Brasas", new Vector3(0f, 1.15f, 0f), new Vector3(0.6f, 0.25f, 0.6f), mGlow);
-        fire.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        var l = AddLight(b, new Vector3(0f, 1.7f, 0f), new Color(1f, 0.6f, 0.3f), 7f, 3f);
-        l.gameObject.AddComponent<LightFlicker>().amount = 0.2f;
-        Smoke(b, new Vector3(0f, 1.3f, 0f), new Color(1f, 0.55f, 0.25f, 0.5f), true);
-        var col = b.gameObject.AddComponent<CapsuleCollider>(); col.radius = 0.45f; col.height = 1.2f; col.center = new Vector3(0f, 0.6f, 0f);
+        BraseroBonito(parent, pos);
     }
 
     // ------------------------------------------------------------------ pueblo
@@ -623,7 +615,7 @@ public partial class DioramaBuilder : MonoBehaviour
     }
 
     /// <summary>Casa de entramado: zócalo de piedra, muros encalados con vigas oscuras, techo de tejas, chimenea y ventanas.</summary>
-    void House(Transform parent, Vector3 pos, float yaw, float w, float d, float wallH, bool chimney)
+    void CasaEntramado(Transform parent, Vector3 pos, float yaw, float w, float d, float wallH, bool chimney)
     {
         var h = Group("Casa", parent);
         h.localPosition = pos;
@@ -646,15 +638,23 @@ public partial class DioramaBuilder : MonoBehaviour
         foreach (float sx in new[] { -1f, 1f })
         {
             Box(h, "Carrera", new Vector3(sx * (w / 2f + 0.02f), top - 0.1f, 0f), new Vector3(0.12f, 0.2f, d), mTimber, false);
-            var diag = Box(h, "Riostra", new Vector3(sx * (w / 2f + 0.02f), baseH + wallH * 0.25f, 0f), new Vector3(0.12f, 0.14f, d * 0.75f), mTimber, false);
-            diag.transform.localRotation = Quaternion.Euler(sx * 18f, 0f, 0f);
+            float hp = wallH * 0.5f - 0.08f, dp = d - 0.24f;
+            float lp = Mathf.Sqrt(hp * hp + dp * dp), ap = Mathf.Atan2(hp, dp) * Mathf.Rad2Deg;
+            foreach (float s2 in new[] { -1f, 1f })
+            {
+                var diag = Box(h, "Riostra", new Vector3(sx * (w / 2f + 0.03f), baseH + hp / 2f + 0.04f, 0f), new Vector3(0.1f, 0.12f, lp - 0.1f), mTimber, false);
+                diag.transform.localRotation = Quaternion.Euler(s2 * ap, 0f, 0f);
+            }
         }
         // techo de tejas a dos aguas (cumbrera a lo largo de X) y hastiales encalados
         float roofH = d * 0.55f;
-        var roof = MeshObject(h, "Tejado", Roof(w + 0.9f, d + 1f, roofH), mRoof, true);
-        roof.transform.localPosition = new Vector3(0f, top, 0f);
-        MeshObject(h, "Hastial", Gable(w, roofH * (d / (d + 1f)), d / 2f + 0.01f), mPlaster, true).transform.localPosition = new Vector3(0f, top, 0f);
-        Box(h, "Cumbrera", new Vector3(0f, top + roofH + 0.05f, 0f), new Vector3(w + 1f, 0.18f, 0.22f), mTimber, false);
+        Techo(h, w, d, top, roofH, mRoof, mPlaster, mTimber, 0.55f, 0.16f, Cumbrera.Teja);
+        // entramado también en el hastial: pendolón al centro y tirante
+        foreach (float sx in new[] { -1f, 1f })
+        {
+            Box(h, "Pendolon", new Vector3(sx * (w / 2f + 0.03f), top + roofH * 0.45f, 0f), new Vector3(0.12f, roofH * 0.9f, 0.16f), mTimber, false);
+            Box(h, "Tirante", new Vector3(sx * (w / 2f + 0.03f), top + roofH * 0.35f, 0f), new Vector3(0.12f, 0.14f, d * 0.6f), mTimber, false);
+        }
         // puerta, ventanas con marco y jardinera (frente = +Z)
         Box(h, "Puerta", new Vector3(w * 0.15f, baseH + 0.9f, d / 2f + 0.05f), new Vector3(0.95f, 1.8f, 0.1f), mDoor, false);
         Box(h, "Dintel", new Vector3(w * 0.15f, baseH + 1.85f, d / 2f + 0.08f), new Vector3(1.2f, 0.16f, 0.12f), mTimber, false);
@@ -701,26 +701,67 @@ public partial class DioramaBuilder : MonoBehaviour
         s.localPosition = pos;
         s.localRotation = Quaternion.Euler(0f, yaw, 0f);
         float w = 3.6f, d = 1.8f;
+        MaterialesCasas();
+        Material rayaA = layout == Layout.Puerto ? mAzul : mCloth, rayaB = mClothB;
+        // armazón: postes gruesos (los de atrás más altos), travesaños arriba y escuadras
         foreach (float sx in new[] { -1f, 1f })
             foreach (float sz in new[] { -1f, 1f })
-                Box(s, "Poste", new Vector3(sx * w / 2f, 1.3f + (sz > 0 ? 0f : 0.3f), sz * d / 2f), new Vector3(0.14f, sz > 0 ? 2.6f : 3.2f, 0.14f), mTimber, false);
+            {
+                float ph = sz > 0 ? 2.6f : 3.2f;
+                Box(s, "Poste", new Vector3(sx * w / 2f, ph / 2f, sz * d / 2f), new Vector3(0.16f, ph, 0.16f), mTimber, false);
+                var esc = Box(s, "Escuadra", new Vector3(sx * (w / 2f - 0.22f), ph - 0.32f, sz * d / 2f), new Vector3(0.6f, 0.08f, 0.08f), mTimber, false);
+                esc.transform.localRotation = Quaternion.Euler(0f, 0f, sx * 45f);
+            }
+        foreach (float sz in new[] { -1f, 1f })
+            Box(s, "Travesano", new Vector3(0f, (sz > 0 ? 2.6f : 3.2f) - 0.06f, sz * d / 2f), new Vector3(w + 0.2f, 0.12f, 0.12f), mTimber, false);
+        // mostrador de tablas verticales con cubierta
         Box(s, "Mostrador", new Vector3(0f, 0.5f, d / 2f - 0.3f), new Vector3(w, 1f, 0.6f), mPlank, false);
-        Box(s, "Tabla", new Vector3(0f, 1.03f, d / 2f - 0.3f), new Vector3(w + 0.2f, 0.07f, 0.8f), mDoor, false);
-        // toldo a rayas inclinado
+        for (float x = -w / 2f + 0.3f; x < w / 2f; x += 0.6f)
+            Box(s, "Tabla", new Vector3(x, 0.5f, d / 2f + 0.005f), new Vector3(0.08f, 0.95f, 0.03f), mTimber, false);
+        Box(s, "Cubierta", new Vector3(0f, 1.03f, d / 2f - 0.3f), new Vector3(w + 0.2f, 0.08f, 0.85f), mDoor, false);
+        // toldo grueso a rayas con faldón de picos al frente
         int stripes = 7;
+        float ang = Mathf.Atan2(0.6f, d) * Mathf.Rad2Deg;
         for (int i = 0; i < stripes; i++)
         {
-            var st = Box(s, "Toldo", new Vector3(-w / 2f + (i + 0.5f) * w / stripes, 2.9f, 0f), new Vector3(w / stripes + 0.01f, 0.06f, d + 0.8f), i % 2 == 0 ? mCloth : mClothB, false);
-            st.transform.localRotation = Quaternion.Euler(-14f, 0f, 0f);
+            float x = -w / 2f + (i + 0.5f) * w / stripes;
+            var st = Box(s, "Toldo", new Vector3(x, 2.92f, 0.05f), new Vector3(w / stripes + 0.01f, 0.08f, d + 0.9f), i % 2 == 0 ? rayaA : rayaB, false);
+            st.transform.localRotation = Quaternion.Euler(ang, 0f, 0f);
+            var pico = Box(s, "Pico", new Vector3(x, 2.43f, d / 2f + 0.5f), new Vector3(w / stripes * 0.72f, 0.36f, 0.05f), i % 2 == 0 ? rayaB : rayaA, false);
+            pico.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            pico.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
         }
-        // fruta en cajas sobre el mostrador
+        Box(s, "Faldon", new Vector3(0f, 2.6f, d / 2f + 0.5f), new Vector3(w + 0.3f, 0.2f, 0.05f), rayaA, false);
+        // letrero y farol colgado
+        Box(s, "Letrero", new Vector3(0f, 3.35f, -d / 2f), new Vector3(1.4f, 0.45f, 0.08f), mDoor, false);
+        Box(s, "LetreroMarco", new Vector3(0f, 3.35f, -d / 2f + 0.02f), new Vector3(1.55f, 0.55f, 0.04f), mTimber, false);
+        Box(s, "Cadena", new Vector3(w * 0.32f, 2.35f, d / 2f - 0.1f), new Vector3(0.02f, 0.35f, 0.02f), mHierro, false);
+        var farol = Box(s, "Farol", new Vector3(w * 0.32f, 2.08f, d / 2f - 0.1f), new Vector3(0.18f, 0.24f, 0.18f), mWindowLit, false);
+        farol.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        AddLight(s, new Vector3(w * 0.32f, 1.9f, d / 2f), new Color(1f, 0.75f, 0.45f), 4f, 1.4f);
+        // repisa de atrás con frascos y costales al lado
+        Box(s, "Repisa", new Vector3(0f, 1.3f, -d / 2f + 0.15f), new Vector3(w - 0.3f, 0.06f, 0.3f), mPlank, false);
+        for (int i = 0; i < 6; i++)
+            Prim(s, PrimitiveType.Cylinder, "Frasco", new Vector3(-w / 2f + 0.5f + i * 0.52f, 1.45f, -d / 2f + 0.15f), new Vector3(0.16f, 0.12f + (i % 3) * 0.03f, 0.16f), i % 2 == 0 ? mWindow : mDoor);
+        foreach (float sx in new[] { -1f, 1f })
+            Prim(s, PrimitiveType.Sphere, "Costal", new Vector3(sx * (w / 2f + 0.45f), 0.32f, d / 2f - 0.2f), new Vector3(0.6f, 0.65f, 0.55f), mClothB);
+        // fruta apilada en cajas inclinadas hacia el cliente (el azar se gasta igual que antes: 3 por fruta)
         Material[] fruit = { mFruitR, mFruitG, mFruitY };
         for (int c = 0; c < 3; c++)
         {
             float x = -w / 2f + 0.65f + c * 1.15f;
-            Box(s, "Caja", new Vector3(x, 1.17f, d / 2f - 0.3f), new Vector3(0.9f, 0.22f, 0.6f), mPlank, false);
+            var caja = Group("Caja", s);
+            caja.localPosition = new Vector3(x, 1.2f, d / 2f - 0.3f);
+            caja.localRotation = Quaternion.Euler(18f, 0f, 0f);
+            Box(caja, "Fondo", Vector3.zero, new Vector3(0.9f, 0.05f, 0.6f), mPlank, false);
+            foreach (float sz in new[] { -1f, 1f }) Box(caja, "Lado", new Vector3(0f, 0.08f, sz * 0.3f), new Vector3(0.9f, 0.16f, 0.04f), mPlank, false);
+            foreach (float sx in new[] { -1f, 1f }) Box(caja, "Lado", new Vector3(sx * 0.45f, 0.08f, 0f), new Vector3(0.04f, 0.16f, 0.6f), mPlank, false);
             for (int i = 0; i < 6; i++)
-                Prim(s, PrimitiveType.Sphere, "Fruta", new Vector3(x + R(-0.3f, 0.3f), 1.33f + R(0f, 0.05f), d / 2f - 0.3f + R(-0.18f, 0.18f)), Vector3.one * 0.2f, fruit[c]);
+            {
+                float jx = R(-0.03f, 0.03f), jy = R(0f, 0.02f), jz = R(-0.03f, 0.03f);
+                Vector3 p = i < 4 ? new Vector3(-0.28f + (i % 2) * 0.24f + (i / 2) * 0.3f, 0.12f, -0.1f + (i % 2) * 0.2f) : new Vector3(-0.15f + (i - 4) * 0.3f, 0.27f, 0f);
+                Prim(caja, PrimitiveType.Sphere, "Fruta", p + new Vector3(jx, jy, jz), Vector3.one * 0.2f, fruit[c]);
+            }
         }
         var col = s.gameObject.AddComponent<BoxCollider>();
         col.center = new Vector3(0f, 0.6f, d / 2f - 0.3f); col.size = new Vector3(w, 1.2f, 0.8f);
@@ -736,9 +777,14 @@ public partial class DioramaBuilder : MonoBehaviour
         water.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         foreach (float sx in new[] { -1f, 1f })
             Box(w, "Poste", new Vector3(sx * 1f, 1.6f, 0f), new Vector3(0.18f, 2.2f, 0.18f), mTimber, false);
-        var roof = MeshObject(w, "Tejadillo", Roof(2.6f, 1.9f, 0.8f), mRoof, true);
-        roof.transform.localPosition = new Vector3(0f, 2.65f, 0f);
-        roof.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+        // tejadillo a dos aguas de tablas con grosor (antes era una sola cara y desde un lado no se veía)
+        foreach (float sx in new[] { -1f, 1f })
+        {
+            var t = Box(w, "Tejadillo", new Vector3(sx * 0.62f, 2.98f, 0f), new Vector3(1.45f, 0.08f, 2.7f), mRoof, false);
+            t.transform.localRotation = Quaternion.Euler(0f, 0f, sx * -34f);
+        }
+        Box(w, "Cumbrera", new Vector3(0f, 3.4f, 0f), new Vector3(0.16f, 0.16f, 2.8f), mTimber, false);
+        Box(w, "Cuerda", new Vector3(0f, 1.65f, 0f), new Vector3(0.025f, 0.7f, 0.025f), mDoor, false);
         var axle = Prim(w, PrimitiveType.Cylinder, "Torno", new Vector3(0f, 2f, 0f), new Vector3(0.14f, 0.95f, 0.14f), mTimber);
         axle.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
         Prim(w, PrimitiveType.Cylinder, "Cubeta", new Vector3(0f, 1.3f, 0f), new Vector3(0.35f, 0.18f, 0.35f), mDoor);

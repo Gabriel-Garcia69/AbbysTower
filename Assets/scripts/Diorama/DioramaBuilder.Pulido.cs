@@ -11,6 +11,7 @@ public partial class DioramaBuilder
 
     void Pulir()
     {
+        CaminosMalla();   // todos los caminos del mapa, unidos en una malla por material
         if (root == null || layout == Layout.Intro) return;
         Faldones();
         PodarPlantas();

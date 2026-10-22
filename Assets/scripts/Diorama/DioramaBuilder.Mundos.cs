@@ -161,37 +161,12 @@ public partial class DioramaBuilder
     /// <summary>Carpa de viajero con fogata.</summary>
     void Tent(Transform parent, Vector3 pos, float yaw, Material cloth)
     {
-        var t = Group("Carpa", parent);
-        t.localPosition = pos;
-        t.localRotation = Quaternion.Euler(0f, yaw, 0f);
-        var roof = MeshObject(t, "Lona", Roof(3.2f, 2.8f, 1.9f), cloth, true);
-        roof.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
-        Box(t, "Palo", new Vector3(0f, 0.95f, 1.5f), new Vector3(0.1f, 1.9f, 0.1f), mTimber, false);
-        Box(t, "Palo", new Vector3(0f, 0.95f, -1.5f), new Vector3(0.1f, 1.9f, 0.1f), mTimber, false);
-        var col = t.gameObject.AddComponent<BoxCollider>(); col.center = new Vector3(0f, 0.8f, 0f); col.size = new Vector3(2.8f, 1.6f, 3.2f);
-        blocked.Add(new Rect(pos.x - 2.5f, pos.z - 2.5f, 5f, 5f));
+        CarpaBonita(parent, pos, yaw, cloth);
     }
 
     void Campfire(Transform parent, Vector3 pos)
     {
-        var f = Group("Fogata", parent);
-        f.localPosition = pos;
-        for (int i = 0; i < 7; i++)
-        {
-            float a = i / 7f * Mathf.PI * 2f;
-            Prim(f, PrimitiveType.Sphere, "Piedra", new Vector3(Mathf.Cos(a) * 0.55f, 0.08f, Mathf.Sin(a) * 0.55f), new Vector3(0.3f, 0.2f, 0.3f), mStone);
-        }
-        for (int i = 0; i < 3; i++)
-        {
-            var log = Prim(f, PrimitiveType.Cylinder, "Leño", new Vector3(0f, 0.12f, 0f), new Vector3(0.12f, 0.4f, 0.12f), mBarkPix);
-            log.transform.localRotation = Quaternion.Euler(80f, i * 60f, 0f);
-        }
-        var fire = Prim(f, PrimitiveType.Sphere, "Fuego", new Vector3(0f, 0.3f, 0f), new Vector3(0.45f, 0.5f, 0.45f), mGlow);
-        fire.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        var l = AddLight(f, new Vector3(0f, 1f, 0f), new Color(1f, 0.6f, 0.3f), 9f, 4f);
-        l.gameObject.AddComponent<LightFlicker>().amount = 0.25f;
-        Smoke(f, new Vector3(0f, 0.4f, 0f), new Color(1f, 0.55f, 0.25f, 0.6f), true);
-        blocked.Add(new Rect(pos.x - 1f, pos.z - 1f, 2f, 2f));
+        FogataBonita(parent, pos);
     }
 
     /// <summary>Farol en poste; de noche alumbra.</summary>

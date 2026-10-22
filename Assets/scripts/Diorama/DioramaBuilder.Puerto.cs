@@ -419,8 +419,8 @@ public partial class DioramaBuilder
     void PortGarden(Transform v)
     {
         var j = Group("Jardin", v);
-        Flat(j, "Senda", new Vector3(0f, 0.012f, -48f), 4f, 18f, mCobble, 0.5f);
-        Flat(j, "SendaCruz", new Vector3(0f, 0.013f, -48f), 34f, 3.4f, mCobble, 0.5f);
+        AnotarPlaza(mCobble, new Vector2(0f, -48f), new Vector2(4f, 18f));
+        AnotarPlaza(mCobble, new Vector2(0f, -48f), new Vector2(34f, 3.4f));
         // la fuente
         Prim(j, PrimitiveType.Cylinder, "Pila", new Vector3(0f, 0.3f, -48f), new Vector3(6.4f, 0.3f, 6.4f), mStone, true);
         Prim(j, PrimitiveType.Cylinder, "AguaFuente", new Vector3(0f, 0.62f, -48f), new Vector3(5.8f, 0.005f, 5.8f), mRiver);
@@ -457,7 +457,7 @@ public partial class DioramaBuilder
     {
         var v = Group("Pueblo", root);
         PortGarden(v);
-        Flat(v, "Plaza", new Vector3(0f, 0.012f, -12f), 50f, 18f, mCobble, 0.5f);
+        AnotarPlaza(mCobble, new Vector2(0f, -12f), new Vector2(50f, 18f));
         blocked.Add(new Rect(-25f, -21f, 50f, 18f));
         // almacenes y casas mirando al mar
         // casas y almacenes a los lados de la plaza (al sur va la cámara: nada alto ahí)

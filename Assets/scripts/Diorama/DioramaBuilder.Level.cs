@@ -172,18 +172,7 @@ public partial class DioramaBuilder
     /// <summary>Santuario de sanación: pedestal con un cristal verde que cura todo.</summary>
     void HealShrine(Transform parent, Vector3 pos)
     {
-        var s = Group("Santuario", parent);
-        s.localPosition = pos;
-        Prim(s, PrimitiveType.Cylinder, "Pedestal", new Vector3(0f, 0.3f, 0f), new Vector3(1.4f, 0.3f, 1.4f), mStone, true);
-        Prim(s, PrimitiveType.Cylinder, "Pedestal2", new Vector3(0f, 0.7f, 0f), new Vector3(0.8f, 0.12f, 0.8f), mStone);
-        var crystalMat = Glow("Dio_CristalVerde", new Color(0.4f, 1f, 0.6f), 3f);
-        var crystal = Box(s, "Cristal", new Vector3(0f, 1.6f, 0f), new Vector3(0.45f, 0.75f, 0.45f), crystalMat, false);
-        crystal.transform.localRotation = Quaternion.Euler(45f, 0f, 45f);
-        crystal.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        var lt = AddLight(s, new Vector3(0f, 1.8f, 0f), new Color(0.45f, 1f, 0.65f), 7f, 5f);
-        var shrine = s.gameObject.AddComponent<HealingShrine>();
-        shrine.crystal = crystal.transform; shrine.glow = lt;
-        blocked.Add(new Rect(pos.x - 1.5f, pos.z - 1.5f, 3f, 3f));
+        SantuarioBonito(parent, pos);
     }
 
     /// <summary>Cofre con fragmentos.</summary>

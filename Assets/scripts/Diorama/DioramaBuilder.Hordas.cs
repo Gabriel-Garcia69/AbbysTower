@@ -132,7 +132,15 @@ public partial class DioramaBuilder
             usados.Add(mejor);
             lista.Add(Arena(lvl != null ? lvl : root, "Horda", mejor, new Vector2(12f, 9f), 5));
         }
-        return lista.Count == HordasPorPiso ? lista : null;
+        // si el camino no cubre el recorrido (p. ej. el Puerto: solo la plaza), quedarían todas juntas al inicio
+        float avance = 0f;
+        foreach (var u in usados) avance = Mathf.Max(avance, Vector3.Dot(u - inicio, rumbo) / largo);
+        if (lista.Count < HordasPorPiso || avance < 0.55f)
+        {
+            foreach (var e in lista) if (e != null) DestroyImmediate(e.gameObject);
+            return null;
+        }
+        return lista;
     }
 
     /// <summary>Llanos para las hordas que faltan en cada piso (vistos desde arriba): x, z, ancho y fondo de la arena.</summary>

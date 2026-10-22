@@ -77,6 +77,9 @@ public class ExteriorBuilder : MonoBehaviour
     float DistTower(Vector2 p) => Vector2.Distance(p, towerCenter);
 
     /// <summary>Altura del suelo dentro de la meseta: plano en la plaza, el risco de la torre y el hueco del lago.</summary>
+    /// <summary>Donde empieza la escalinata (fuera del bloque de editor: GroundHeight la usa también en el juego).</summary>
+    float StairsStartZ => towerCenter.y - mesaRadius - mesaHeight * 1.9f;   // pendiente ~28°
+
     public float GroundHeight(float x, float z)
     {
         var p = new Vector2(x, z);
@@ -346,7 +349,6 @@ public class ExteriorBuilder : MonoBehaviour
 
     // ---------------- risco de la torre y escalinata
 
-    float StairsStartZ => towerCenter.y - mesaRadius - mesaHeight * 1.9f;   // pendiente ~28°
     float StairsEndZ => towerCenter.y - mesaRadius + 0.3f;
 
     void BuildMesaAndStairs()

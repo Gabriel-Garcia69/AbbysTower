@@ -115,7 +115,13 @@ public partial class DioramaBuilder
                 {
                     float x = x0 + i * celda, z = z0 + j * celda;
                     float v = Campo(l, x, z);
-                    if (tierra) v += (Mathf.PerlinNoise(x * 0.45f + 11f, z * 0.45f + 7f) - 0.5f) * 0.55f;   // orilla irregular
+                    if (tierra)
+                    {
+                        v += (Mathf.PerlinNoise(x * 0.45f + 11f, z * 0.45f + 7f) - 0.5f) * 0.55f;   // orilla irregular
+                        // donde hay empedrado o losas, la tierra se corta (antes se encimaban y la tierra se asomaba entre las piedras)
+                        foreach (var otro in tramos)
+                            if (otro.Key == mCobble || otro.Key == mPlaza) v = Mathf.Min(v, -Campo(otro.Value, x, z) - 0.05f);
+                    }
                     f[i, j] = v;
                     hgt[i, j] = v > -0.6f ? AlturaSuelo(x, z) : 0f;
                 }
@@ -147,7 +153,7 @@ public partial class DioramaBuilder
                     int b0 = verts.Count;
                     for (int k = 0; k < poly.Count; k++)
                     {
-                        verts.Add(new Vector3(poly[k].x, polyH[k] + 0.02f, poly[k].y));
+                        verts.Add(new Vector3(poly[k].x, polyH[k] + (tierra ? 0.02f : 0.03f), poly[k].y));
                         uvs.Add(poly[k] * 0.5f);
                     }
                     for (int k = 1; k + 1 < poly.Count; k++) tris.AddRange(new[] { b0, b0 + k + 1, b0 + k });

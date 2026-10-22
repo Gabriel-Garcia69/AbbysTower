@@ -28,7 +28,7 @@ public partial class DioramaBuilder
             {
                 Vector2 p0 = Vector2.Lerp(a, b, k / (float)n), p1 = Vector2.Lerp(a, b, (k + 1) / (float)n);
                 trail.Add(p0);
-                if (k % 3 == 0) blocked.Add(new Rect(p0.x - width / 2f - 0.6f, p0.y - width / 2f - 0.6f, width + 1.2f, width + 1.2f));
+                if (k % 3 == 0) { var rc = new Rect(p0.x - width / 2f - 0.6f, p0.y - width / 2f - 0.6f, width + 1.2f, width + 1.2f); blocked.Add(rc); rectsCamino.Add(rc); }
             }
         }
         trail.Add(pts[pts.Length - 1]);

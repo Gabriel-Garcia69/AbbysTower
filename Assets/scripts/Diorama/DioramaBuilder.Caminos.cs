@@ -12,6 +12,9 @@ public partial class DioramaBuilder
     struct TramoCamino { public Vector2 a, b; public float ancho; public bool rect; public Vector2 tam; }
 
     readonly Dictionary<Material, List<TramoCamino>> tramos = new Dictionary<Material, List<TramoCamino>>();
+    /// <summary>Zonas de camino (están en 'blocked' para que no crezcan árboles) y puntos del camino cada ~2 m (para las hordas).</summary>
+    readonly HashSet<Rect> rectsCamino = new HashSet<Rect>();
+    readonly List<Vector2> puntosCamino = new List<Vector2>();
     Material mGrava, mTierraOscura;
 
     void AnotarCamino(Material mat, TramoCamino t)
@@ -63,10 +66,34 @@ public partial class DioramaBuilder
         return best;
     }
 
+    /// <summary>
+    /// Altura real del suelo: la malla del terreno de algunos mapas (el Puerto) está hecha en celdas más grandes que la
+    /// función Height, así que se toma la del collider del terreno debajo (si está cerca de Height); si no, Height.
+    /// </summary>
+    float AlturaSuelo(float x, float z)
+    {
+        float h = Height(x, z), mejor = float.MinValue;
+        var hits = Physics.RaycastAll(new Vector3(x, h + 3f, z), Vector3.down, 6f, ~0, QueryTriggerInteraction.Ignore);
+        foreach (var hit in hits)
+        {
+            if (!(hit.collider is MeshCollider) || !hit.collider.transform.IsChildOf(root)) continue;
+            if (Mathf.Abs(hit.point.y - h) < 1.2f && hit.point.y > mejor) mejor = hit.point.y;
+        }
+        return mejor > float.MinValue ? mejor : h;
+    }
+
     void CaminosMalla()
     {
         if (root == null || tramos.Count == 0) return;
+        foreach (var kv in tramos)
+            foreach (var t in kv.Value)
+            {
+                if (t.rect) { for (float x = -t.tam.x / 2f; x <= t.tam.x / 2f; x += 2f) for (float z = -t.tam.y / 2f; z <= t.tam.y / 2f; z += 2f) puntosCamino.Add(t.a + new Vector2(x, z)); continue; }
+                float len = Vector2.Distance(t.a, t.b);
+                for (float k = 0f; k <= len; k += 2f) puntosCamino.Add(Vector2.Lerp(t.a, t.b, len < 0.01f ? 0f : k / len));
+            }
         var g = Group("CaminosUnidos", root);
+        Physics.SyncTransforms();   // en el editor los colliders recién hechos aún no están en la escena de física
         const float celda = 0.35f;
         foreach (var kv in tramos)
         {
@@ -90,7 +117,7 @@ public partial class DioramaBuilder
                     float v = Campo(l, x, z);
                     if (tierra) v += (Mathf.PerlinNoise(x * 0.45f + 11f, z * 0.45f + 7f) - 0.5f) * 0.55f;   // orilla irregular
                     f[i, j] = v;
-                    hgt[i, j] = v > -0.6f ? Height(x, z) : 0f;
+                    hgt[i, j] = v > -0.6f ? AlturaSuelo(x, z) : 0f;
                 }
             var verts = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
             var poly = new List<Vector2>(8); var polyH = new List<float>(8);

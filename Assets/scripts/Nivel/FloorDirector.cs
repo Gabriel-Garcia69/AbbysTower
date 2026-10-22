@@ -120,6 +120,7 @@ public class FloorDirector : MonoBehaviour
         RunState.Changed += OnRunChanged;
 
         runStart = Time.time;
+        guia = gameObject.AddComponent<GuiaHordas>();   // baliza y flecha hacia la siguiente pelea
         Banner(floorTitle, floorSubtitle, new Color(0.75f, 0.85f, 1f), 4f);
     }
 
@@ -146,13 +147,23 @@ public class FloorDirector : MonoBehaviour
         else Banner("¡EMBOSCADA!", string.IsNullOrEmpty(room.displayName) ? "" : room.displayName, new Color(1f, 0.65f, 0.35f), 2.2f);
     }
 
+    GuiaHordas guia;
+
     void OnRoomCleared(RoomEncounter room)
     {
         if (room != activeRoom) return;
         activeRoom = null; boss = null;
         Musica.Pelea(false);
         if (room.isBoss) Banner("¡JEFE DERROTADO!", "La salida se ha abierto", new Color(1f, 0.85f, 0.45f), 4f);
-        else if (room.Total > 0) Banner("SALA DESPEJADA", "Las puertas se abren", new Color(0.5f, 1f, 0.85f), 2f);
+        else if (room.Total > 0)
+        {
+            // cuántas hordas faltan y hacia dónde seguir (la flecha y la baliza marcan la siguiente)
+            int faltan = guia != null ? guia.Restantes : 0;
+            string titulo = (string.IsNullOrEmpty(room.displayName) ? "HORDA" : room.displayName.ToUpper()) + " DERROTADA";
+            if (faltan > 0) Banner(titulo, faltan == 1 ? "Falta 1 horda: sigue la luz morada" : $"Faltan {faltan} hordas: sigue la luz morada", new Color(0.5f, 1f, 0.85f), 3f);
+            else if (guia != null && guia.JefePendiente) Banner("¡HORDAS DERROTADAS!", "Sigue la luz: algo te espera", new Color(1f, 0.55f, 0.85f), 3.5f);
+            else Banner("¡PISO DESPEJADO!", "Sigue la luz hasta la salida", new Color(1f, 0.85f, 0.45f), 3.5f);
+        }
     }
 
     void OnRoomEscaped(RoomEncounter room)

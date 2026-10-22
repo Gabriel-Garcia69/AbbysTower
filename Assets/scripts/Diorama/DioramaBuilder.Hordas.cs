@@ -52,6 +52,9 @@ public partial class DioramaBuilder
             hordas.Sort((a, b) => Plano(a.transform.position - s).CompareTo(Plano(b.transform.position - s)));
         }
         if (hordas.Count < HordasPorPiso) Debug.LogWarning($"[Diorama] {layout}: solo {hordas.Count} hordas (no hubo dónde poner más).");
+        // numeradas en el orden del recorrido (de la entrada hacia la salida), no por distancia en línea recta
+        Vector3 rumbo = fin - s; rumbo.y = 0f; rumbo = rumbo.sqrMagnitude > 1f ? rumbo.normalized : Vector3.forward;
+        hordas.Sort((a, b) => Vector3.Dot(a.transform.position - s, rumbo).CompareTo(Vector3.Dot(b.transform.position - s, rumbo)));
         for (int i = 0; i < hordas.Count; i++)
         {
             hordas[i].displayName = $"Horda {i + 1} de {hordas.Count}";
@@ -153,7 +156,14 @@ public partial class DioramaBuilder
         y = Height(c.x, c.y);
         if (!walk.Contains(new Vector2(c.x - 7f, c.y - 5f)) || !walk.Contains(new Vector2(c.x + 7f, c.y + 5f))) return false;
         foreach (var o in otras) if (Plano(new Vector3(c.x, 0f, c.y) - o) < 18f) return false;
-        if (!Free(c, 4f)) return false;
+        if (!LibreSinCamino(c, 4f)) return false;
+        // sobre el camino: el centro de la arena a menos de 4 m de algún punto del camino (si el mapa tiene caminos)
+        if (puntosCamino.Count > 0)
+        {
+            float mejor = float.MaxValue;
+            foreach (var p in puntosCamino) { float d = (p - c).sqrMagnitude; if (d < mejor) mejor = d; }
+            if (mejor > 16f) return false;
+        }
         for (float x = -7f; x <= 7f; x += 1.75f)
             for (float z = -5f; z <= 5f; z += 1.65f)
             {

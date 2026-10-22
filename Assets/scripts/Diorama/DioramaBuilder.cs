@@ -73,7 +73,7 @@ public partial class DioramaBuilder : MonoBehaviour
         Clear();
         rng = new System.Random(seed);
         blocked.Clear();
-        tramos.Clear();
+        tramos.Clear(); rectsCamino.Clear(); puntosCamino.Clear();
         LoadMaterials();
         LoadWorldMaterials();
         root = Group(Prefix + "Mapa", transform);
@@ -182,7 +182,7 @@ public partial class DioramaBuilder : MonoBehaviour
         Vector2 c = (a + b) / 2f;
         AnotarPlaza(PisoSendero(), c, alongZ ? new Vector2(width, len) : new Vector2(len, width));   // se une al final (CaminosMalla)
         var rect = alongZ ? new Rect(c.x - width / 2f - 0.4f, Mathf.Min(a.y, b.y), width + 0.8f, len) : new Rect(Mathf.Min(a.x, b.x), c.y - width / 2f - 0.4f, len, width + 0.8f);
-        blocked.Add(rect);
+        blocked.Add(rect); rectsCamino.Add(rect);
         // matas de pasto que se comen el borde del camino
         for (float t = 0.6f; t < len; t += R(0.8f, 1.5f))
             foreach (float sg in new[] { -1f, 1f })
@@ -857,6 +857,17 @@ public partial class DioramaBuilder : MonoBehaviour
     }
 
     [System.NonSerialized] Mesh coneMesh;
+
+    /// <summary>Como Free, pero el camino no cuenta como ocupado (las hordas van sobre el camino).</summary>
+    bool LibreSinCamino(Vector2 q, float margin)
+    {
+        foreach (var r in blocked)
+        {
+            if (rectsCamino.Contains(r)) continue;
+            if (q.x > r.xMin - margin && q.x < r.xMax + margin && q.y > r.yMin - margin && q.y < r.yMax + margin) return false;
+        }
+        return true;
+    }
 
     bool Free(Vector2 q, float margin)
     {

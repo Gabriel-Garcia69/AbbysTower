@@ -217,6 +217,51 @@ public static class CombatFx
         return discMesh;
     }
 
+    // ------------------------------------------------------------------ baliza (marca la siguiente horda)
+
+    /// <summary>Columna de luz morada que se ve de lejos: chispas que suben, un haz suave y una luz. La mueve GuiaHordas.</summary>
+    public static GameObject Baliza()
+    {
+        var go = new GameObject("FX_Baliza");
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.loop = true; main.playOnAwake = false; main.duration = 1f;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(2.2f, 3.2f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(2.5f, 4.5f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.4f);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.8f, 0.45f, 1f, 1f), new Color(0.55f, 0.75f, 1f, 1f));
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = 120;
+        var em = ps.emission; em.rateOverTime = 30f;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.9f; sh.rotation = new Vector3(-90f, 0f, 0f);
+        var col = ps.colorOverLifetime; col.enabled = true;
+        var g = new Gradient();
+        g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                  new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.15f), new GradientAlphaKey(0f, 1f) });
+        col.color = g;
+        var r = go.GetComponent<ParticleSystemRenderer>();
+        r.sharedMaterial = Additive;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        ps.Play();
+        // anillo en el suelo
+        if (ringMesh == null) ringMesh = BuildRing(0.86f, 48);
+        var anillo = new GameObject("Anillo");
+        anillo.transform.SetParent(go.transform, false);
+        anillo.transform.localPosition = Vector3.up * 0.06f;
+        anillo.transform.localScale = Vector3.one * 1.6f;
+        anillo.AddComponent<MeshFilter>().sharedMesh = ringMesh;
+        var ar = anillo.AddComponent<MeshRenderer>();
+        ar.sharedMaterial = AdditiveFlat;
+        ar.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var mpb = new MaterialPropertyBlock(); mpb.SetColor(BaseColor, new Color(0.75f, 0.4f, 1f, 0.8f)); ar.SetPropertyBlock(mpb);
+        var l = new GameObject("Luz").AddComponent<Light>();
+        l.transform.SetParent(go.transform, false);
+        l.transform.localPosition = Vector3.up * 2f;
+        l.type = LightType.Point; l.color = new Color(0.7f, 0.4f, 1f); l.range = 10f; l.intensity = 3f; l.shadows = LightShadows.None;
+        return go;
+    }
+
     // ------------------------------------------------------------------ grieta del abismo (aparición de enemigos)
 
     static Material darkPool;

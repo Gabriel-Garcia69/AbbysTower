@@ -4,14 +4,18 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Menú principal (GDD): Jugar · Configuración (volumen general y de música, pantalla completa) · Salir (pide
-/// confirmación). De fondo, la torre del abismo en la plaza, con la cámara girando despacio. Va en la escena "Menu"
-/// (una copia de la escena Intro con la cinemática apagada). Jugar abre la cinemática inicial.
+/// confirmación). De fondo, el puerto al atardecer (faro, mar, pueblito y gaviotas) con la cámara girando despacio sobre
+/// la bahía. Va en la escena "Menu" (una copia del Puerto sin Abby ni peleas). Jugar abre la cinemática inicial.
 /// </summary>
 public class MenuPrincipal : MonoBehaviour
 {
     public string escenaJugar = "Intro";
-    public Vector3 centro = new Vector3(0f, 0f, -1850f);   // la torre en el set de la plaza
-    public float radio = 260f, altura = 22f;
+    public Vector3 centro = new Vector3(22f, 2f, 8f);   // la bahía, entre el muelle y el faro
+    public float radio = 52f, altura = 15f;
+    [Tooltip("A qué altura sobre el centro mira la cámara.")]
+    public float alturaMira = 3f;
+    [Tooltip("Radianes por segundo que gira la cámara.")]
+    public float giro = 0.035f;
 
     enum Pagina { Principal, Configuracion, Salir }
     Pagina pagina;
@@ -24,6 +28,12 @@ public class MenuPrincipal : MonoBehaviour
         // antes de que la cinemática empiece (su Start corre después de todos los Awake)
         foreach (var c in FindObjectsByType<Cinematica>()) Destroy(c);
         ReintentoJefe.Escena = null;   // empezar de nuevo desde el menú
+        // el fondo es un mapa jugable: sin Abby, sin peleas ni HUD del piso
+        var fd = FindAnyObjectByType<FloorDirector>();
+        if (fd != null) fd.gameObject.SetActive(false);
+        var abby = GameObject.FindWithTag("Player");
+        if (abby != null) abby.SetActive(false);
+        foreach (var e in FindObjectsByType<RoomEncounter>()) e.enabled = false;
     }
 
     void Start()
@@ -50,9 +60,9 @@ public class MenuPrincipal : MonoBehaviour
         t += Time.deltaTime; entrada += Time.deltaTime;
         if (cam != null)
         {
-            float a = t * 0.04f;
+            float a = t * giro;
             cam.transform.position = centro + new Vector3(Mathf.Sin(a) * radio, altura, -Mathf.Cos(a) * radio);
-            cam.transform.rotation = Quaternion.LookRotation(centro + Vector3.up * 75f - cam.transform.position);
+            cam.transform.rotation = Quaternion.LookRotation(centro + Vector3.up * alturaMira - cam.transform.position);
         }
         var kb = Keyboard.current;
         if (kb == null) return;

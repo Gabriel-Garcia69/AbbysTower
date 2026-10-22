@@ -85,6 +85,7 @@ public partial class TowerEnemy
             // de frente a la cámara, derecho (como los sprites de Abby)
             Vector3 f = cam.transform.forward; f.y = 0f;
             if (f.sqrMagnitude > 0.0001f) transform.rotation = Quaternion.LookRotation(f.normalized, Vector3.up);
+            sr.enabled = enemigo.state != State.Spawning || enemigo.timer >= GrietaAbre;   // sale de la grieta como los demás
             if (enemigo.visual != null) transform.localPosition = baseLocal + Vector3.up * enemigo.visual.localPosition.y;   // salta con el golpe de área
 
             Vector3 mov = enemigo.transform.position - ultima; mov.y = 0f;

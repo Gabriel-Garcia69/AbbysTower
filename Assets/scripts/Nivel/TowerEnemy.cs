@@ -152,6 +152,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         maxHealth *= diff.enemyHealth; moveSpeed *= diff.enemySpeed;
         Health = maxHealth;
         BuildVisual();
+        if (Application.isPlaying && !ForceProceduralVisual) CombatFx.Grieta(transform.position, Mathf.Max(0.8f, radius * 1.5f) * Mathf.Max(1f, Scale), GrietaAbre, GrietaAbre + GrietaSube + 0.25f);
 
         var col = gameObject.AddComponent<CapsuleCollider>();
         col.radius = radius; col.height = Mathf.Max(radius * 2f, 1.8f * Scale); col.center = Vector3.up * col.height / 2f;
@@ -161,6 +162,10 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         hitbox.offset = new Vector3(0f, 0.6f * Scale, radius * 0.6f);
         hitbox.halfExtents = new Vector3(0.55f, 0.6f, 0.55f) * Scale + new Vector3(radius * 0.4f, 0f, radius * 0.4f);
     }
+
+    /// <summary>Aparición: la grieta tarda esto en abrirse y luego el enemigo tarda GrietaSube en salir.</summary>
+    const float GrietaAbre = 0.85f, GrietaSube = 0.7f;
+    bool emergio;
 
     float Scale => kind == Kind.Jefe ? 2.6f : kind == Kind.Dante ? 1.15f : kind == Kind.Embestidor ? 1.1f : kind == Kind.Bruto || kind == Kind.Escudero ? 1.35f : kind == Kind.Torbellino ? 1.1f : 0.95f;
 
@@ -318,10 +323,18 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         {
             case State.Spawning:
             {
-                float k = Mathf.Clamp01(timer / 0.8f);
-                visual.localScale = Vector3.one * Mathf.Lerp(0.05f, 1f, 1f - (1f - k) * (1f - k));
-                visual.localPosition = Vector3.down * (1f - k) * 1.2f;
-                if (k >= 1f) Go(State.Chase);
+                // primero se abre la grieta del abismo (CombatFx.Grieta) y luego sube de ella, como saliendo del suelo
+                if (timer < GrietaAbre) { visual.localScale = Vector3.one * 0.001f; break; }
+                if (!emergio)
+                {
+                    emergio = true;
+                    Sonido.Tocar(Sonido.Efecto.Destello, 0.5f, 0.55f);
+                }
+                float k = Mathf.Clamp01((timer - GrietaAbre) / GrietaSube);
+                float e = 1f - (1f - k) * (1f - k) * (1f - k);
+                visual.localScale = new Vector3(1f - 0.12f * (1f - k), 1f + 0.1f * Mathf.Sin(k * Mathf.PI), 1f - 0.12f * (1f - k));
+                visual.localPosition = Vector3.down * (1f - e) * 2.2f * Scale;
+                if (k >= 1f) { visual.localScale = Vector3.one; visual.localPosition = Vector3.zero; Go(State.Chase); }
                 break;
             }
             case State.Chase:

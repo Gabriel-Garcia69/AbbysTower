@@ -76,7 +76,13 @@ public partial class TowerEnemy
             if (sprites[dir] != null) sr.sprite = sprites[dir];
 
             Color c = Color.white;
-            if (enemigo.flash > 0f) c = new Color(1f, 0.45f, 0.45f);
+            if (enemigo.state == State.Spawning)
+            {
+                // sale como silueta de sombra y toma su color al terminar de salir
+                float k = Mathf.Clamp01((enemigo.timer - GrietaAbre) / GrietaSube);
+                c = Color.Lerp(new Color(0.12f, 0.04f, 0.2f), Color.white, k * k);
+            }
+            else if (enemigo.flash > 0f) c = new Color(1f, 0.45f, 0.45f);
             else if (enemigo.state == State.Telegraph || enemigo.state == State.Slam)
                 c = Color.Lerp(Color.white, new Color(0.85f, 0.55f, 1f), 0.5f + 0.5f * Mathf.Sin(Time.time * 30f));
             else if (enemigo.Enraged) c = new Color(1f, 0.8f, 0.85f);

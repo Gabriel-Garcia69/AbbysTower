@@ -217,6 +217,156 @@ public static class CombatFx
         return discMesh;
     }
 
+    // ------------------------------------------------------------------ grieta del abismo (aparición de enemigos)
+
+    static Material darkPool;
+    /// <summary>Mancha oscura con mezcla normal (no aditiva): el agujero negro de la grieta.</summary>
+    static Material DarkPool
+    {
+        get
+        {
+            if (darkPool != null) return darkPool;
+            darkPool = new Material(AdditiveFlat) { name = "FX_Grieta (runtime)" };
+            darkPool.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            darkPool.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent - 1;
+            return darkPool;
+        }
+    }
+
+    /// <summary>
+    /// Grieta del abismo en el suelo: se abre un pozo negro con borde morado que palpita, sube humo de sombra y una luz
+    /// morada parpadea; a los 'abre' segundos sale el enemigo (estallido) y la grieta se cierra sola al llegar a 'total'.
+    /// </summary>
+    public static void Grieta(Vector3 pos, float radius, float abre, float total)
+    {
+        if (ringMesh == null) ringMesh = BuildRing(0.86f, 48);
+        var go = new GameObject("FX_Grieta");
+        go.transform.position = pos + Vector3.up * 0.03f;
+
+        // pozo negro (un disco suave)
+        var pozo = new GameObject("Pozo");
+        pozo.transform.SetParent(go.transform, false);
+        pozo.AddComponent<MeshFilter>().sharedMesh = PozoMesh();
+        var pr = pozo.AddComponent<MeshRenderer>();
+        pr.sharedMaterial = DarkPool;
+        pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        // borde que brilla
+        var borde = new GameObject("Borde");
+        borde.transform.SetParent(go.transform, false);
+        borde.transform.localPosition = Vector3.up * 0.01f;
+        borde.AddComponent<MeshFilter>().sharedMesh = ringMesh;
+        var br = borde.AddComponent<MeshRenderer>();
+        br.sharedMaterial = AdditiveFlat;
+        br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        // humo de sombra que sube del pozo
+        var humo = new GameObject("Humo");
+        humo.transform.SetParent(go.transform, false);
+        var ps = humo.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.loop = true; main.playOnAwake = false; main.duration = 1f;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.7f, 1.3f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.6f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.25f * radius, 0.55f * radius);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.45f, 0.15f, 0.75f, 0.8f), new Color(0.12f, 0.04f, 0.2f, 0.9f));
+        main.gravityModifier = -0.35f;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = 60;
+        var em = ps.emission; em.rateOverTime = 34f;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = radius * 0.7f;
+        sh.rotation = new Vector3(-90f, 0f, 0f);
+        var col = ps.colorOverLifetime; col.enabled = true;
+        var g = new Gradient();
+        g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                  new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.2f), new GradientAlphaKey(0f, 1f) });
+        col.color = g;
+        var sz = ps.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.6f, 1, 1.4f));
+        var rr = humo.GetComponent<ParticleSystemRenderer>();
+        rr.sharedMaterial = Additive;
+        rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        ps.Play();
+
+        // luz morada que tiembla
+        var l = new GameObject("Luz").AddComponent<Light>();
+        l.transform.SetParent(go.transform, false);
+        l.transform.localPosition = Vector3.up * 0.6f;
+        l.type = LightType.Point; l.color = new Color(0.7f, 0.3f, 1f); l.range = radius * 6f; l.intensity = 0f; l.shadows = LightShadows.None;
+
+        go.AddComponent<FxGrieta>().Init(radius, abre, total, pr, br, ps, l);
+    }
+
+    static Mesh pozoMesh;
+    /// <summary>Disco negro por dentro (alfa 1 hasta el 65 % del radio) que se difumina hacia la orilla, con borde irregular.</summary>
+    static Mesh PozoMesh()
+    {
+        if (pozoMesh != null) return pozoMesh;
+        const int segs = 40;
+        var v = new List<Vector3> { Vector3.zero }; var c = new List<Color> { Color.white }; var t = new List<int>();
+        for (int i = 0; i < segs; i++)
+        {
+            float a = i / (float)segs * Mathf.PI * 2f;
+            float irregular = 1f + 0.12f * Mathf.Sin(a * 5f) + 0.07f * Mathf.Sin(a * 11f + 1.3f);   // grieta, no círculo perfecto
+            var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * irregular;
+            v.Add(d * 0.65f); c.Add(Color.white);
+            v.Add(d); c.Add(new Color(1f, 1f, 1f, 0f));
+        }
+        for (int i = 0; i < segs; i++)
+        {
+            int a0 = 1 + i * 2, a1 = 1 + ((i + 1) % segs) * 2;
+            t.AddRange(new[] { 0, a1, a0 });                       // centro
+            t.AddRange(new[] { a0, a1, a1 + 1, a0, a1 + 1, a0 + 1 });   // orilla difuminada
+        }
+        pozoMesh = new Mesh { name = "FxPozo" };
+        pozoMesh.SetVertices(v); pozoMesh.SetColors(c); pozoMesh.SetTriangles(t, 0); pozoMesh.RecalculateBounds();
+        return pozoMesh;
+    }
+
+    class FxGrieta : MonoBehaviour
+    {
+        float radius, abre, total, t; bool salio;
+        MeshRenderer pozo, borde; ParticleSystem humo; Light luz; MaterialPropertyBlock mpb;
+
+        public void Init(float r, float a, float tot, MeshRenderer p, MeshRenderer b, ParticleSystem h, Light l)
+        {
+            radius = r; abre = a; total = Mathf.Max(a + 0.3f, tot); pozo = p; borde = b; humo = h; luz = l;
+            mpb = new MaterialPropertyBlock();
+            Update();
+        }
+
+        void Update()
+        {
+            t += Time.deltaTime;
+            // se abre rápido (con un poco de rebote), se mantiene y al final se cierra
+            float abrir = Mathf.Clamp01(t / (abre * 0.6f));
+            abrir = 1f - (1f - abrir) * (1f - abrir) * (1f - abrir);
+            float cerrar = Mathf.Clamp01((total - t) / 0.5f);
+            float k = abrir * cerrar;
+            float pulso = 0.75f + 0.25f * Mathf.Sin(t * 14f) + 0.1f * Mathf.Sin(t * 37f);
+
+            pozo.transform.localScale = Vector3.one * radius * k * (1f + 0.04f * Mathf.Sin(t * 9f));
+            mpb.SetColor(BaseColor, new Color(0.01f, 0f, 0.025f, 0.97f * k));
+            pozo.SetPropertyBlock(mpb);
+            borde.transform.localScale = Vector3.one * radius * k * 1.04f;
+            borde.transform.localRotation = Quaternion.Euler(0f, t * 40f, 0f);
+            mpb.SetColor(BaseColor, new Color(0.75f, 0.35f, 1f, k * pulso));
+            borde.SetPropertyBlock(mpb);
+            luz.intensity = 5f * k * pulso;
+
+            if (!salio && t >= abre)
+            {
+                // sale el enemigo: chispazo de sombra hacia arriba
+                salio = true;
+                Burst(transform.position + Vector3.up * 0.3f, new Color(0.7f, 0.3f, 1f), 26, 4.5f, 0.22f, 0.6f, -0.4f);
+                Burst(transform.position + Vector3.up * 0.2f, new Color(0.15f, 0.05f, 0.25f), 18, 2.5f, 0.45f, 0.8f, -0.6f);
+                luz.intensity *= 2.2f;
+            }
+            if (t >= total - 0.5f && humo.isEmitting) humo.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            if (t >= total + 1.4f) Destroy(gameObject);   // deja que el humo termine de subir
+        }
+    }
+
     // ------------------------------------------------------------------ componentes de apoyo
 
     /// <summary>Desvanece (y opcionalmente agranda) un efecto y lo destruye.</summary>

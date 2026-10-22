@@ -43,6 +43,7 @@ public class Musica : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void AlCargar()
     {
+        Precalcular();
         SceneManager.sceneLoaded += (s, m) => PorEscena(s.name);
         PorEscena(SceneManager.GetActiveScene().name);
     }
@@ -166,7 +167,7 @@ public class Musica : MonoBehaviour
     static float Nota(int midi) => 440f * Mathf.Pow(2f, (midi - 69) / 12f);
 
     /// <summary>Piano (bajo, acordes y arpegio) y una línea de violín sobre una progresión menor que se repite.</summary>
-    static AudioClip Componer(Pista p)
+    static float[] Muestras(Pista p)
     {
         // progresiones (raíz MIDI y si es menor) y tempo de cada pista
         int[][] acordes; float bpm; int compasPorAcorde = 1;
@@ -264,7 +265,32 @@ public class Musica : MonoBehaviour
         // sin chasquido al dar la vuelta
         int borde = Hz / 20;
         for (int i = 0; i < borde; i++) { float k = i / (float)borde; d[i] *= k; d[n - 1 - i] *= k; }
-        var clip = AudioClip.Create("Musica_" + p, n, 1, Hz, false);
+        return d;
+    }
+
+    /// <summary>Muestras ya calculadas en segundo plano (componer una pista tarda; hacerlo al empezar una pelea trababa el juego).</summary>
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<Pista, float[]> listas = new System.Collections.Concurrent.ConcurrentDictionary<Pista, float[]>();
+    static bool precalculando;
+
+    /// <summary>Compone todas las pistas en otro hilo al arrancar el juego: Mathf y System.Random no tocan la API de Unity.</summary>
+    static void Precalcular()
+    {
+        if (precalculando) return;
+        precalculando = true;
+        var pistas = new List<Pista>();
+        foreach (Pista p in System.Enum.GetValues(typeof(Pista)))
+            if (p != Pista.Ninguna && Resources.Load<AudioClip>("Audio/Musica_" + p) == null) pistas.Add(p);
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            foreach (var p in pistas)
+                if (!listas.ContainsKey(p)) listas.TryAdd(p, Muestras(p));
+        });
+    }
+
+    static AudioClip Componer(Pista p)
+    {
+        if (!listas.TryGetValue(p, out var d)) d = Muestras(p);   // aún no estaba lista: se compone aquí (una sola vez)
+        var clip = AudioClip.Create("Musica_" + p, d.Length, 1, Hz, false);
         clip.SetData(d, 0);
         return clip;
     }

@@ -36,9 +36,19 @@ public partial class DioramaBuilder
         while (hordas.Count > HordasPorPiso) { var x = hordas[hordas.Count - 2]; hordas.Remove(x); DestroyImmediate(x.gameObject); }
         var salida = BuscarSalida();
         Vector3 fin = salida != null ? salida.transform.position : jefeFinal != null ? jefeFinal.transform.position : s + Vector3.forward * 80f;
+        // si el mapa tiene caminos, las 4 hordas van SOBRE el camino, repartidas de la entrada a la salida
+        // (las que estaban a mano a veces caían junto al río o dentro de una cerca y el piso no se podía terminar)
+        var enCamino = HordasEnCamino(s, fin);
+        if (enCamino != null)
+        {
+            foreach (var h in hordas) if (h != null) DestroyImmediate(h.gameObject);
+            hordas = enCamino;
+        }
+        else
         // primero, lugares escogidos a mano en cada mapa (x, z, ancho, fondo); si aún faltan, se buscan solos
         foreach (var e in HordasExtra)
         {
+            if (enCamino != null) break;
             if (hordas.Count >= HordasPorPiso) break;
             var lvl0 = root.Find("Nivel");
             hordas.Add(Arena(lvl0 != null ? lvl0 : root, "Horda", new Vector3(e.x, Height(e.x, e.y), e.y), new Vector2(e.z, e.w), 5));
@@ -63,6 +73,66 @@ public partial class DioramaBuilder
         if (salida != null) { salida.unlockedBy = null; salida.requiere = hordas.ToArray(); }
         if (jefeFinal != null) jefeFinal.esperaA = hordas.ToArray();
         Debug.Log($"[Diorama] {layout}: {hordas.Count} hordas" + (jefeFinal != null ? " + Dante." : "."));
+    }
+
+    /// <summary>
+    /// Cuatro arenas sobre puntos del camino: suelo parejo, sin agua, lejos del inicio y de la salida, separadas entre sí
+    /// y en el orden del recorrido. null si el mapa no tiene caminos suficientes (se usa lo de antes).
+    /// </summary>
+    List<RoomEncounter> HordasEnCamino(Vector3 inicio, Vector3 fin)
+    {
+        if (puntosCamino.Count < 30) return null;
+        Vector3 rumbo = fin - inicio; rumbo.y = 0f;
+        float largo = rumbo.magnitude; if (largo < 1f) return null;
+        rumbo /= largo;
+        var agua = new List<Bounds>();
+        foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true))
+        {
+            var m = mr.sharedMaterial;
+            if (m != null && m.shader != null && m.shader.name == "Abby/Water") agua.Add(mr.bounds);
+        }
+        var buenos = new List<Vector3>();
+        foreach (var p in puntosCamino)
+        {
+            var v = new Vector3(p.x, 0f, p.y);
+            if (Plano(v - inicio) < 12f || Plano(v - fin) < 10f) continue;
+            float y = Height(p.x, p.y);
+            bool ok = y > VoidY + 1f;
+            for (float dx = -4f; dx <= 4f && ok; dx += 2f)
+                for (float dz = -4f; dz <= 4f && ok; dz += 2f)
+                {
+                    float h = Height(p.x + dx, p.y + dz);
+                    var q = new Vector2(p.x + dx, p.y + dz);
+                    if (Mathf.Abs(h - y) > 0.6f || InWater(q) || NewWorldWater(q)) ok = false;
+                    foreach (var b in agua)
+                        if (ok && q.x > b.min.x && q.x < b.max.x && q.y > b.min.z && q.y < b.max.z && b.max.y > h - 0.6f) ok = false;
+                }
+            if (ok) buenos.Add(new Vector3(p.x, y, p.y));
+        }
+        if (buenos.Count < 4) return null;
+        buenos.Sort((a, b) => Vector3.Dot(a - inicio, rumbo).CompareTo(Vector3.Dot(b - inicio, rumbo)));
+        // 4 puntos repartidos a lo largo del recorrido, a 16 m o más uno del otro
+        var lista = new List<RoomEncounter>();
+        var usados = new List<Vector3>();
+        var lvl = root.Find("Nivel");
+        for (int k = 0; k < HordasPorPiso; k++)
+        {
+            float meta = (k + 0.7f) / (HordasPorPiso + 0.2f);
+            Vector3 mejor = Vector3.zero; float mejorD = float.MaxValue;
+            foreach (var c in buenos)
+            {
+                bool lejos = true;
+                foreach (var u in usados) if (Plano(c - u) < 16f) { lejos = false; break; }
+                if (!lejos) continue;
+                float t = Vector3.Dot(c - inicio, rumbo) / largo;
+                float d = Mathf.Abs(t - meta);
+                if (d < mejorD) { mejorD = d; mejor = c; }
+            }
+            if (mejorD == float.MaxValue) break;
+            usados.Add(mejor);
+            lista.Add(Arena(lvl != null ? lvl : root, "Horda", mejor, new Vector2(12f, 9f), 5));
+        }
+        return lista.Count == HordasPorPiso ? lista : null;
     }
 
     /// <summary>Llanos para las hordas que faltan en cada piso (vistos desde arriba): x, z, ancho y fondo de la arena.</summary>

@@ -123,7 +123,10 @@ public class RoomEncounter : MonoBehaviour
     bool PlayerInside()
     {
         Vector3 local = transform.InverseTransformPoint(player.position);
-        return Mathf.Abs(local.x) < size.x / 2f - triggerInset && Mathf.Abs(local.z) < size.y / 2f - triggerInset;
+        if (Mathf.Abs(local.x) < size.x / 2f - triggerInset && Mathf.Abs(local.z) < size.y / 2f - triggerInset) return true;
+        // también al llegar cerca de la marca (por si la arena quedó junto a una cerca o un río y no se puede pisar el centro)
+        Vector3 d = player.position - transform.position;
+        return !isBoss && new Vector2(d.x, d.z).magnitude < 7f && Mathf.Abs(d.y) < 4f;
     }
 
     float escapeTimer;
@@ -182,8 +185,30 @@ public class RoomEncounter : MonoBehaviour
         var kind = isBoss ? bossKind
                  : roster != null && roster.Length > 0 ? roster[index % roster.Length]
                  : (index % 3 == 2 ? TowerEnemy.Kind.Bruto : TowerEnemy.Kind.Sombra);
-        var e = TowerEnemy.Create(kind, sp.position, transform, this, player, isBoss ? bossStyle : 0);
+        Vector3 pos = isBoss || player == null ? sp.position : PuntoCercaDeAbby(sp.position, index);
+        var e = TowerEnemy.Create(kind, pos, transform, this, player, isBoss ? bossStyle : 0);
         alive.Add(Prepare(e).gameObject);
+    }
+
+    /// <summary>
+    /// Dónde sale un enemigo de la horda: alrededor de Abby (5.5 a 8 m), en suelo firme a su altura y sin nada en medio
+    /// (cerca, casa, río, orilla). Así ninguna horda queda imposible por salir detrás de algo. Si no hay hueco, su punto.
+    /// </summary>
+    Vector3 PuntoCercaDeAbby(Vector3 respaldo, int index)
+    {
+        Vector3 c = player.position;
+        for (int intento = 0; intento < 12; intento++)
+        {
+            float ang = (index * 2.4f + intento * 0.9f) % (Mathf.PI * 2f);
+            float rad = 5.5f + (intento % 3) * 1.2f;
+            Vector3 q = c + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * rad;
+            if (!Physics.Raycast(q + Vector3.up * 6f, Vector3.down, out var hit, 14f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (Mathf.Abs(hit.point.y - c.y) > 1.2f) continue;                     // cauce del río, risco o techo
+            Vector3 a = c + Vector3.up * 1f, b = hit.point + Vector3.up * 1f;
+            if (Physics.Linecast(a, b, ~0, QueryTriggerInteraction.Ignore)) continue;   // algo en medio
+            return hit.point + Vector3.up * 0.05f;
+        }
+        return respaldo;
     }
 
     /// <summary>Agrega un enemigo a la pelea en curso (invocaciones del jefe).</summary>

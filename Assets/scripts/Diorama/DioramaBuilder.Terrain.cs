@@ -620,17 +620,22 @@ public partial class DioramaBuilder
     void BuildFences(float bridgeX)
     {
         var g = Group("Cercas", root);
+        // a lo largo del río no hace falta ver cerca (solo un muro invisible para no caer al cañón); junto al puente sí
+        const float tramoPuente = 7f;
         foreach (float sz in new[] { -1f, 1f })
         {
-            Fence(g, new Vector2(RiverStartX - 1.5f, sz * FenceZ), new Vector2(bridgeX - 2.6f, sz * FenceZ));
-            Fence(g, new Vector2(bridgeX + 2.6f, sz * FenceZ), new Vector2(Walk.xMax, sz * FenceZ));
+            Fence(g, new Vector2(RiverStartX - 1.5f, sz * FenceZ), new Vector2(bridgeX - tramoPuente, sz * FenceZ), false);
+            Fence(g, new Vector2(bridgeX - tramoPuente, sz * FenceZ), new Vector2(bridgeX - 2.6f, sz * FenceZ));
+            Fence(g, new Vector2(bridgeX + 2.6f, sz * FenceZ), new Vector2(bridgeX + tramoPuente, sz * FenceZ));
+            Fence(g, new Vector2(bridgeX + tramoPuente, sz * FenceZ), new Vector2(Walk.xMax, sz * FenceZ), false);
         }
         // a lo ancho, en la orilla de la cascada (cruza el arroyo)
-        Fence(g, new Vector2(RiverStartX - 1.5f, -FenceZ), new Vector2(RiverStartX - 1.5f, -2.6f));
-        Fence(g, new Vector2(RiverStartX - 1.5f, 2.6f), new Vector2(RiverStartX - 1.5f, FenceZ));
+        Fence(g, new Vector2(RiverStartX - 1.5f, -FenceZ), new Vector2(RiverStartX - 1.5f, -2.6f), false);
+        Fence(g, new Vector2(RiverStartX - 1.5f, 2.6f), new Vector2(RiverStartX - 1.5f, FenceZ), false);
     }
 
-    void Fence(Transform parent, Vector2 a, Vector2 b)
+    /// <summary>Cerca de madera de a a b con su collider; visible=false deja solo el muro invisible (gasta el azar igual).</summary>
+    void Fence(Transform parent, Vector2 a, Vector2 b, bool visible = true)
     {
         Vector2 d = b - a;
         float len = d.magnitude;
@@ -640,13 +645,16 @@ public partial class DioramaBuilder
         for (int i = 0; i <= posts; i++)
         {
             Vector2 p = a + dir * (len * i / posts);
+            var giro = Quaternion.Euler(R(-3f, 3f), R(0f, 90f), R(-3f, 3f));
+            if (!visible) continue;
             var post = Box(parent, "Poste", new Vector3(p.x, 0.45f, p.y), new Vector3(0.14f, 0.95f, 0.14f), mTimber, false);
-            post.transform.localRotation = Quaternion.Euler(R(-3f, 3f), R(0f, 90f), R(-3f, 3f));
+            post.transform.localRotation = giro;
         }
         Vector2 c = (a + b) / 2f;
         float yaw = Mathf.Atan2(dir.x, dir.y) * Mathf.Rad2Deg;
         foreach (float y in new[] { 0.4f, 0.78f })
         {
+            if (!visible) break;
             var rail = Box(parent, "Travesano", new Vector3(c.x, y, c.y), new Vector3(0.07f, 0.09f, len), mTimber, false);
             rail.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
         }

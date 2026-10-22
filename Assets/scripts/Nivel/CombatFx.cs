@@ -227,13 +227,13 @@ public static class CombatFx
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
         main.loop = true; main.playOnAwake = false; main.duration = 1f;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(2.2f, 3.2f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(2.5f, 4.5f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.4f);
+        main.startLifetime = new ParticleSystem.MinMaxCurve(2.5f, 3.5f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 5f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.65f);
         main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.8f, 0.45f, 1f, 1f), new Color(0.55f, 0.75f, 1f, 1f));
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 120;
-        var em = ps.emission; em.rateOverTime = 30f;
+        main.maxParticles = 200;
+        var em = ps.emission; em.rateOverTime = 50f;
         var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.9f; sh.rotation = new Vector3(-90f, 0f, 0f);
         var col = ps.colorOverLifetime; col.enabled = true;
         var g = new Gradient();
@@ -255,6 +255,18 @@ public static class CombatFx
         ar.sharedMaterial = AdditiveFlat;
         ar.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         var mpb = new MaterialPropertyBlock(); mpb.SetColor(BaseColor, new Color(0.75f, 0.4f, 1f, 0.8f)); ar.SetPropertyBlock(mpb);
+        // haz vertical suave (se ve desde lejos aunque las chispas sean chicas)
+        var haz = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        Object.Destroy(haz.GetComponent<Collider>());
+        haz.name = "Haz";
+        haz.transform.SetParent(go.transform, false);
+        haz.transform.localPosition = Vector3.up * 7f;
+        haz.transform.localScale = new Vector3(1.1f, 7f, 1.1f);
+        var hr = haz.GetComponent<MeshRenderer>();
+        hr.sharedMaterial = AdditiveFlat;
+        hr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var hp = new MaterialPropertyBlock(); hp.SetColor(BaseColor, new Color(0.65f, 0.35f, 1f, 0.22f)); hr.SetPropertyBlock(hp);
+        haz.AddComponent<FxPulso>();
         var l = new GameObject("Luz").AddComponent<Light>();
         l.transform.SetParent(go.transform, false);
         l.transform.localPosition = Vector3.up * 2f;
@@ -366,6 +378,18 @@ public static class CombatFx
         pozoMesh = new Mesh { name = "FxPozo" };
         pozoMesh.SetVertices(v); pozoMesh.SetColors(c); pozoMesh.SetTriangles(t, 0); pozoMesh.RecalculateBounds();
         return pozoMesh;
+    }
+
+    /// <summary>El haz de la baliza late despacio.</summary>
+    class FxPulso : MonoBehaviour
+    {
+        MeshRenderer mr; MaterialPropertyBlock mpb;
+        void Update()
+        {
+            if (mr == null) { mr = GetComponent<MeshRenderer>(); mpb = new MaterialPropertyBlock(); }
+            mpb.SetColor(BaseColor, new Color(0.65f, 0.35f, 1f, 0.16f + 0.1f * Mathf.Sin(Time.time * 2.5f)));
+            mr.SetPropertyBlock(mpb);
+        }
     }
 
     class FxGrieta : MonoBehaviour

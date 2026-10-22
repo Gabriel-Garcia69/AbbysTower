@@ -219,12 +219,35 @@ public partial class DioramaBuilder
             Prim(tower, PrimitiveType.Cylinder, "Tramo", new Vector3(0f, y + 1.3f, 0f), new Vector3(3.6f - i * 0.3f, 1.3f, 3.6f - i * 0.3f), i % 2 == 0 ? mWhite : mRedPaint, true);
             y += 2.6f;
         }
-        for (int i = 0; i < 6; i++)   // borde roto
+        // borde roto: un muro curvo hecho de dovelas que se asientan sobre el último tramo, con alturas desiguales
+        float rTop = (3.6f - 2 * 0.3f) / 2f - 0.15f;
+        for (int i = 0; i < 6; i++)
         {
-            float a = i / 6f * Mathf.PI * 2f;
-            var b = Box(tower, "Diente", new Vector3(Mathf.Cos(a) * 1.4f, y + R(0.2f, 1.2f), Mathf.Sin(a) * 1.4f), new Vector3(0.7f, R(0.6f, 2f), 0.5f), i % 2 == 0 ? mWhite : mRedPaint, false);
-            b.transform.localRotation = Quaternion.Euler(0f, -a * Mathf.Rad2Deg, R(-10f, 10f));
+            R(0.2f, 1.2f);   // (azar que gastaba la versión anterior)
+            float alto = R(0.6f, 2f), inc = R(-10f, 10f);
+            for (int k = 0; k < 3; k++)
+            {
+                float a = (i * 3 + k) / 18f * Mathf.PI * 2f;
+                float hk = alto * (k == 1 ? 1f : 0.65f);
+                var b = Box(tower, "Diente", new Vector3(Mathf.Cos(a) * rTop, y + hk / 2f, Mathf.Sin(a) * rTop), new Vector3(0.6f, hk, 0.35f), mWhite, false);
+                b.transform.localRotation = Quaternion.Euler(0f, -90f - a * Mathf.Rad2Deg, k == 1 ? inc * 0.3f : 0f);
+            }
         }
+        // la linterna de hierro caída al pie del faro y una escalera de caracol que asoma
+        MaterialesFuego();
+        var linterna = Group("LinternaCaida", tower);
+        linterna.localPosition = new Vector3(3.2f, 0.9f, -1.2f);
+        linterna.localRotation = Quaternion.Euler(0f, 30f, 68f);
+        MeshObject(linterna, "Aro", Ring(1.1f, 1f, 0.12f, 16), mHierro, false);
+        for (int k = 0; k < 6; k++)
+        {
+            float a = k / 6f * Mathf.PI * 2f;
+            Box(linterna, "Barra", new Vector3(Mathf.Cos(a) * 1.05f, 0.7f, Mathf.Sin(a) * 1.05f), new Vector3(0.08f, 1.4f, 0.08f), mHierro, false);
+        }
+        Prim(linterna, PrimitiveType.Sphere, "Cupula", new Vector3(0f, 1.45f, 0f), new Vector3(2.2f, 0.9f, 2.2f), mRedPaint);
+        Box(tower, "Puerta", new Vector3(0f, 1.9f, 1.62f), new Vector3(1f, 1.9f, 0.2f), mDoor, false);
+        foreach (float yy in new[] { 3.6f, 6.2f })
+            Box(tower, "Ventanuco", new Vector3(0f, yy, 1.55f - (yy - 3.6f) * 0.06f), new Vector3(0.35f, 0.7f, 0.1f), mWindow, false);
         for (int i = 0; i < 8; i++)
         {
             var r = Box(tower, "Escombro", new Vector3(R(-5f, 2f), 0.25f, R(-5f, 2f)), new Vector3(R(0.5f, 1.2f), R(0.3f, 0.7f), R(0.5f, 1f)), i % 2 == 0 ? mWhite : mStoneBrick, true);

@@ -1417,6 +1417,9 @@ public partial class DioramaBuilder : MonoBehaviour
         go.transform.localScale = scale;
         if (!keepCollider) DestroyImmediate(go.GetComponent<Collider>());
         go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+        // roca hecha con esfera: se cambia por una piedra facetada (las esferas estiradas parecían bolas o panes)
+        if (type == PrimitiveType.Sphere && mat != null && (mat == mRock || mat == mCliff))
+            go.GetComponent<MeshFilter>().sharedMesh = PiedraMedia(Mathf.RoundToInt(pos.x * 13.7f + pos.z * 7.3f + pos.y * 3.1f));
         // agua en una primitiva (pozo, estanque, lago redondo): su uv1 (de iluminación) el shader lo leería como corriente
         if (mat != null && mat.shader != null && mat.shader.name == "Abby/Water")
         {

@@ -127,6 +127,20 @@ public partial class DioramaBuilder
         return piedras[semilla] = m;
     }
 
+    static readonly Dictionary<int, Mesh> piedrasMedias = new Dictionary<int, Mesh>();
+
+    /// <summary>Piedra facetada del tamaño de la esfera de Unity (radio 0.5), para reemplazar rocas hechas con esferas.</summary>
+    static Mesh PiedraMedia(int semilla)
+    {
+        semilla = ((semilla % 6) + 6) % 6;
+        if (piedrasMedias.TryGetValue(semilla, out var m) && m != null) return m;
+        m = Object.Instantiate(PiedraMesh(semilla));
+        var v = m.vertices;
+        for (int i = 0; i < v.Length; i++) v[i] = new Vector3(v[i].x * 0.52f, v[i].y * 0.6f - 0.06f, v[i].z * 0.52f);
+        m.vertices = v; m.RecalculateNormals(); m.RecalculateBounds(); m.name = "PiedraMedia" + semilla;
+        return piedrasMedias[semilla] = m;
+    }
+
     GameObject Piedra(Transform parent, Vector3 pos, Vector3 escala, float yaw, int semilla, Material mat)
     {
         var go = MeshObject(parent, "Piedra", PiedraMesh(semilla), mat, false);

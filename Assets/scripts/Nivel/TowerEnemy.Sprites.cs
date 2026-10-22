@@ -10,6 +10,7 @@ public partial class TowerEnemy
 {
     static readonly string[] SpriteDirs = { "east", "north-east", "north", "north-west", "west", "south-west", "south", "south-east" };
     static Material spriteMat;
+    float glowEscala = 1f;
 
     bool SpriteVisual()
     {
@@ -42,9 +43,9 @@ public partial class TowerEnemy
             // el jefe trae su propia luz (late al enfurecerse, ver Update)
             var l = new GameObject("Brillo").AddComponent<Light>();
             l.transform.SetParent(visual, false);
-            l.transform.localPosition = new Vector3(0f, 2.2f, 0.8f);
-            l.type = LightType.Point; l.color = eyeColor; l.range = 9f; l.intensity = 6f; l.shadows = LightShadows.None;
-            glow = l;
+            l.transform.localPosition = new Vector3(0f, 3.4f, -1.2f);
+            l.type = LightType.Point; l.color = new Color(0.72f, 0.45f, 1f); l.range = 7f; l.intensity = 2.2f; l.shadows = LightShadows.None;
+            glow = l; glowEscala = 0.4f;   // un sprite se quema con la luz fuerte de los jefes 3D
         }
         visual.localScale = Vector3.one * 0.05f;
         return true;

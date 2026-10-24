@@ -219,59 +219,177 @@ public static class CombatFx
 
     // ------------------------------------------------------------------ baliza (marca la siguiente horda)
 
-    /// <summary>Columna de luz morada que se ve de lejos: chispas que suben, un haz suave y una luz. La mueve GuiaHordas.</summary>
+    static readonly Color ColorBaliza = new Color(0.68f, 0.58f, 1f);
+    static Mesh hazMesh, aroFinoMesh, runasMesh;
+
+    /// <summary>
+    /// Marca de la siguiente pelea: un haz de luz que se desvanece hacia arriba y hacia los lados (tres planos cruzados,
+    /// se ve "volumétrico" desde cualquier ángulo), un resplandor suave en el suelo, dos aros finos que giran en sentidos
+    /// contrarios (el de adentro en segmentos, como un círculo de runas), motas de luz que suben despacio y una luz tenue.
+    /// </summary>
     public static GameObject Baliza()
     {
         var go = new GameObject("FX_Baliza");
-        var ps = go.AddComponent<ParticleSystem>();
+        if (hazMesh == null) hazMesh = BuildHaz(0.7f, 11f);
+        if (aroFinoMesh == null) aroFinoMesh = BuildRing(0.955f, 64);
+        if (runasMesh == null) runasMesh = BuildRunas(16, 0.72f, 0.8f, 0.55f);
+
+        var haz = Pieza(go.transform, "Haz", hazMesh, AdditiveFlat, Vector3.zero, Vector3.one);
+        var disco = Pieza(go.transform, "Resplandor", QuadSuelo(), Additive, Vector3.up * 0.05f, Vector3.one * 2.3f);
+        var aro = Pieza(go.transform, "Aro", aroFinoMesh, AdditiveFlat, Vector3.up * 0.07f, Vector3.one * 2.1f);
+        var runas = Pieza(go.transform, "Runas", runasMesh, AdditiveFlat, Vector3.up * 0.08f, Vector3.one * 2.1f);
+
+        // motas de luz que suben despacio
+        var motas = new GameObject("Motas");
+        motas.transform.SetParent(go.transform, false);
+        var ps = motas.AddComponent<ParticleSystem>();
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
         main.loop = true; main.playOnAwake = false; main.duration = 1f;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(2.5f, 3.5f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(3f, 5f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.65f);
-        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.8f, 0.45f, 1f, 1f), new Color(0.55f, 0.75f, 1f, 1f));
+        main.startLifetime = new ParticleSystem.MinMaxCurve(2.5f, 4f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 1.2f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.07f, 0.16f);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.85f, 0.8f, 1f, 1f), new Color(0.6f, 0.75f, 1f, 1f));
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 200;
-        var em = ps.emission; em.rateOverTime = 50f;
-        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 0.9f; sh.rotation = new Vector3(-90f, 0f, 0f);
+        main.maxParticles = 50;
+        var em = ps.emission; em.rateOverTime = 12f;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Circle; sh.radius = 1.2f; sh.rotation = new Vector3(-90f, 0f, 0f);
         var col = ps.colorOverLifetime; col.enabled = true;
         var g = new Gradient();
         g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                  new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.15f), new GradientAlphaKey(0f, 1f) });
+                  new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.2f), new GradientAlphaKey(0f, 1f) });
         col.color = g;
-        var r = go.GetComponent<ParticleSystemRenderer>();
+        var nz = ps.noise; nz.enabled = true; nz.strength = 0.25f; nz.frequency = 0.8f; nz.quality = ParticleSystemNoiseQuality.Low;
+        var r = motas.GetComponent<ParticleSystemRenderer>();
         r.sharedMaterial = Additive;
         r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         ps.Play();
-        // anillo en el suelo
-        if (ringMesh == null) ringMesh = BuildRing(0.86f, 48);
-        var anillo = new GameObject("Anillo");
-        anillo.transform.SetParent(go.transform, false);
-        anillo.transform.localPosition = Vector3.up * 0.06f;
-        anillo.transform.localScale = Vector3.one * 1.6f;
-        anillo.AddComponent<MeshFilter>().sharedMesh = ringMesh;
-        var ar = anillo.AddComponent<MeshRenderer>();
-        ar.sharedMaterial = AdditiveFlat;
-        ar.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        var mpb = new MaterialPropertyBlock(); mpb.SetColor(BaseColor, new Color(0.75f, 0.4f, 1f, 0.8f)); ar.SetPropertyBlock(mpb);
-        // haz vertical suave (se ve desde lejos aunque las chispas sean chicas)
-        var haz = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        Object.Destroy(haz.GetComponent<Collider>());
-        haz.name = "Haz";
-        haz.transform.SetParent(go.transform, false);
-        haz.transform.localPosition = Vector3.up * 7f;
-        haz.transform.localScale = new Vector3(1.1f, 7f, 1.1f);
-        var hr = haz.GetComponent<MeshRenderer>();
-        hr.sharedMaterial = AdditiveFlat;
-        hr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        var hp = new MaterialPropertyBlock(); hp.SetColor(BaseColor, new Color(0.65f, 0.35f, 1f, 0.22f)); hr.SetPropertyBlock(hp);
-        haz.AddComponent<FxPulso>();
+
         var l = new GameObject("Luz").AddComponent<Light>();
         l.transform.SetParent(go.transform, false);
-        l.transform.localPosition = Vector3.up * 2f;
-        l.type = LightType.Point; l.color = new Color(0.7f, 0.4f, 1f); l.range = 10f; l.intensity = 3f; l.shadows = LightShadows.None;
+        l.transform.localPosition = Vector3.up * 1.5f;
+        l.type = LightType.Point; l.color = ColorBaliza; l.range = 7f; l.intensity = 1.6f; l.shadows = LightShadows.None;
+
+        go.AddComponent<FxBaliza>().Init(haz.GetComponent<MeshRenderer>(), disco.GetComponent<MeshRenderer>(),
+            aro.GetComponent<MeshRenderer>(), runas.GetComponent<MeshRenderer>(), l);
         return go;
+    }
+
+    static GameObject Pieza(Transform parent, string name, Mesh mesh, Material mat, Vector3 pos, Vector3 escala)
+    {
+        var p = new GameObject(name);
+        p.transform.SetParent(parent, false);
+        p.transform.localPosition = pos;
+        p.transform.localScale = escala;
+        p.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var mr = p.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = mat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = false;
+        return p;
+    }
+
+    static Mesh quadSuelo;
+    /// <summary>Cuadro acostado de 2 x 2 con UV completas (para usar el punto suave como resplandor en el suelo).</summary>
+    static Mesh QuadSuelo()
+    {
+        if (quadSuelo != null) return quadSuelo;
+        quadSuelo = new Mesh { name = "QuadSuelo" };
+        quadSuelo.SetVertices(new List<Vector3> { new Vector3(-1, 0, -1), new Vector3(1, 0, -1), new Vector3(-1, 0, 1), new Vector3(1, 0, 1) });
+        quadSuelo.SetUVs(0, new List<Vector2> { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 1), new Vector2(1, 1) });
+        quadSuelo.SetColors(new List<Color> { Color.white, Color.white, Color.white, Color.white });
+        quadSuelo.SetTriangles(new[] { 0, 2, 3, 0, 3, 1 }, 0);
+        quadSuelo.RecalculateBounds();
+        return quadSuelo;
+    }
+
+    /// <summary>Haz de luz: tres planos verticales cruzados; alfa máximo al centro y abajo, cero en los bordes y arriba.</summary>
+    static Mesh BuildHaz(float medioAncho, float alto)
+    {
+        var v = new List<Vector3>(); var c = new List<Color>(); var t = new List<int>();
+        float[] ys = { 0f, 0.15f, 0.45f, 1f };
+        float[] alfas = { 0.55f, 1f, 0.45f, 0f };
+        for (int plano = 0; plano < 3; plano++)
+        {
+            var rot = Quaternion.Euler(0f, plano * 60f, 0f);
+            int b = v.Count;
+            for (int fila = 0; fila < ys.Length; fila++)
+                for (int k = 0; k < 3; k++)
+                {
+                    float x = (k - 1) * medioAncho * (1f - ys[fila] * 0.35f);   // un poco más angosto arriba
+                    v.Add(rot * new Vector3(x, ys[fila] * alto, 0f));
+                    c.Add(new Color(1f, 1f, 1f, k == 1 ? alfas[fila] : 0f));
+                }
+            for (int fila = 0; fila + 1 < ys.Length; fila++)
+                for (int k = 0; k < 2; k++)
+                {
+                    int a0 = b + fila * 3 + k, a1 = a0 + 1, b0 = a0 + 3, b1 = b0 + 1;
+                    t.AddRange(new[] { a0, b0, b1, a0, b1, a1 });
+                }
+        }
+        var m = new Mesh { name = "Haz" };
+        m.SetVertices(v); m.SetColors(c); m.SetTriangles(t, 0); m.RecalculateBounds();
+        return m;
+    }
+
+    /// <summary>Aro en segmentos (radio interno ri, externo re; lleno = fracción de cada segmento que se dibuja).</summary>
+    static Mesh BuildRunas(int segmentos, float ri, float re, float lleno)
+    {
+        var v = new List<Vector3>(); var c = new List<Color>(); var t = new List<int>();
+        for (int s = 0; s < segmentos; s++)
+        {
+            float a0 = s / (float)segmentos * Mathf.PI * 2f, a1 = a0 + lleno / segmentos * Mathf.PI * 2f;
+            int b = v.Count;
+            const int pasos = 4;
+            for (int k = 0; k <= pasos; k++)
+            {
+                float a = Mathf.Lerp(a0, a1, k / (float)pasos);
+                var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+                float alfa = Mathf.Sin(k / (float)pasos * Mathf.PI) * 0.6f + 0.4f;
+                v.Add(d * ri); c.Add(new Color(1, 1, 1, alfa * 0.6f));
+                v.Add(d * re); c.Add(new Color(1, 1, 1, alfa));
+                if (k < pasos) { int q = b + k * 2; t.AddRange(new[] { q, q + 3, q + 1, q, q + 2, q + 3 }); }
+            }
+        }
+        var m = new Mesh { name = "Runas" };
+        m.SetVertices(v); m.SetColors(c); m.SetTriangles(t, 0); m.RecalculateBounds();
+        return m;
+    }
+
+    /// <summary>Anima la baliza: entra suave, los aros giran en sentidos contrarios y el haz y el resplandor laten despacio.</summary>
+    class FxBaliza : MonoBehaviour
+    {
+        MeshRenderer haz, disco, aro, runas; Light luz; MaterialPropertyBlock mpb;
+        float aparecer;
+
+        public void Init(MeshRenderer h, MeshRenderer d, MeshRenderer a, MeshRenderer r, Light l)
+        {
+            haz = h; disco = d; aro = a; runas = r; luz = l; mpb = new MaterialPropertyBlock();
+        }
+
+        void OnEnable() { aparecer = 0f; }
+
+        void Tono(MeshRenderer mr, float a)
+        {
+            mpb.SetColor(BaseColor, new Color(ColorBaliza.r, ColorBaliza.g, ColorBaliza.b, a));
+            mr.SetPropertyBlock(mpb);
+        }
+
+        void Update()
+        {
+            if (mpb == null) return;
+            aparecer = Mathf.Min(1f, aparecer + Time.deltaTime * 1.5f);   // entra suave al cambiar de horda
+            float k = aparecer * aparecer * (3f - 2f * aparecer);
+            float p = 0.85f + 0.15f * Mathf.Sin(Time.time * 1.8f);
+            aro.transform.localRotation = Quaternion.Euler(0f, Time.time * 14f, 0f);
+            runas.transform.localRotation = Quaternion.Euler(0f, -Time.time * 22f, 0f);
+            Tono(haz, 0.32f * p * k);
+            Tono(disco, 0.45f * p * k);
+            Tono(aro, 0.8f * k);
+            Tono(runas, 0.75f * k);
+            luz.intensity = 1.6f * p * k;
+            transform.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, k);
+        }
     }
 
     // ------------------------------------------------------------------ grieta del abismo (aparición de enemigos)
@@ -312,7 +430,8 @@ public static class CombatFx
         var borde = new GameObject("Borde");
         borde.transform.SetParent(go.transform, false);
         borde.transform.localPosition = Vector3.up * 0.01f;
-        borde.AddComponent<MeshFilter>().sharedMesh = ringMesh;
+        if (runasMesh == null) runasMesh = BuildRunas(16, 0.72f, 0.8f, 0.55f);
+        borde.AddComponent<MeshFilter>().sharedMesh = runasMesh;   // círculo de runas, como la baliza
         var br = borde.AddComponent<MeshRenderer>();
         br.sharedMaterial = AdditiveFlat;
         br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -380,18 +499,6 @@ public static class CombatFx
         return pozoMesh;
     }
 
-    /// <summary>El haz de la baliza late despacio.</summary>
-    class FxPulso : MonoBehaviour
-    {
-        MeshRenderer mr; MaterialPropertyBlock mpb;
-        void Update()
-        {
-            if (mr == null) { mr = GetComponent<MeshRenderer>(); mpb = new MaterialPropertyBlock(); }
-            mpb.SetColor(BaseColor, new Color(0.65f, 0.35f, 1f, 0.16f + 0.1f * Mathf.Sin(Time.time * 2.5f)));
-            mr.SetPropertyBlock(mpb);
-        }
-    }
-
     class FxGrieta : MonoBehaviour
     {
         float radius, abre, total, t; bool salio;
@@ -417,9 +524,9 @@ public static class CombatFx
             pozo.transform.localScale = Vector3.one * radius * k * (1f + 0.04f * Mathf.Sin(t * 9f));
             mpb.SetColor(BaseColor, new Color(0.01f, 0f, 0.025f, 0.97f * k));
             pozo.SetPropertyBlock(mpb);
-            borde.transform.localScale = Vector3.one * radius * k * 1.04f;
+            borde.transform.localScale = Vector3.one * radius * k * 1.25f;
             borde.transform.localRotation = Quaternion.Euler(0f, t * 40f, 0f);
-            mpb.SetColor(BaseColor, new Color(0.75f, 0.35f, 1f, k * pulso));
+            mpb.SetColor(BaseColor, new Color(0.7f, 0.55f, 1f, k * pulso));
             borde.SetPropertyBlock(mpb);
             luz.intensity = 5f * k * pulso;
 

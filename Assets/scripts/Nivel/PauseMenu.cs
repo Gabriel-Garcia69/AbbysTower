@@ -211,9 +211,8 @@ public class PauseMenu : MonoBehaviour
         Text(new Rect(panel.x, panel.y + 3f * u, pw, 9f * u), "P A U S A", 7f * u, true, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.65f));
         Divider(panel.center.x, panel.y + 13f * u, pw * 0.6f, u);
         Text(new Rect(panel.x, panel.y + 14.6f * u, pw, 3f * u), "ABBY'S TOWER   ·   " + SceneLabel(), 1.9f * u, false, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
-        var diff = Difficulty.Active;
-        Text(new Rect(panel.x + 2f * u, panel.y + 17.6f * u, pw - 4f * u, 3f * u), "Modo: " + diff.name, FitSize("Modo: " + diff.name, 1.9f * u, pw - 4f * u, true), true, TextAnchor.MiddleCenter, diff.color);
-        string found = $"◆ Reliquias {SecretTracker.Relics}/{SecretTracker.TotalRelics}   ·   Escondites {SecretTracker.Hideouts}   ·   Notas {SecretTracker.Notes}";
+        // GDD: el único coleccionable son las notas
+        string found = SecretTracker.Notes == 1 ? "1 nota encontrada" : $"{SecretTracker.Notes} notas encontradas";
         Text(new Rect(panel.x, panel.yMax - 9.5f * u, pw, 3f * u), found, FitSize(found, 1.7f * u, pw - 4f * u, false), false, TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.55f, 0.75f));
 
         float y0 = panel.y + 22f * u, x = panel.x + 3f * u, w = pw - 6f * u;
@@ -250,7 +249,7 @@ public class PauseMenu : MonoBehaviour
         // Resumen del modo bajo el cursor
         float sy = y + 4f * (ch + gap);
         var p = Difficulty.Presets[Mathf.Clamp(sel, 0, Difficulty.Presets.Length - 1)];
-        string lost = p.fragmentsLost >= 1f ? "todos tus ◆" : Mathf.RoundToInt(p.fragmentsLost * 100f) + "% de tus ◆";
+        string lost = p.fragmentsLost >= 1f ? "todo" : Mathf.RoundToInt(p.fragmentsLost * 100f) + "%";
         string stats = $"Daño recibido x{p.damageTaken:0.##}   ·   Vida enemigos x{p.enemyHealth:0.##}   ·   Curación x{p.healing:0.##}   ·   Al morir pierdes {lost}{(p.loseUpgrades ? " y mejoras" : "")}";
         Text(new Rect(x, sy, w, 4f * u), stats, FitSize(stats, 1.7f * u, w, false), false, TextAnchor.MiddleCenter, sel < OptionsDiorama ? new Color(1f, 1f, 1f, 0.7f) : new Color(1f, 1f, 1f, 0f));
 
@@ -307,8 +306,8 @@ public class PauseMenu : MonoBehaviour
         if (!selected) return;
         float a = 0.6f + 0.4f * Mathf.Sin(t * 5f), off = Mathf.Sin(t * 5f) * 0.3f * u;
         var dc = new Color(Gold.r, Gold.g, Gold.b, a);
-        Text(new Rect(r.x + 1.5f * u + off, r.y, 4f * u, r.height), "◆", 1.8f * u, false, TextAnchor.MiddleCenter, dc);
-        Text(new Rect(r.xMax - 5.5f * u - off, r.y, 4f * u, r.height), "◆", 1.8f * u, false, TextAnchor.MiddleCenter, dc);
+        Text(new Rect(r.x + 1.5f * u + off, r.y, 4f * u, r.height), "*", 1.8f * u, false, TextAnchor.MiddleCenter, dc);
+        Text(new Rect(r.xMax - 5.5f * u - off, r.y, 4f * u, r.height), "*", 1.8f * u, false, TextAnchor.MiddleCenter, dc);
     }
 
     void DrawCard(Rect r, Difficulty.Preset p, bool active, bool selected, bool crazy, float u, float t)
@@ -335,7 +334,7 @@ public class PauseMenu : MonoBehaviour
         Text(new Rect(r.x + 3.5f * u, r.y + 5.6f * u, r.width - 6f * u, 4.2f * u), p.description, 1.75f * u, false, TextAnchor.UpperLeft,
              new Color(1f, 1f, 1f, selected || active ? 0.75f : 0.45f), true);
         if (active)
-            Text(new Rect(r.xMax - tagW - 1.5f * u, r.y + 1.2f * u, tagW, 4.5f * u), "●  ACTIVO", 1.6f * u, true, TextAnchor.MiddleRight, c);
+            Text(new Rect(r.xMax - tagW - 1.5f * u, r.y + 1.2f * u, tagW, 4.5f * u), "ACTIVO", 1.6f * u, true, TextAnchor.MiddleRight, c);
     }
 
     void Footer(Rect panel, float u)
@@ -351,7 +350,7 @@ public class PauseMenu : MonoBehaviour
         Tint(new Color(Gold.r, Gold.g, Gold.b, 0.55f));
         Draw(new Rect(cx - half, y - th / 2f, half - hole, th), Texture2D.whiteTexture);
         Draw(new Rect(cx + hole, y - th / 2f, half - hole, th), Texture2D.whiteTexture);
-        Text(new Rect(cx - hole, y - 2f * u, hole * 2f, 4f * u), "◆", 2f * u, false, TextAnchor.MiddleCenter, Gold);
+        Text(new Rect(cx - hole, y - 2f * u, hole * 2f, 4f * u), "*", 2f * u, false, TextAnchor.MiddleCenter, Gold);
     }
 
     /// <summary>Mouse: pasar encima selecciona, clic activa. Devuelve true si se activó (la página pudo cambiar).</summary>

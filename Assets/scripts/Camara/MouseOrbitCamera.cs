@@ -101,8 +101,9 @@ public class MouseOrbitCamera : MonoBehaviour
     };
     [System.NonSerialized] CameraStyleProfile diorama = new CameraStyleProfile
     {
-        fov = 22f, distance = 36f, pivotHeight = 0.8f, startPitch = 20f, minPitch = 20f, maxPitch = 20f,
-        lookUp = 6f, lookAhead = 1.6f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true, allowShots = true
+        // un poco más cerca y más inclinada que antes (36 m, 20°): Abby se lee mejor y se ve más suelo por delante
+        fov = 24f, distance = 29f, pivotHeight = 0.9f, startPitch = 24f, minPitch = 24f, maxPitch = 24f,
+        lookUp = 4.5f, lookAhead = 2.2f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true, allowShots = true
     };
     [Tooltip("Esta escena arranca con su propio estilo (p. ej. el diorama), sin cambiar el que se guardó para los pisos.")]
     [SerializeField] bool useSceneStyle = false;

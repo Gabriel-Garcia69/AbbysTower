@@ -15,15 +15,16 @@ public class FondoMenu : MonoBehaviour
         public string escena;
         public Vector3 centro;
         public float radio, altura, alturaMira, angulo0, giro;
+        public Musica.Pista musica;
     }
 
     /// <summary>Los paisajes del menú: puerto con faro, valle de las cascadas, acantilado al atardecer y la cima.</summary>
     public Vista[] vistas =
     {
-        new Vista { escena = "Puerto", centro = new Vector3(33f, 3f, 17f), radio = 50f, altura = 16f, alturaMira = 6f, angulo0 = -0.6f, giro = 0.035f },
-        new Vista { escena = "Cascadas", centro = new Vector3(-5f, 6f, 95f), radio = 55f, altura = 22f, alturaMira = 4f, angulo0 = 0.2f, giro = 0.03f },
-        new Vista { escena = "Acantilado", centro = new Vector3(0f, 6f, -5f), radio = 48f, altura = 18f, alturaMira = 3f, angulo0 = -0.4f, giro = 0.035f },
-        new Vista { escena = "Cima", centro = new Vector3(-2f, 4f, 0f), radio = 62f, altura = 24f, alturaMira = 4f, angulo0 = 0.6f, giro = 0.03f },
+        new Vista { escena = "Puerto", centro = new Vector3(33f, 3f, 17f), radio = 50f, altura = 16f, alturaMira = 6f, angulo0 = -0.6f, giro = 0.035f, musica = Musica.Pista.Menu },
+        new Vista { escena = "Cascadas", centro = new Vector3(-5f, 6f, 95f), radio = 55f, altura = 22f, alturaMira = 4f, angulo0 = 0.2f, giro = 0.03f, musica = Musica.Pista.Paisaje },
+        new Vista { escena = "Acantilado", centro = new Vector3(0f, 6f, -5f), radio = 48f, altura = 18f, alturaMira = 3f, angulo0 = -0.4f, giro = 0.035f, musica = Musica.Pista.Menu },
+        new Vista { escena = "Cima", centro = new Vector3(-2f, 4f, 0f), radio = 62f, altura = 24f, alturaMira = 4f, angulo0 = 0.6f, giro = 0.03f, musica = Musica.Pista.Paisaje },
     };
     public float segundosPorVista = 14f, fundido = 1.2f;
 
@@ -37,6 +38,8 @@ public class FondoMenu : MonoBehaviour
     void Start()
     {
         menu = gameObject.scene;
+        Musica.Cruce = 4f;   // en el menú los cambios de canción van lentos
+        Musica.Poner(vistas[0].musica);
         StartCoroutine(Ciclo());
     }
 
@@ -52,11 +55,14 @@ public class FondoMenu : MonoBehaviour
             var sc = SceneManager.GetSceneByName(v.escena);
             Limpiar(sc);
             SceneManager.SetActiveScene(sc);   // su luz, cielo y niebla
-            Musica.Poner(Musica.Pista.Menu);     // el mapa cambiaría a su música
+            yield return null;
+            foreach (var go in FindObjectsByType<Transform>(FindObjectsSortMode.None))   // balizas de horda que alcanzaron a nacer
+                if (go != null && go.name.StartsWith("FX_")) Destroy(go.gameObject);
             actual = v; hayVista = true; tVista = 0f;
             for (float t = 0f; t < fundido; t += Time.unscaledDeltaTime) { negro = 1f - t / fundido; yield return null; }
             negro = 0f;
             yield return new WaitForSeconds(segundosPorVista);
+            Musica.Poner(vistas[indice % vistas.Length].musica);   // la canción del siguiente paisaje entra mientras este se va
             for (float t = 0f; t < fundido; t += Time.unscaledDeltaTime) { negro = t / fundido; yield return null; }
             negro = 1f;
             hayVista = false;
@@ -79,6 +85,8 @@ public class FondoMenu : MonoBehaviour
                 if (t.CompareTag("Player")) { t.gameObject.SetActive(false); break; }
         }
     }
+
+    void OnDestroy() { Musica.Cruce = 2.5f; }
 
     void LateUpdate()
     {

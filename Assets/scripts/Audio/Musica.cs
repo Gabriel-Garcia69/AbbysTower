@@ -44,7 +44,7 @@ public class Musica : MonoBehaviour
     static void AlCargar()
     {
         Precalcular();
-        SceneManager.sceneLoaded += (s, m) => PorEscena(s.name);
+        SceneManager.sceneLoaded += (s, m) => { if (m == LoadSceneMode.Single) PorEscena(s.name); };   // los paisajes del menú (aditivos) no mandan
         PorEscena(SceneManager.GetActiveScene().name);
     }
 
@@ -75,24 +75,31 @@ public class Musica : MonoBehaviour
         StartCoroutine(Cruzar(p));
     }
 
+    /// <summary>Segundos del cruce entre pistas: la que sale se apaga despacio mientras la nueva sube, nunca de golpe.</summary>
+    public static float Cruce = 2.5f;
+
     IEnumerator Cruzar(Pista p)
     {
-        var sale = a.isPlaying ? a : b;
-        var entra = sale == a ? b : a;
+        // entra por la fuente más baja; si un cruce anterior quedó a medias, la otra sigue bajando desde donde iba
+        var entra = a.volume <= b.volume ? a : b;
+        var sale = entra == a ? b : a;
+        float v0 = sale.isPlaying ? sale.volume : 0f, e0 = 0f;
         if (p != Pista.Ninguna)
         {
             entra.clip = Clip(p);
             entra.volume = 0f;
             entra.Play();
         }
-        float v0 = sale.volume;
-        for (float t = 0f; t < 1.5f; t += Time.unscaledDeltaTime)
+        else { entra.Stop(); entra.volume = 0f; }
+        float dur = Mathf.Max(0.1f, Cruce);
+        for (float t = 0f; t < dur; t += Time.unscaledDeltaTime)
         {
-            float k = t / 1.5f;
+            float k = Mathf.SmoothStep(0f, 1f, t / dur);
             sale.volume = v0 * (1f - k);
-            if (p != Pista.Ninguna) entra.volume = Volumen() * k;
+            if (p != Pista.Ninguna) entra.volume = Mathf.Lerp(e0, Volumen(), k);
             yield return null;
         }
+        sale.volume = 0f;
         sale.Stop();
     }
 
@@ -100,7 +107,8 @@ public class Musica : MonoBehaviour
 
     void Update()
     {
-        var s = a.isPlaying && a.volume >= b.volume ? a : b;
+        if (a.isPlaying && b.isPlaying) return;   // en pleno cruce manda Cruzar
+        var s = a.isPlaying ? a : b;
         if (s.isPlaying) s.volume = Mathf.MoveTowards(s.volume, Volumen(), Time.unscaledDeltaTime * 0.5f);
     }
 

@@ -86,8 +86,8 @@ public class MenuPrincipal : MonoBehaviour
         switch (pagina)
         {
             case Pagina.Configuracion:
-                return new[] { $"Volumen general   ◀ {Mathf.RoundToInt(Ajustes.General * 100f)} % ▶", $"Volumen de música   ◀ {Mathf.RoundToInt(Ajustes.Musica * 100f)} % ▶",
-                               $"Volumen de efectos   ◀ {Mathf.RoundToInt(Ajustes.Efectos * 100f)} % ▶",
+                return new[] { $"Volumen general   < {Mathf.RoundToInt(Ajustes.General * 100f)} % >", $"Volumen de música   < {Mathf.RoundToInt(Ajustes.Musica * 100f)} % >",
+                               $"Volumen de efectos   < {Mathf.RoundToInt(Ajustes.Efectos * 100f)} % >",
                                "Pantalla completa: " + (Screen.fullScreen ? "Sí" : "No"), "Restablecer", "Volver" };
             case Pagina.Salir: return new[] { "No, quedarme", "Sí, salir del juego" };
             default: return new[] { "Jugar", "Configuración", "Salir" };

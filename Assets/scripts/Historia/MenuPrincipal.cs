@@ -4,8 +4,8 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Menú principal (GDD): Jugar · Configuración (volumen general y de música, pantalla completa) · Salir (pide
-/// confirmación). De fondo, el puerto al atardecer (faro, mar, pueblito y gaviotas) con la cámara girando despacio sobre
-/// la bahía. Va en la escena "Menu" (una copia del Puerto sin Abby ni peleas). Jugar abre la cinemática inicial.
+/// confirmación). De fondo van pasando paisajes de algunos pisos (FondoMenu: puerto, cascadas, acantilado y cima) con
+/// la cámara paneando despacio. Va en la escena "Menu" (vacía: solo este objeto). Jugar abre la cinemática inicial.
 /// </summary>
 public class MenuPrincipal : MonoBehaviour
 {
@@ -22,6 +22,7 @@ public class MenuPrincipal : MonoBehaviour
     int sel;
     float t, entrada;
     Camera cam;
+    FondoMenu fondo;
 
     void Awake()
     {
@@ -46,6 +47,8 @@ public class MenuPrincipal : MonoBehaviour
         cam = go.AddComponent<Camera>();
         if (main != null) { cam.CopyFrom(main); main.transform.root.gameObject.SetActive(false); }
         cam.nearClipPlane = 0.3f; cam.farClipPlane = 3000f;
+        fondo = gameObject.AddComponent<FondoMenu>();   // los paisajes que van cambiando
+        fondo.cam = cam;
         go.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing = true;
         go.AddComponent<AudioListener>();
         go.tag = "MainCamera";
@@ -58,7 +61,7 @@ public class MenuPrincipal : MonoBehaviour
         // la escena es una copia de la Intro: si su cinemática aparece (al llegar desde otro piso se vuelve a crear), fuera
         if (t < 3f) foreach (var c in FindObjectsByType<Cinematica>()) { c.StopAllCoroutines(); c.enabled = false; Destroy(c.gameObject); }
         t += Time.deltaTime; entrada += Time.deltaTime;
-        if (cam != null)
+        if (cam != null && fondo == null)
         {
             float a = t * giro;
             cam.transform.position = centro + new Vector3(Mathf.Sin(a) * radio, altura, -Mathf.Cos(a) * radio);

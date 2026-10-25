@@ -1,0 +1,19 @@
+﻿Personaje;Tipo;Dónde aparece;¿Tiene sprites?;Qué tiene;Carpeta en el proyecto
+Abby;Protagonista;Todos los pisos;Sí;8 direcciones: de pie, caminar, impulso; poses de golpe, guardia, de rodillas y tendida;Assets/sprites/Abby
+Dante (La Sombra);Jefe final;Piso 5 · Cima;Sí (prestados);Usa los sprites de Abby oscurecidos con humo morado (su versión propia está en PixelLab, sin conectar);Assets/sprites/Abby
+Larva del Abismo;Enemigo;Desde el piso 1;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Sombra
+Acechador;Enemigo;Desde el piso 2;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Saltador
+Bruto;Enemigo;Desde el piso 2;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Bruto
+Embestidor;Enemigo;Desde el piso 3;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Embestidor
+Guardián;Enemigo;Desde el piso 4;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Escudero
+Espectro;Enemigo;Piso 5;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Hechicero
+Guardián de las Ruinas;Jefe;Piso 1 · Pueblo;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Jefe_Diorama
+Capitán sin Barco;Jefe;Piso 2 · Puerto;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Jefe_Puerto
+Señor del Torrente;Jefe;Piso 3 · Cascadas;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Jefe_Cascadas
+Gárgola del Faro Roto;Jefe;Piso 4 · Acantilado;Sí;8 direcciones (dibujo quieto, se mueve por código);Assets/Resources/EnemigosSprites/Jefe_Acantilado
+Capitán Elías Vargas;Historia (NPC);Tutorial · piso 20;No;Figura 3D de bloques;—
+Miembros de la expedición;Historia (NPC);Tutorial · piso 20;No;Figuras 3D de bloques;—
+El Coloso;Criatura de historia;Tutorial · piso 20;No;Figura 3D de bloques;—
+Gente de la ciudad;Historia (NPC);Cinemática de inicio;No;Figuras 3D de bloques;—
+Angelo;Historia (padre);Solo se menciona;No;No aparece en pantalla;—
+Mercader;NPC;Fuera de la ruta (el GDD quitó las tiendas);No;No aparece en la ruta;—

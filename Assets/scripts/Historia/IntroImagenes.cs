@@ -1,0 +1,240 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
+
+/// <summary>
+/// Intro como imágenes que van pasando (pixel art con zoom lento, fundidos y el texto del guion).
+/// Lee los PNG de Assets/Resources/Intro/ (01_*.png … 12_*.png, 16:9, por ejemplo 640x360).
+/// Si falta la carpeta, Cinematica sigue usando la cinemática 3D de siempre (ver Cinematica.Start).
+/// Saltar: mantener Esc / Start (1 s). Avanzar el texto: Espacio / Enter / clic / A.
+/// El texto sale de Historia.cs, igual que en la cinemática 3D.
+/// </summary>
+public class IntroImagenes : MonoBehaviour
+{
+    public string siguienteEscena = "Expedicion";
+
+    struct Pieza
+    {
+        public int imagen;                 // número del PNG (01..12)
+        public Historia.Linea[] lineas;    // vacío = solo imagen
+        public float minimo;               // segundos mínimos si no hay texto
+        public Pieza(int i, float min, params Historia.Linea[] l) { imagen = i; lineas = l; minimo = min; }
+    }
+
+    static Historia.Linea N(string t) => new Historia.Linea("", t);
+
+    static Pieza[] Guion() => new[]
+    {
+        new Pieza(1,  3f, N(Historia.Torre[0])),
+        new Pieza(2,  3.5f),
+        new Pieza(3,  3f, N(Historia.Abismo[0])),
+        new Pieza(4,  3f, N(Historia.Abismo[1])),
+        new Pieza(5,  3f, N(Historia.Canalizadores[0])),
+        new Pieza(6,  3f, N(Historia.Minerales[0])),
+        new Pieza(7,  3f, Historia.Funeral[0], Historia.Funeral[1]),
+        new Pieza(8,  3f, Historia.Funeral[2]),
+        // aquí va la tarjeta "Año 2035" (se dibuja sola)
+        new Pieza(9,  3f, Historia.Discurso[0], Historia.Discurso[1]),
+        new Pieza(10, 3f, Historia.Discurso[2]),
+        new Pieza(11, 3f, Historia.Discurso[3], Historia.Discurso[4]),
+        new Pieza(12, 3f, Historia.Despedida[0], Historia.Despedida[1]),
+    };
+
+    const int ImagenAntesDeTarjeta = 8;
+
+    /// <summary>¿Hay imágenes de intro en el proyecto? (si no, se usa la cinemática 3D)</summary>
+    public static bool Hay() => Resources.LoadAll<Texture2D>("Intro").Length >= 3;
+
+    readonly Dictionary<int, Texture2D> imgs = new Dictionary<int, Texture2D>();
+    Texture2D actual;
+    float t, dur = 1f, negro = 1f, alphaTexto, tTexto, escHeld;
+    int dir;
+    bool presionado, terminando;
+    string quien = "", texto = "", tarjeta = "", tarjetaChica = "";
+    bool mostrarTitulo;
+    GUIStyle sNarr, sQuien, sTarj, sTarjChica, sTit;
+    Texture2D pix;
+
+    void Start()
+    {
+        var player = GameObject.FindWithTag("Player"); if (player != null) player.SetActive(false);
+        var fd = FindAnyObjectByType<FloorDirector>(); if (fd != null) fd.gameObject.SetActive(false);
+
+        foreach (var tx in Resources.LoadAll<Texture2D>("Intro"))
+        {
+            tx.filterMode = FilterMode.Point;      // pixel art nítido al escalar
+            tx.wrapMode = TextureWrapMode.Clamp;
+            var n = tx.name; int k = 0;
+            for (int i = 0; i < n.Length && char.IsDigit(n[i]); i++) k = k * 10 + (n[i] - '0');
+            if (k > 0) imgs[k] = tx;
+        }
+        pix = new Texture2D(1, 1); pix.SetPixel(0, 0, Color.white); pix.Apply();
+        StartCoroutine(Reproducir());
+    }
+
+    void Update()
+    {
+        var kb = Keyboard.current; var mouse = Mouse.current; var pad = Gamepad.current;
+        if ((kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame))
+            || (mouse != null && mouse.leftButton.wasPressedThisFrame) || (pad != null && pad.buttonSouth.wasPressedThisFrame))
+            presionado = true;
+        bool esc = (kb != null && kb.escapeKey.isPressed) || (pad != null && pad.startButton.isPressed);
+        escHeld = esc ? escHeld + Time.deltaTime : 0f;
+        if (escHeld > 1f && !terminando) { terminando = true; StopAllCoroutines(); StartCoroutine(Salir()); }
+        t += Time.deltaTime; tTexto += Time.deltaTime;
+    }
+
+    // ------------------------------------------------------------------ guion
+
+    IEnumerator Reproducir()
+    {
+        var piezas = Guion();
+        foreach (var p in piezas)
+        {
+            if (!imgs.TryGetValue(p.imagen, out actual)) actual = null;   // falta una imagen: se salta la parte visual, el texto sigue
+            dir = p.imagen % 4; t = 0f; dur = 1f;
+            texto = quien = ""; alphaTexto = 0f;
+            yield return Fundir(0f, 0.9f);
+
+            if (p.lineas.Length == 0) { dur = p.minimo; yield return Esperar(p.minimo); }
+            else
+            {
+                dur = 0f; foreach (var l in p.lineas) dur += Duracion(l.texto);
+                foreach (var l in p.lineas) yield return Decir(l);
+            }
+            texto = quien = ""; alphaTexto = 0f;
+            yield return Fundir(1f, 0.8f);
+
+            if (p.imagen == ImagenAntesDeTarjeta)
+            {
+                tarjeta = Historia.Anio2035; tarjetaChica = "";
+                yield return Esperar(2.8f);
+                tarjeta = "";
+            }
+        }
+        yield return Salir();
+    }
+
+    static float Duracion(string s) => Mathf.Clamp(2.2f + s.Length / 16f, 3f, 11f);
+
+    IEnumerator Salir()
+    {
+        yield return Fundir(1f, 1f);
+        texto = quien = ""; actual = null;
+        mostrarTitulo = true;
+        yield return Fundir(0f, 1f);
+        yield return Esperar(3f);
+        yield return Fundir(1f, 1f);
+        SceneManager.LoadScene(siguienteEscena);
+    }
+
+    IEnumerator Fundir(float hasta, float d)
+    {
+        float desde = negro, tt = 0f;
+        while (tt < d) { tt += Time.deltaTime; negro = Mathf.Lerp(desde, hasta, tt / d); yield return null; }
+        negro = hasta;
+    }
+
+    IEnumerator Esperar(float s) { float tt = 0f; presionado = false; while (tt < s && !presionado) { tt += Time.deltaTime; yield return null; } }
+
+    IEnumerator Decir(Historia.Linea l)
+    {
+        quien = l.quien; texto = l.texto; tTexto = 0f; presionado = false;
+        float espera = Duracion(l.texto), tt = 0f;
+        while (alphaTexto < 1f) { alphaTexto = Mathf.MoveTowards(alphaTexto, 1f, Time.deltaTime * 4f); yield return null; }
+        while (tt < espera)
+        {
+            tt += Time.deltaTime;
+            if (presionado)
+            {   // el primer toque completa el texto; el segundo pasa al siguiente
+                if (tTexto * 45f < texto.Length) { tTexto = texto.Length; presionado = false; }
+                else break;
+            }
+            yield return null;
+        }
+        while (alphaTexto > 0f) { alphaTexto = Mathf.MoveTowards(alphaTexto, 0f, Time.deltaTime * 4f); yield return null; }
+    }
+
+    // ------------------------------------------------------------------ dibujo
+
+    void Estilos()
+    {
+        if (sNarr != null) return;
+        sNarr = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true, richText = true };
+        sNarr.normal.textColor = new Color(0.95f, 0.93f, 0.88f);
+        sQuien = new GUIStyle(sNarr) { fontStyle = FontStyle.Bold };
+        sQuien.normal.textColor = new Color(1f, 0.82f, 0.45f);
+        sTarj = new GUIStyle(sNarr) { fontStyle = FontStyle.Bold };
+        sTarj.normal.textColor = new Color(0.9f, 0.85f, 1f);
+        sTarjChica = new GUIStyle(sNarr);
+        sTarjChica.normal.textColor = new Color(0.7f, 0.65f, 0.8f);
+        sTit = new GUIStyle(sTarj);
+    }
+
+    void OnGUI()
+    {
+        if (Event.current.type != EventType.Repaint) return;
+        Estilos();
+        float W = Screen.width, H = Screen.height;
+        GUI.color = Color.black; GUI.DrawTexture(new Rect(0, 0, W, H), pix);
+
+        if (actual != null)
+        {   // "cover" + zoom lento + un poco de paneo (la dirección cambia según la imagen)
+            float prog = Mathf.Clamp01(t / Mathf.Max(0.1f, dur + 1.7f));
+            bool zoomOut = dir == 3;
+            float z = zoomOut ? Mathf.Lerp(1.12f, 1.02f, prog) : Mathf.Lerp(1.02f, 1.12f, prog);
+            float ar = (float)actual.width / actual.height;
+            float rw = H * ar, rh = H;
+            if (rw < W) { rw = W; rh = W / ar; }
+            rw *= z; rh *= z;
+            float px = (dir == 1 ? 1f : dir == 2 ? -1f : 0f) * Mathf.Lerp(-0.02f, 0.02f, prog) * W;
+            float py = (dir == 0 ? 1f : 0f) * Mathf.Lerp(0.015f, -0.015f, prog) * H;
+            GUI.color = Color.white;
+            GUI.DrawTexture(new Rect((W - rw) * 0.5f + px, (H - rh) * 0.5f + py, rw, rh), actual, ScaleMode.StretchToFill);
+            // viñeta suave arriba y abajo
+            GUI.color = new Color(0, 0, 0, 0.35f); GUI.DrawTexture(new Rect(0, H * 0.82f, W, H * 0.18f), pix);
+            GUI.color = new Color(0, 0, 0, 0.25f); GUI.DrawTexture(new Rect(0, 0, W, H * 0.08f), pix);
+        }
+
+        if (alphaTexto > 0.01f && texto.Length > 0)
+        {
+            int fs = Mathf.RoundToInt(H / 26f);
+            sNarr.fontSize = fs; sQuien.fontSize = Mathf.RoundToInt(fs * 0.9f);
+            float bw = W * 0.8f, bh = H * 0.2f, bx = (W - bw) * 0.5f, by = H - bh - H * 0.05f;
+            GUI.color = new Color(0, 0, 0, 0.72f * alphaTexto); GUI.DrawTexture(new Rect(bx, by, bw, bh), pix);
+            int n = Mathf.Clamp(Mathf.FloorToInt(tTexto * 45f), 0, texto.Length);
+            float ty = by + H * 0.012f;
+            if (quien.Length > 0)
+            {
+                GUI.color = new Color(1, 1, 1, alphaTexto);
+                GUI.Label(new Rect(bx, ty, bw, fs * 1.4f), quien, sQuien);
+                ty += fs * 1.35f;
+            }
+            GUI.color = new Color(1, 1, 1, alphaTexto);
+            GUI.Label(new Rect(bx + bw * 0.03f, ty, bw * 0.94f, by + bh - ty), texto.Substring(0, n), sNarr);
+        }
+
+        if (tarjeta.Length > 0)
+        {
+            sTarj.fontSize = Mathf.RoundToInt(H / 9f);
+            GUI.color = new Color(1, 1, 1, 1f - negro);
+            GUI.Label(new Rect(0, H * 0.35f, W, H * 0.3f), tarjeta, sTarj);
+        }
+        if (mostrarTitulo)
+        {
+            sTit.fontSize = Mathf.RoundToInt(H / 8f); sTarjChica.fontSize = Mathf.RoundToInt(H / 22f);
+            GUI.color = new Color(1, 1, 1, 1f - negro);
+            GUI.Label(new Rect(0, H * 0.32f, W, H * 0.2f), Historia.Titulo, sTit);
+            GUI.Label(new Rect(0, H * 0.52f, W, H * 0.1f), Historia.Subtitulo, sTarjChica);
+        }
+
+        if (negro > 0.001f) { GUI.color = new Color(0, 0, 0, negro); GUI.DrawTexture(new Rect(0, 0, W, H), pix); }
+
+        GUI.color = new Color(1, 1, 1, 0.5f);
+        sTarjChica.fontSize = Mathf.RoundToInt(H / 40f);
+        GUI.Label(new Rect(0, H - H * 0.04f, W, H * 0.04f), "Mantén Esc: saltar", sTarjChica);
+        GUI.color = Color.white;
+    }
+}

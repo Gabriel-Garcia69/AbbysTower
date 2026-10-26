@@ -33,6 +33,14 @@ public class Cinematica : MonoBehaviour
 
     void Start()
     {
+        // si hay imágenes de intro en Resources/Intro, se usan en vez de la cinemática 3D
+        if (IntroImagenes.Hay())
+        {
+            gameObject.AddComponent<IntroImagenes>().siguienteEscena = siguienteEscena;
+            enabled = false;
+            return;
+        }
+
         // fuera el jugador, el HUD y la cámara de juego: aquí manda la cinemática
         var player = GameObject.FindWithTag("Player");
         if (player != null) player.SetActive(false);

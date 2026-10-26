@@ -7,7 +7,7 @@ public static class Historia
 {
     // ------------------------------------------------------------------ datos "a definir" en el guion
     /// <summary>Ciudad donde aparece la torre ("la ciudad [a definir]").</summary>
-    public const string Ciudad = "Cancún";
+    public const string Ciudad = "Cala Sombría";
     /// <summary>Nombre del hermano de Abby ("[Nombre del hermano de Abby]"). Definido en el GDD 0.6.0: Dante.</summary>
     public const string Hermano = "Dante";
     /// <summary>Nombre del capitán de la expedición ("Capitán [Nombre aún por definir]"). GDD 0.6.0: Elías Vargas.</summary>
@@ -23,7 +23,7 @@ public static class Historia
     // ------------------------------------------------------------------ contexto y presentación de la torre
     public static readonly string[] Torre =
     {
-        "En el año 2030, en medio de la ciudad " + Ciudad + " se materializó una torre misteriosa de gran tamaño.",
+        "En el año 2030, en medio del pueblo de " + Ciudad + " se materializó una torre misteriosa de gran tamaño.",
     };
     public static readonly string[] Abismo =
     {

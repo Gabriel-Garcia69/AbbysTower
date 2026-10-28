@@ -37,7 +37,8 @@ public partial class TowerEnemy
         return true;
     }
 
-    /// <summary>La silueta de Abby (sus cuadros de animación) teñida de sombra, con un brillo morado.</summary>
+    /// <summary>Su pixel art propio (Resources/Personajes/Dante, la sombra de PixelLab) si existe; si no, la silueta de
+    /// Abby (sus cuadros de animación) teñida de sombra. Siempre con un brillo morado.</summary>
     bool DanteVisual()
     {
         var p = GameObject.FindWithTag("Player");
@@ -51,12 +52,23 @@ public partial class TowerEnemy
         go.transform.SetParent(transform, false);   // fuera de "Visual": Visual gira hacia donde mira, el sprite no
         go.transform.localScale = srAbby.transform.lossyScale * 1.18f;   // un poco más alto que Abby
         go.transform.localPosition = Vector3.up * Mathf.Max(0f, srAbby.transform.position.y - p.transform.position.y) * 1.18f;
+        var propio = new Sprite[8];
+        bool hayPropio = false;
+        for (int i = 0; i < 8; i++) { propio[i] = Resources.Load<Sprite>("Personajes/Dante/" + SpriteDirs[i]); hayPropio |= propio[i] != null; }
+        if (hayPropio)
+        {
+            // el tamaño y los pies vienen del .meta (ya mide 1.18 veces a Abby)
+            Vector3 ls = transform.lossyScale;
+            go.transform.localScale = new Vector3(1f / Mathf.Max(0.001f, ls.x), 1f / Mathf.Max(0.001f, ls.y), 1f / Mathf.Max(0.001f, ls.z));
+            go.transform.localPosition = Vector3.zero;
+        }
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sharedMaterial = srAbby.sharedMaterial;
-        sr.color = new Color(0.16f, 0.09f, 0.24f);
-        sr.sprite = srAbby.sprite;
+        sr.color = hayPropio ? Color.white : new Color(0.16f, 0.09f, 0.24f);
+        sr.sprite = hayPropio ? (propio[6] != null ? propio[6] : System.Array.Find(propio, x => x != null)) : srAbby.sprite;
         var ds = go.AddComponent<DanteSprite>();
         ds.fuente = anim; ds.enemigo = this; ds.sr = sr; ds.baseLocal = go.transform.localPosition;
+        if (hayPropio) { ds.propio = propio; ds.escalaBase = go.transform.localScale; }
         body = null;
         eyes = new Renderer[0];
         var l = new GameObject("Brillo").AddComponent<Light>();
@@ -74,6 +86,8 @@ public partial class TowerEnemy
         public TowerEnemy enemigo;
         public SpriteRenderer sr;
         public Vector3 baseLocal;
+        public Sprite[] propio;          // su dibujo de 8 direcciones; sin cuadros: se mueve por código
+        public Vector3 escalaBase = Vector3.one;
         Vector3 ultima;
         float paso, golpe, aura;
         int dir = 6;
@@ -96,6 +110,11 @@ public partial class TowerEnemy
             dir = ((Mathf.RoundToInt(ang / 45f) % 8) + 8) % 8;
 
             Sprite s = null;
+            if (propio != null)
+            {
+                Propio(mov, cam);
+                return;
+            }
             bool atacando = enemigo.state == State.Telegraph || enemigo.state == State.Lunge || enemigo.state == State.Slam;
             bool tajo = enemigo.state == State.Slam || enemigo.lungeSpeed < 15f;   // la embestida larga (22 m/s) usa la pose del dash
             if (atacando && tajo && fuente.slash != null && fuente.slash.Length > dir && fuente.slash[dir] != null && fuente.slash[dir].Has)
@@ -124,6 +143,43 @@ public partial class TowerEnemy
             float pulso = enemigo.Enraged ? 0.08f + 0.06f * Mathf.Sin(Time.time * 12f) : 0f;
             sr.color = new Color(0.16f + pulso, 0.09f, 0.24f + pulso * 2f);
             // aura de sombra: se le desprende humo morado oscuro (más cuando se enfurece)
+            aura -= Time.deltaTime;
+            if (aura <= 0f && enemigo.enabled)
+            {
+                aura = enemigo.Enraged ? 0.08f : 0.16f;
+                Vector3 p = enemigo.transform.position + new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(0.3f, 2f), Random.Range(-0.5f, 0.5f));
+                CombatFx.Burst(p, enemigo.Enraged ? new Color(0.55f, 0.15f, 0.8f) : new Color(0.22f, 0.08f, 0.35f), 3, 0.8f, 0.22f, 0.9f, -0.8f);
+            }
+        }
+
+        /// <summary>Con su dibujo propio: pisa al caminar, se encoge al avisar y se estira hacia adelante al lanzarse.</summary>
+        void Propio(Vector3 mov, Camera cam)
+        {
+            if (propio[dir] != null) sr.sprite = propio[dir];
+            bool avisa = enemigo.state == State.Telegraph;
+            bool lanza = enemigo.state == State.Lunge || enemigo.state == State.Slam;
+            float alto = 1f, ancho = 1f, giro = 0f, bote = 0f;
+            if (mov.magnitude > 0.004f && !lanza)
+            {
+                paso += Time.deltaTime * 9f;
+                bote = Mathf.Abs(Mathf.Sin(paso)) * 0.06f;
+                giro = Mathf.Sin(paso) * 2.5f;
+            }
+            if (avisa) { golpe = 0f; alto = 0.93f; ancho = 1.05f; }
+            else if (lanza)
+            {
+                golpe += Time.deltaTime;
+                float k = Mathf.Clamp01(golpe / 0.25f);
+                alto = Mathf.Lerp(1.08f, 1f, k); ancho = Mathf.Lerp(0.94f, 1f, k);
+                Vector3 r = cam.transform.right; r.y = 0f;
+                giro = -Mathf.Sign(Vector3.Dot(enemigo.facing, r)) * 10f * (1f - k);   // se inclina hacia donde corta
+            }
+            transform.localScale = new Vector3(escalaBase.x * ancho, escalaBase.y * alto, escalaBase.z);
+            transform.localPosition += Vector3.up * bote;
+            transform.rotation *= Quaternion.Euler(0f, 0f, giro);
+            // sombra viva: al enfurecer, un brillo morado que late
+            float pulso = enemigo.Enraged ? 0.5f + 0.5f * Mathf.Sin(Time.time * 12f) : 0f;
+            sr.color = Color.Lerp(Color.white, new Color(0.85f, 0.55f, 1f), pulso * 0.6f);
             aura -= Time.deltaTime;
             if (aura <= 0f && enemigo.enabled)
             {

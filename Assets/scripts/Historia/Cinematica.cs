@@ -33,6 +33,7 @@ public class Cinematica : MonoBehaviour
 
     void Start()
     {
+        PersonaSprite.Aplicar();   // la gente con su pixel art, si ya lo tiene
         // fuera el jugador, el HUD y la cámara de juego: aquí manda la cinemática
         var player = GameObject.FindWithTag("Player");
         if (player != null) player.SetActive(false);

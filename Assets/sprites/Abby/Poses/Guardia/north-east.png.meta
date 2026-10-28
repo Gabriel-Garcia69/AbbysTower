@@ -1,10 +1,7 @@
 fileFormatVersion: 2
 guid: 0e88b2cf3c2e48c5ba0df2792ccf8440
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: -206670225839568205
-    second: north-east_0
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,34 +110,12 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: north-east_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 128
-        height: 128
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 3bace2b4682c12df0800000000000000
-      internalID: -206670225839568205
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: a753fa9c7bf94658bd231d7b0d8df191
+    spriteID: 02b8b300267241d1895c68406f78548c
     internalID: 0
     vertices: []
     indices: 

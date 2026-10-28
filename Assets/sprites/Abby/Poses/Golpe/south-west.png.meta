@@ -1,10 +1,7 @@
 fileFormatVersion: 2
 guid: 4476019ec4174fefb68d0735cdbc2b5b
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: -1505471383403432660
-    second: south-west_0
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -50,7 +47,7 @@ TextureImporter:
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 9
-  spritePivot: {x: 0.5, y: 0.125}
+  spritePivot: {x: 0.5, y: 0.1484}
   spritePixelsToUnits: 64
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -113,34 +110,12 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: south-west_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 128
-        height: 128
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: c25f8bcc0cd7b1be0800000000000000
-      internalID: -1505471383403432660
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: da29ca751db04266bec64a8691b29c34
+    spriteID: f37e3df7e39d4f6d91fd31520dbf6a30
     internalID: 0
     vertices: []
     indices: 

@@ -131,15 +131,15 @@ public class AbbySpriteAnimator : MonoBehaviour
         if (s != null) { }
         else if (attacking && golpePose != null && golpePose.Length > dir && golpePose[dir] != null)
         {
-            // pose de golpe: un instante de carga (se encoge con el dibujo de pie) y luego el tajo, sin voltear la espada
+            // pose de golpe: un instante de carga (alza la espada con la pose de guardia) y luego el tajo, sin voltear la espada
             if (attack.Swings != lastSwing) { lastSwing = attack.Swings; attackTime = 0f; }
             attackTime += dt;
             bool fuerte = attack.ComboIndex >= 2;
             float lado = DirX(dir);
             if (attackTime < attack.windup)
             {
-                s = idle[dir] != null ? idle[dir] : sr.sprite;
-                stretch = 0.94f;
+                s = guardia != null && guardia.Length > dir && guardia[dir] != null ? guardia[dir] : idle[dir] != null ? idle[dir] : sr.sprite;
+                stretch = 0.97f;
                 giro = lado * 6f;
             }
             else

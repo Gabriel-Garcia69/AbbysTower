@@ -1,0 +1,141 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a3b7df1fde310243b094225a8f30c78, type: 3}
+  m_Name: PiezasDiorama
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::PiezasDiorama
+  piezas:
+  - escena: Puerto
+    nombre: Casa
+    dentroDe: Pueblo
+    indice: 0
+    prefab: CasaPescador_A
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: Casa
+    dentroDe: Pueblo
+    indice: 1
+    prefab: CasaPescador_B
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Cascadas
+    nombre: Casa
+    dentroDe: 
+    indice: 0
+    prefab: CasaPiedra_A
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Cascadas
+    nombre: Casa
+    dentroDe: 
+    indice: 1
+    prefab: CasaPiedra_B
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Acantilado
+    nombre: Casa
+    dentroDe: 
+    indice: 0
+    prefab: CasaPizarra_A
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Acantilado
+    nombre: Casa
+    dentroDe: 
+    indice: 1
+    prefab: CasaPizarra_B
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Diorama
+    nombre: Casa
+    dentroDe: 
+    indice: 0
+    prefab: CasaEntramado_A
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Diorama
+    nombre: Casa
+    dentroDe: 
+    indice: 1
+    prefab: CasaEntramado_B
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: MuelleDePiedra
+    dentroDe: 
+    indice: 0
+    prefab: MuelleDePiedra
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: Embarcadero
+    dentroDe: 
+    indice: 0
+    prefab: Embarcadero
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: Barca
+    dentroDe: Embarcadero
+    indice: 0
+    prefab: Barca
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: Velero
+    dentroDe: 
+    indice: 0
+    prefab: Velero
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: Farol
+    dentroDe: Pueblo
+    indice: 0
+    prefab: Farol
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Diorama
+    nombre: Brasero
+    dentroDe: 
+    indice: 0
+    prefab: Brasero
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Cascadas
+    nombre: Fogata
+    dentroDe: 
+    indice: 0
+    prefab: Fogata
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Cascadas
+    nombre: Carpa
+    dentroDe: 
+    indice: 0
+    prefab: Carpa
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: Pino
+    dentroDe: 
+    indice: 0
+    prefab: Pino
+    quitarLuces: 0
+    quitarFlotar: 0
+  - escena: Puerto
+    nombre: Arbol
+    dentroDe: 
+    indice: 0
+    prefab: Arbol
+    quitarLuces: 0
+    quitarFlotar: 0

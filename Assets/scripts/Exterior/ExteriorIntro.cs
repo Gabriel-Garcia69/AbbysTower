@@ -72,6 +72,7 @@ public class ExteriorIntro : MonoBehaviour
     {
         var b = FindAnyObjectByType<ExteriorBuilder>();
         if (b == null) return;
+        if (b.forma == ExteriorBuilder.Forma.Cala) { CalaShots(b.transform); return; }
         Transform w = b.transform;
         Vector3 W(float x, float y, float z) => w.TransformPoint(new Vector3(x, y, z));
         Vector2 pc = b.plateauCenter, tc = b.towerCenter, lc = b.lakeCenter;
@@ -83,7 +84,7 @@ public class ExteriorIntro : MonoBehaviour
         {
             pos = new[] { W(-70f, -85f, edgeS - 105f), W(-40f, -40f, edgeS - 75f), W(-14f, 6f, edgeS - 52f) },
             look = new[] { W(0f, -40f, edgeS + 10f), W(0f, -5f, edgeS + 20f), W(tc.x, mh + 40f, tc.y) },
-            duration = 6.5f, fovA = 52f, fovB = 44f, caption = "El Abismo",
+            duration = 6.5f, fovA = 52f, fovB = 44f, caption = Historia.Ciudad,
         });
 
         // 2) pasada junto a la isla flotante más cercana
@@ -170,6 +171,50 @@ public class ExteriorIntro : MonoBehaviour
         {
             pos = new[] { W(pc.x + 12f, 34f, edgeS - 30f), W(pc.x + 4f, 12f, edgeS - 6f) },
             look = new[] { W(tc.x, mh + 30f, tc.y), W(0f, 2f, -8f) },
+            duration = 5.5f, fovA = 50f, fovB = endFov, finalShot = true,
+        });
+    }
+
+    /// <summary>
+    /// Tomas de Cala Sombría (trazado fijo de ExteriorBuilder.Cala): desde el mar hacia el pueblo y la torre (02_torre),
+    /// desde lo alto del cabo oeste sobre los techos y la bahía (01_pueblo), el campamento de la expedición (10_expedicion),
+    /// la torre desde el atrio (con el título) y la bajada por la Calle Mayor hasta la vista de juego.
+    /// </summary>
+    void CalaShots(Transform w)
+    {
+        Vector3 W(float x, float y, float z) => w.TransformPoint(new Vector3(x, y, z));
+        Vector2 camp = ExteriorBuilder.CalaCampamento, emb = ExteriorBuilder.CalaEmbarcadero;
+
+        shots.Add(new Shot
+        {
+            pos = new[] { W(-60f, 9f, 175f), W(-38f, 12f, 140f), W(-18f, 16f, 112f) },
+            look = new[] { W(0f, 25f, 0f), W(0f, 30f, 0f), W(4f, 40f, 0f) },
+            duration = 7f, fovA = 40f, fovB = 34f, caption = Historia.Ciudad,
+        });
+        shots.Add(new Shot
+        {
+            pos = new[] { W(-82f, 24f, -20f), W(-80f, 22f, 10f) },
+            look = new[] { W(emb.x + 11f, 0f, emb.y - 6f), W(0f, 0f, 60f) },
+            duration = 6f, fovA = 42f, fovB = 38f, caption = "La bahía",
+        });
+        shots.Add(new Shot
+        {
+            pos = new[] { W(camp.x + 4f, 1.8f, camp.y - 16f), W(camp.x + 1f, 2.2f, camp.y - 9f) },
+            look = new[] { W(camp.x, 1f, camp.y), W(10f, 25f, 0f) },
+            duration = 6f, fovA = 40f, fovB = 46f, caption = "Campamento de la expedición",
+        });
+        // la torre desde el atrio, de los braseros hasta la punta (aquí aparece el título)
+        shots.Add(new Shot
+        {
+            pos = new[] { W(7f, 1.4f, -38f), W(3f, 2f, -25f) },
+            look = new[] { W(0f, 6f, -14f), W(0f, 150f, 0f) },
+            duration = 7f, fovA = 44f, fovB = 58f, caption = null,
+        });
+        // llegada: desde lo alto sobre la loma sur, bajando por la Calle Mayor hasta la vista de juego
+        shots.Add(new Shot
+        {
+            pos = new[] { W(14f, 30f, -100f), W(5f, 12f, -72f) },
+            look = new[] { W(0f, 30f, 0f), W(0f, 2f, -30f) },
             duration = 5.5f, fovA = 50f, fovB = endFov, finalShot = true,
         });
     }

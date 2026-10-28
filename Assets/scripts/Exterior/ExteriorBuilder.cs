@@ -15,12 +15,14 @@ using UnityEditor;
 /// Todo es procedural (texturas pixel-art incluidas); con arte real se reemplazan los materiales en Assets/Materials/Exterior.
 /// Uso: clic derecho en el componente → "Generar exterior". Solo funciona en el editor.
 /// </summary>
-public class ExteriorBuilder : MonoBehaviour
+public partial class ExteriorBuilder : MonoBehaviour
 {
     [Header("General")]
     public int seed = 7;
     [Tooltip("Escena que carga el portal de la torre (tiene que estar en Build Settings).")]
     public string towerScene = "Nivel1";
+    [Tooltip("Abismo: la meseta flotante de antes. Cala: el pueblo costero de Cala Sombría (se genera como prefab en Assets/Prefabs/Exterior/Generado).")]
+    public Forma forma = Forma.Abismo;
 
     [Header("Meseta (metros)")]
     public Vector2 plateauCenter = new Vector2(0f, 15f);
@@ -47,8 +49,9 @@ public class ExteriorBuilder : MonoBehaviour
     public int floatingIslands = 12;
 
     const string Prefix = "Ext_";
-    const string MatDir = "Assets/Materials/Exterior";
-    const string TexDir = "Assets/Textures/Exterior";
+    // la Cala escribe en Materials/Cala y Textures/Cala: los .mat de Exterior los usan también los pisos del Diorama
+    static string MatDir = "Assets/Materials/Exterior";
+    static string TexDir = "Assets/Textures/Exterior";
     static readonly Vector2 StarCenter = new Vector2(0f, 40f);   // desde aquí se traza el borde de la meseta
     const int ContourPoints = 360;
 
@@ -144,7 +147,7 @@ public class ExteriorBuilder : MonoBehaviour
     }
 
     /// <summary>Punto de aparición de Abby: al sur de la fuente, mirando hacia la torre.</summary>
-    public Vector3 PlayerSpawn => transform.TransformPoint(new Vector3(0f, 0f, -22f));
+    public Vector3 PlayerSpawn => transform.TransformPoint(forma == Forma.Cala ? new Vector3(CalaSpawn.x, 0f, CalaSpawn.y) : new Vector3(0f, 0f, -22f));
 
 #if UNITY_EDITOR
     Material mGrass, mStone, mStoneDark, mBrick, mBark, mMetal, mTuft, mRock, mCliff, mThatch, mPlank, mDoor;
@@ -156,6 +159,8 @@ public class ExteriorBuilder : MonoBehaviour
     {
         Clear();
         rng = new System.Random(seed);
+        if (forma == Forma.Cala) { BuildCala(); return; }
+        MatDir = "Assets/Materials/Exterior"; TexDir = "Assets/Textures/Exterior";
         CreateAssets();
         TraceContour();
 
@@ -174,6 +179,7 @@ public class ExteriorBuilder : MonoBehaviour
         BuildLamps();
         BuildFireflies();
         BuildBoundary();
+        PlacePlayer();
         EditorUtility.SetDirty(gameObject);
     }
 
@@ -492,10 +498,11 @@ public class ExteriorBuilder : MonoBehaviour
 
     // ---------------- torre
 
-    void BuildTower()
+    /// <summary>cala = true: va dentro del pueblo (parent/basePos), el portal no da sombra, sin luz en el faro y sin braseros (la Cala pone los suyos).</summary>
+    void BuildTower(Transform parent = null, Vector3? basePos = null, bool cala = false)
     {
-        var root = Group("AbbysTower");
-        root.localPosition = new Vector3(towerCenter.x, mesaHeight, towerCenter.y);
+        var root = Group("AbbysTower", parent);
+        root.localPosition = basePos ?? new Vector3(towerCenter.x, mesaHeight, towerCenter.y);
 
         var plinth = MeshObject(root, "Base", Cylinder(18f, 18f, 0.25f, 64, 2f, true), mStone, true, true);
         plinth.AddComponent<MeshCollider>().sharedMesh = plinth.GetComponent<MeshFilter>().sharedMesh;
@@ -526,7 +533,7 @@ public class ExteriorBuilder : MonoBehaviour
         MeshObject(root, "Aguja", Cylinder(r1, 0.4f, 34f, 48, 3f, false), mBrick, true, true).transform.localPosition = new Vector3(0f, topY, 0f);
         var orb = Primitive(root, PrimitiveType.Sphere, "Faro", new Vector3(0f, topY + 36f, 0f), Vector3.one * 4f, mBeacon);
         orb.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        AddLight(root, "LuzFaro", orb.transform.localPosition, new Color(0.75f, 0.45f, 1f), 140f, 600f, LightShadows.None).gameObject.AddComponent<LightFlicker>().amount = 0.12f;
+        if (!cala) AddLight(root, "LuzFaro", orb.transform.localPosition, new Color(0.75f, 0.45f, 1f), 140f, 600f, LightShadows.None).gameObject.AddComponent<LightFlicker>().amount = 0.12f;
 
         var body = new GameObject("Collider_Cuerpo");
         body.transform.SetParent(root, false);
@@ -543,7 +550,7 @@ public class ExteriorBuilder : MonoBehaviour
         Primitive(door, PrimitiveType.Cube, "RunaIzq", new Vector3(-2.6f, 3.3f, -0.92f), new Vector3(0.15f, 6f, 0.05f), mRune);
         Primitive(door, PrimitiveType.Cube, "RunaDer", new Vector3(2.6f, 3.3f, -0.92f), new Vector3(0.15f, 6f, 0.05f), mRune);
         MeshObject(door, "Portal", Quad(4.3f, 6.5f, 10f, true), mPortal, false, false).transform.localPosition = new Vector3(0f, 3.25f, -0.1f);
-        AddLight(door, "LuzPortal", new Vector3(0f, 3f, -2f), new Color(0.7f, 0.4f, 1f), 14f, 10f, LightShadows.Soft).gameObject.AddComponent<LightFlicker>().amount = 0.1f;
+        AddLight(door, "LuzPortal", new Vector3(0f, 3f, -2f), new Color(0.7f, 0.4f, 1f), 14f, 10f, cala ? LightShadows.None : LightShadows.Soft).gameObject.AddComponent<LightFlicker>().amount = 0.1f;
 
         var entry = new GameObject("Entrada");
         entry.transform.SetParent(door, false);
@@ -552,7 +559,7 @@ public class ExteriorBuilder : MonoBehaviour
         exit.nextScene = towerScene;
         exit.radius = 1.8f;
 
-        foreach (float x in new[] { -5f, 5f })
+        if (!cala) foreach (float x in new[] { -5f, 5f })
         {
             var b = Primitive(door, PrimitiveType.Cylinder, "Brasero", new Vector3(x, 0.6f, -2.5f), new Vector3(0.9f, 0.6f, 0.9f), mMetal);
             var f = Primitive(b.transform, PrimitiveType.Sphere, "Fuego", new Vector3(0f, 1.1f, 0f), new Vector3(0.7f, 0.9f, 0.7f), mLampGlow);
@@ -1345,8 +1352,8 @@ public class ExteriorBuilder : MonoBehaviour
 
     void CreateAssets()
     {
-        if (!AssetDatabase.IsValidFolder("Assets/Materials/Exterior")) AssetDatabase.CreateFolder("Assets/Materials", "Exterior");
-        if (!AssetDatabase.IsValidFolder("Assets/Textures/Exterior")) AssetDatabase.CreateFolder("Assets/Textures", "Exterior");
+        EnsureFolder(MatDir);
+        EnsureFolder(TexDir);
 
         var grass = Tex("Grass", 64, (x, y) =>
         {

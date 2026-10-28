@@ -372,7 +372,7 @@ public class PauseMenu : MonoBehaviour
     string SceneLabel()
     {
         string n = SceneManager.GetActiveScene().name;
-        if (n == exteriorScene) return "EL ABISMO";
+        if (n == exteriorScene) return Historia.Ciudad.ToUpperInvariant();
         if (n.StartsWith("Nivel")) return "PISO " + n.Substring(5);
         if (n == dioramaScene) return "DIORAMA HD-2D (PRUEBA)";
         if (n == portScene) return "EL PUERTO (PRUEBA)";

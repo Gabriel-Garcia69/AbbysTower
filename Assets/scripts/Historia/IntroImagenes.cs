@@ -13,7 +13,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class IntroImagenes : MonoBehaviour
 {
-    public string siguienteEscena = "Expedicion";
+    public string siguienteEscena = "Exterior";
 
     struct Pieza
     {
@@ -47,8 +47,12 @@ public class IntroImagenes : MonoBehaviour
     /// <summary>¿Hay imágenes de intro en el proyecto? (si no, se usa la cinemática 3D)</summary>
     public static bool Hay() => Resources.LoadAll<Texture2D>("Intro").Length >= 3;
 
-    readonly Dictionary<int, Texture2D> imgs = new Dictionary<int, Texture2D>();
-    Texture2D actual;
+    // Nitidez: cada PNG (256x144) se amplía x4 con filtro Point a un RenderTexture (1024x576) y el Ken Burns muestra ese RT con filtro
+    // suave: los píxeles quedan nítidos y el zoom y el paneo no saltan (con Point directo a escala fraccionaria los píxeles bailan).
+    const int Ampliar = 4;
+    readonly Dictionary<int, RenderTexture> imgs = new Dictionary<int, RenderTexture>();
+    readonly Dictionary<RenderTexture, Texture2D> origen = new Dictionary<RenderTexture, Texture2D>();
+    Texture actual;
     float t, dur = 1f, negro = 1f, alphaTexto, tTexto, escHeld;
     int dir;
     bool presionado, terminando;
@@ -68,14 +72,41 @@ public class IntroImagenes : MonoBehaviour
             tx.wrapMode = TextureWrapMode.Clamp;
             var n = tx.name; int k = 0;
             for (int i = 0; i < n.Length && char.IsDigit(n[i]); i++) k = k * 10 + (n[i] - '0');
-            if (k > 0) imgs[k] = tx;
+            if (k > 0) imgs[k] = CrearRT(tx);
         }
         pix = new Texture2D(1, 1); pix.SetPixel(0, 0, Color.white); pix.Apply();
         StartCoroutine(Reproducir());
     }
 
+    RenderTexture CrearRT(Texture2D src)
+    {
+        int w = Mathf.Min(src.width * Ampliar, 4096), h = Mathf.Min(src.height * Ampliar, 4096);
+        var rt = new RenderTexture(w, h, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+        {
+            name = "Intro_" + src.name, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, useMipMap = false, autoGenerateMips = false,
+        };
+        rt.Create();
+        origen[rt] = src;
+        Rehacer(rt);
+        return rt;
+    }
+
+    /// <summary>Vuelve a dibujar la imagen en su RT (un RT puede perder su contenido, p. ej. al cambiar de ventana).</summary>
+    void Rehacer(RenderTexture rt)
+    {
+        var src = origen[rt];
+        src.filterMode = FilterMode.Point;   // la ampliación es con Point: cada píxel original pasa a ser un bloque de 4x4
+        Graphics.Blit(src, rt);
+    }
+
+    void OnDestroy()
+    {
+        foreach (var rt in imgs.Values) if (rt != null) rt.Release();
+    }
+
     void Update()
     {
+        if (actual is RenderTexture rtActual && !rtActual.IsCreated()) { rtActual.Create(); Rehacer(rtActual); }
         var kb = Keyboard.current; var mouse = Mouse.current; var pad = Gamepad.current;
         if ((kb != null && (kb.spaceKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame))
             || (mouse != null && mouse.leftButton.wasPressedThisFrame) || (pad != null && pad.buttonSouth.wasPressedThisFrame))
@@ -93,7 +124,7 @@ public class IntroImagenes : MonoBehaviour
         var piezas = Guion();
         foreach (var p in piezas)
         {
-            if (!imgs.TryGetValue(p.imagen, out actual)) actual = null;   // falta una imagen: se salta la parte visual, el texto sigue
+            actual = imgs.TryGetValue(p.imagen, out var rtImg) ? rtImg : null;   // falta una imagen: se salta la parte visual, el texto sigue
             dir = p.imagen % 4; t = 0f; dur = 1f;
             texto = quien = ""; alphaTexto = 0f;
             yield return Fundir(0f, 0.9f);
@@ -127,7 +158,7 @@ public class IntroImagenes : MonoBehaviour
         yield return Fundir(0f, 1f);
         yield return Esperar(3f);
         yield return Fundir(1f, 1f);
-        SceneManager.LoadScene(siguienteEscena);
+        Cargador.Ir(siguienteEscena);
     }
 
     IEnumerator Fundir(float hasta, float d)

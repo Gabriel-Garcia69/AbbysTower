@@ -74,6 +74,10 @@ public class FloorDirector : MonoBehaviour
             health = p.GetComponent<PlayerHealth>();
             if (health == null) health = p.AddComponent<PlayerHealth>();
             health.SetMaxHealth(playerMaxHealth, true);   // GDD: vida 100, sin mejoras
+            // la vida con la que salió de la escena anterior (la stamina siempre empieza llena); el tutorial (Dante) no arrastra nada
+            string escena = SceneManager.GetActiveScene().name;
+            if (escena == "Expedicion") RunState.ClearHealth();
+            else if (RunState.HasSavedHealth) health.SetHealth(RunState.SavedHealth);
             if (p.GetComponent<AbbyDash>() == null) p.AddComponent<AbbyDash>();
             var fall = p.GetComponent<FallGuard>(); if (fall == null) fall = p.AddComponent<FallGuard>();
             fall.killY = killY;
@@ -183,6 +187,7 @@ public class FloorDirector : MonoBehaviour
 
     void OnPlayerDied()
     {
+        RunState.ClearHealth();   // el reintento arranca con la vida completa
         dead = true; endTimer = 0f;
     }
 
@@ -195,6 +200,7 @@ public class FloorDirector : MonoBehaviour
         if (completed) return;
         if (!string.IsNullOrEmpty(next)) nextScene = next;
         completed = true; endTimer = 0f;
+        if (health != null && !health.IsDead) RunState.SaveHealth(health.Health);   // la vida pasa a la escena siguiente
         float secs = Time.time - runStart;
         completeTime = $"{(int)(secs / 60f)}:{(int)(secs % 60f):00}";
         if (player != null)
@@ -244,14 +250,14 @@ public class FloorDirector : MonoBehaviour
             endTimer += dt;
             fade = dead ? Mathf.Clamp01((endTimer - 1.5f) / 1.2f) : Mathf.Min(0.75f, endTimer / 1.5f);
             // GDD: pantalla de derrota → Reintentar reinicia el piso actual (o el jefe)
-            if (dead && endTimer > 1.6f && Continue()) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            if (dead && endTimer > 1.6f && Continue()) Cargador.Ir(SceneManager.GetActiveScene().name);
             if (dead && endTimer > 1.6f && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame && Application.CanStreamedLevelBeLoaded(MenuScene))
-                SceneManager.LoadScene(MenuScene);
+                Cargador.Ir(MenuScene);
             if (completed && endTimer > 1.5f && Continue())
             {
                 bool hasNext = !string.IsNullOrEmpty(nextScene) && Application.CanStreamedLevelBeLoaded(nextScene);
                 bool hasReturn = !string.IsNullOrEmpty(returnScene) && Application.CanStreamedLevelBeLoaded(returnScene);
-                SceneManager.LoadScene(hasNext ? nextScene : hasReturn ? returnScene : SceneManager.GetActiveScene().name);
+                Cargador.Ir(hasNext ? nextScene : hasReturn ? returnScene : SceneManager.GetActiveScene().name);
             }
         }
         else fade = Mathf.MoveTowards(fade, 0f, dt / 1.2f);

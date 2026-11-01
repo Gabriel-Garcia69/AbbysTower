@@ -100,7 +100,7 @@ public class DanteFinal : MonoBehaviour
         creditos = false;
         yield return new WaitForSeconds(0.4f);
         string sig = Application.CanStreamedLevelBeLoaded(escenaAlTerminar) ? escenaAlTerminar : SceneManager.GetSceneByBuildIndex(0).name;
-        SceneManager.LoadScene(Application.CanStreamedLevelBeLoaded(sig) ? sig : "Intro");
+        Cargador.Ir(Application.CanStreamedLevelBeLoaded(sig) ? sig : "Menu");   // la Intro ya no es el principio del juego
     }
 
     GameObject Colgante(Vector3 pos)
@@ -151,9 +151,9 @@ public class DanteFinal : MonoBehaviour
 
     bool creditos;
     float creditosT;
-    const float DuracionCreditos = 22f;
+    public const float DuracionCreditos = 22f;
 
-    static readonly string[][] Creditos =
+    public static readonly string[][] Creditos =
     {
         new[] { "ABBY´S TOWER", "" },
         new[] { "Un proyecto de Estudio 02", "Integradora · IDYGS103 · UT Cancún" },
@@ -165,13 +165,14 @@ public class DanteFinal : MonoBehaviour
         new[] { "Gracias por jugar", "La historia de Abby continuará…" },
     };
 
-    void DibujarCreditos()
+    /// <summary>Los créditos subiendo por la pantalla; t = segundos desde el principio (DuracionCreditos). Los usa también el menú principal.</summary>
+    public static void DibujarCreditos(float t, bool fondoNegro = true)
     {
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
-        GUI.color = Color.black; GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
+        if (fondoNegro) { GUI.color = Color.black; GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture); }
         var grande = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         var chico = new GUIStyle(grande) { fontSize = FuentePixel.Tam(u * 2.4f), fontStyle = FontStyle.Italic };
-        float y = sh + u * 4f - creditosT * (sh + Creditos.Length * u * 16f) / DuracionCreditos;
+        float y = sh + u * 4f - Mathf.Repeat(t, DuracionCreditos) * (sh + Creditos.Length * u * 16f) / DuracionCreditos;
         for (int i = 0; i < Creditos.Length; i++, y += u * 16f)
         {
             float a = Mathf.Clamp01(Mathf.Min((y + u * 10f) / (sh * 0.25f), (sh - y) / (sh * 0.25f)));
@@ -187,7 +188,7 @@ public class DanteFinal : MonoBehaviour
     void OnGUI()
     {
         if (!corriendo) return;
-        if (creditos) { GUI.depth = -960; DibujarCreditos(); return; }
+        if (creditos) { GUI.depth = -960; DibujarCreditos(creditosT); return; }
         GUI.depth = -960;
         if (!string.IsNullOrEmpty(texto)) CuadroNarracion.Dialogo(quien, texto, CuadroNarracion.Letras(texto, textoT * 0.6f), 1f);
         CuadroNarracion.Negro(negro);

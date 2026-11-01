@@ -14,6 +14,13 @@ public static class RunState
     public static float DamageMultiplier => 1f + 0.25f * DamageLevel;
     public static float MaxHealthBonus => 25f * HeartLevel;
 
+    /// <summary>Vida con la que Abby sale de una escena (se restaura al entrar a la siguiente); -1 = nada guardado (se empieza con la vida completa).</summary>
+    public static float SavedHealth { get; private set; } = -1f;
+    public static bool HasSavedHealth => SavedHealth > 0f;
+    public static void SaveHealth(float health) { SavedHealth = Math.Max(1f, health); }
+    /// <summary>Se borra al empezar la partida y al morir: el reintento arranca con la vida completa.</summary>
+    public static void ClearHealth() { SavedHealth = -1f; }
+
     public static event Action Changed;
 
     public static void AddFragments(int amount)

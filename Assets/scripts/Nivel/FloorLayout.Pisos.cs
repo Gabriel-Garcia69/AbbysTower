@@ -16,6 +16,9 @@ public partial class FloorLayout
 {
     [Header("Número de piso (historia, secretos)")]
     public int floorNumber = 1;
+    [Header("Zona de cuartos (entre dioramas)")]
+    [Tooltip("Plano corto de 3 salas sin jefe (inicio, un combate y descanso con tienda y santuario). La salida está en la última sala y se abre al limpiar el combate. floorNumber 0 = sin notas ni reliquia.")]
+    public bool zona;
 
     // ------------------------------------------------------------------ planos
 
@@ -225,11 +228,39 @@ public partial class FloorLayout
         }
     }
 
+    /// <summary>
+    /// Zona de cuartos entre dioramas: 3 salas (inicio, un combate de 5 o 6 enemigos y un descanso con tienda y santuario que cura),
+    /// sin jefe. Cada pecado pone su nombre, su enemigo extra y a qué diorama sigue (A Pereza → Puerto, B Gula → Cascadas,
+    /// C Avaricia → Acantilado, D Envidia → Cima).
+    /// </summary>
+    public static FloorPreset PresetZona(FloorTheme t)
+    {
+        string sala, nombre, sub, next; int enemigos; float hp;
+        switch (t)
+        {
+            case FloorTheme.Gula: sala = "cocinas"; nombre = "GULA"; sub = "Los Salones del Banquete"; next = "Cascadas"; enemigos = 6; hp = 1.2f; break;
+            case FloorTheme.Avaricia: sala = "casa de cambio"; nombre = "AVARICIA"; sub = "La Bóveda del Acaparador"; next = "Acantilado"; enemigos = 5; hp = 1.35f; break;
+            case FloorTheme.Envidia: sala = "galería de espejos"; nombre = "ENVIDIA"; sub = "La Galería de los Espejos"; next = "Cima"; enemigos = 6; hp = 1.5f; break;
+            default: sala = "sala de lectura"; nombre = "PEREZA"; sub = "La Biblioteca Dormida"; next = "Puerto"; enemigos = 5; hp = 1.05f; break;
+        }
+        return new FloorPreset
+        {
+            theme = t, number = 0, title = "CUARTOS · " + nombre, subtitle = sub, boss = "", next = next, hp = hp, wall = 5f,
+            rooms = new[]
+            {
+                R("0 Inicio", RoomType.Inicio, 0, 0, 14, 12, 0, 0, RoomFeature.Ninguna, 5),
+                R("1 Combate (" + sala + ")", RoomType.Combate, 0, 28, 24, 18, enemigos, 0, RoomFeature.Ninguna, 5),
+                R("2 Descanso / Tienda", RoomType.Descanso, 0, 58, 16, 14, 0, 0, RoomFeature.Ninguna, 5),
+            },
+            corridors = new[] { C(0, 1), C(1, 2) },
+        };
+    }
+
     /// <summary>Carga el plano, nombres y jefe del tema elegido (borra las salas actuales).</summary>
     [ContextMenu("Cargar plano del tema")]
     public void LoadPreset()
     {
-        var p = Preset(theme);
+        var p = zona ? PresetZona(theme) : Preset(theme);
         rooms = p.rooms; corridors = p.corridors;
         floorNumber = p.number; floorTitle = p.title; floorSubtitle = p.subtitle;
         bossName = p.boss; nextScene = p.next; enemyHealthMultiplier = p.hp;

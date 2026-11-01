@@ -644741,7 +644741,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fdbdb472ab0ba1418164483804dca87, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Cinematica
-  siguienteEscena: Expedicion
+  siguienteEscena: Exterior
 --- !u!1 &1422552049
 GameObject:
   m_ObjectHideFlags: 0

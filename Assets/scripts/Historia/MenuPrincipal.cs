@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class MenuPrincipal : MonoBehaviour
 {
-    public string escenaJugar = "Intro";
+    public string escenaJugar = "Expedicion";   // Menú → tarjeta "Despertar" → Expedicion (tutorial) → Intro → Exterior → Diorama...
     public Vector3 centro = new Vector3(22f, 2f, 8f);   // la bahía, entre el muelle y el faro
     public float radio = 52f, altura = 15f;
     [Tooltip("A qué altura sobre el centro mira la cámara.")]
@@ -17,7 +17,20 @@ public class MenuPrincipal : MonoBehaviour
     [Tooltip("Radianes por segundo que gira la cámara.")]
     public float giro = 0.035f;
 
-    enum Pagina { Principal, Configuracion, Salir }
+    [Header("Arranque")]
+    [Tooltip("Al abrir el juego se va directo a la tarjeta \"Despertar\" y al tutorial, sin mostrar el menú. El menú solo se ve al volver desde la pausa o tras el final.")]
+    public bool saltarMenuAlIniciar = true;
+    [Tooltip("En el editor el menú se sigue viendo (para probarlo); marca esto para que el editor también arranque saltándolo.")]
+    public bool saltarEnEditor = false;
+
+    /// <summary>¿Ya pasó el arranque del juego en esta ejecución? Si es así, el menú se muestra normal (venimos de la pausa o del final).</summary>
+    static bool yaIniciado;
+    bool saltando;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { yaIniciado = false; }   // con "Enter Play Mode" sin recargar el dominio, cada ejecución cuenta como nueva
+
+    enum Pagina { Principal, Configuracion, Creditos, Salir }
     Pagina pagina;
     int sel;
     float t, entrada;
@@ -39,6 +52,19 @@ public class MenuPrincipal : MonoBehaviour
 
     void Start()
     {
+        bool primera = !yaIniciado;
+        yaIniciado = true;
+        if (primera && saltarMenuAlIniciar && (!Application.isEditor || saltarEnEditor))
+        {
+            // primera vez en esta ejecución: ni se dibuja el menú, solo la tarjeta "Despertar" sobre negro y de ahí el tutorial
+            saltando = true;
+            RunState.ClearHealth();
+            Musica.Poner(Musica.Pista.Ninguna);
+            Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
+            Time.timeScale = 1f;
+            Cargador.IrConTarjeta(escenaJugar, "DESPERTAR", true);
+            return;
+        }
         // sin HUD del piso ni cámara de juego (esa sigue a Abby y pisaría la del menú): una cámara propia, como la cinemática
         var fd = FindAnyObjectByType<FloorDirector>();
         if (fd != null) fd.gameObject.SetActive(false);
@@ -58,6 +84,7 @@ public class MenuPrincipal : MonoBehaviour
 
     void Update()
     {
+        if (saltando) return;
         // la escena es una copia de la Intro: si su cinemática aparece (al llegar desde otro piso se vuelve a crear), fuera
         if (t < 3f) foreach (var c in FindObjectsByType<Cinematica>()) { c.StopAllCoroutines(); c.enabled = false; Destroy(c.gameObject); }
         t += Time.deltaTime; entrada += Time.deltaTime;
@@ -90,7 +117,8 @@ public class MenuPrincipal : MonoBehaviour
                                $"Volumen de efectos   < {Mathf.RoundToInt(Ajustes.Efectos * 100f)} % >",
                                "Pantalla completa: " + (Screen.fullScreen ? "Sí" : "No"), "Restablecer", "Volver" };
             case Pagina.Salir: return new[] { "No, quedarme", "Sí, salir del juego" };
-            default: return new[] { "Jugar", "Configuración", "Salir" };
+            case Pagina.Creditos: return new[] { "Volver" };
+            default: return new[] { "Jugar", "Configuración", "Créditos", "Salir" };
         }
     }
 
@@ -108,9 +136,13 @@ public class MenuPrincipal : MonoBehaviour
         switch (pagina)
         {
             case Pagina.Principal:
-                if (i == 0) SceneManager.LoadScene(escenaJugar);
+                if (i == 0) { RunState.ClearHealth(); Cargador.IrConTarjeta(escenaJugar, "DESPERTAR"); }
                 else if (i == 1) Ir(Pagina.Configuracion);
+                else if (i == 2) Ir(Pagina.Creditos);
                 else Ir(Pagina.Salir);
+                break;
+            case Pagina.Creditos:
+                Ir(Pagina.Principal);
                 break;
             case Pagina.Configuracion:
                 if (i == 3) Screen.fullScreen = !Screen.fullScreen;
@@ -133,8 +165,20 @@ public class MenuPrincipal : MonoBehaviour
 
     void OnGUI()
     {
+        if (saltando) return;
         GUI.depth = -900;
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
+        if (pagina == Pagina.Creditos)
+        {
+            // créditos sobre el fondo del menú, con un velo oscuro; clic o cualquier tecla de aceptar regresa
+            GUI.color = new Color(0.02f, 0.01f, 0.05f, 0.82f); GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
+            DanteFinal.DibujarCreditos(entrada, false);
+            var ayudaC = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 1.8f), alignment = TextAnchor.MiddleCenter };
+            Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), "Esc  regresar", ayudaC, new Color(1f, 1f, 1f, 0.7f));
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 0) { Ir(Pagina.Principal); Event.current.Use(); }
+            GUI.color = Color.white;
+            return;
+        }
         // título
         var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 9f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         Sombra(new Rect(0, sh * 0.1f, sw, u * 12f), "ABBY´S TOWER", titulo, new Color(1f, 0.92f, 0.75f));

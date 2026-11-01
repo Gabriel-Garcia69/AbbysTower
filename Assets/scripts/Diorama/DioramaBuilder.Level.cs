@@ -10,6 +10,8 @@ public partial class DioramaBuilder
 {
     /// <summary>Orden de la ruta HD-2D (nombre de escena por piso).</summary>
     /// <summary>GDD: la demo tiene 5 pisos; el último es el del jefe final (Dante). Los demás mundos quedan fuera de la ruta.</summary>
+    // Ruta completa: Menú → Intro → Expedicion → Exterior → Diorama → CuartosA → Puerto → CuartosB → Cascadas → CuartosC → Acantilado → CuartosD → Cima.
+    // Esta lista son solo los dioramas (las zonas de cuartos son escenas de FloorLayout y no se regeneran con el DioramaBuilder).
     public static readonly string[] Route = { "Diorama", "Puerto", "Cascadas", "Acantilado", "Cima" };
     /// <summary>Pisos de la ruta del GDD (4 hordas por piso).</summary>
     bool EnRutaGDD => layout == Layout.Pueblo || layout == Layout.Puerto || layout == Layout.Cascadas || layout == Layout.Acantilado || layout == Layout.Cima;
@@ -30,10 +32,10 @@ public partial class DioramaBuilder
                 case Layout.Lago: return new LevelInfo { title = "PISO 6", subtitle = "El Lago de los Espejos", boss = "La Dama del Lago", next = "Templo", hp = 1.75f };
                 case Layout.Templo: return new LevelInfo { title = "PISO 7", subtitle = "El Templo de Arena", boss = "El Guardián Dorado", next = "Nevado", hp = 1.9f };
                 case Layout.Nevado: return new LevelInfo { title = "PISO 8", subtitle = "La Aldea de la Nieve Eterna", boss = "Escarcha, la Viuda Blanca", next = "Montana", hp = 2.05f };
-                case Layout.Expedicion: return new LevelInfo { title = "PISO 20", subtitle = "La expedición", boss = "", next = "Diorama", hp = 0.8f };
+                case Layout.Expedicion: return new LevelInfo { title = "PISO 20", subtitle = "La expedición", boss = "", next = "Exterior", hp = 0.8f };
                 case Layout.Montana: return new LevelInfo { title = "PISO 9", subtitle = "La Montaña del Eco", boss = "El Eco de Piedra", next = "Cima", hp = 2.2f };
                 case Layout.Cima: return new LevelInfo { title = "PISO 5", subtitle = "La cima de la torre", boss = "La Sombra", next = "", hp = 1.6f };
-                default: return new LevelInfo { title = "PISO 1", subtitle = "El Pueblo del Risco", boss = "Guardián de las Ruinas", next = "Puerto", hp = 1f };
+                default: return new LevelInfo { title = "PISO 1", subtitle = "El Pueblo del Risco", boss = "Guardián de las Ruinas", next = "CuartosA", hp = 1f };
             }
         }
     }

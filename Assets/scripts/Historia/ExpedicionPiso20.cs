@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class ExpedicionPiso20 : MonoBehaviour
 {
-    public string siguienteEscena = "Diorama";
+    public string siguienteEscena = "Intro";   // Menú → "Despertar" → Expedicion → Intro (cinemática) → Exterior → Diorama...
 
     Transform player;
     PlayerHealth health;
@@ -190,7 +190,7 @@ public class ExpedicionPiso20 : MonoBehaviour
         yield return Hablar(Historia.Capitan, "¡Retirada! ¡Todos atrás!");
         yield return Fundir(1f, 2.5f);
         yield return Tarjeta("La expedición nunca regresó.", 3.5f);
-        SceneManager.LoadScene(siguienteEscena);
+        Cargador.Ir(siguienteEscena);
     }
 
     int tomaId;

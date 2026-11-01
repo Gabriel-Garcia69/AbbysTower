@@ -297,12 +297,22 @@ public partial class FloorLayout : MonoBehaviour
         // 4) suelo exterior oscuro, un poco por debajo para no pelear con los pisos
         CreateOutside();
 
-        // 5) salida en la sala del jefe (se activa al derrotarlo)
+        // 5) salida en la sala del jefe (se activa al derrotarlo); en una zona sin jefe, en la última sala (el descanso) y se abre
+        // al limpiar el último combate
+        bool hayJefe = false;
         for (int i = 0; i < rooms.Length; i++)
         {
             if (rooms[i].type != RoomType.Jefe) continue;
+            hayJefe = true;
             var exit = CreateExit(roomObjects[i], rooms[i]);
             exit.unlockedBy = encounters[i];
+        }
+        if (!hayJefe && rooms.Length > 0)
+        {
+            int ultimoCombate = -1;
+            for (int i = 0; i < rooms.Length; i++) if (rooms[i].type == RoomType.Combate) ultimoCombate = i;
+            var exit = CreateExit(roomObjects[rooms.Length - 1], rooms[rooms.Length - 1]);
+            if (ultimoCombate >= 0) exit.unlockedBy = encounters[ultimoCombate];
         }
 
         // 6) director del piso: vida y ataque de Abby, HUD, muerte y final del piso
@@ -611,7 +621,9 @@ public partial class FloorLayout : MonoBehaviour
         var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         go.name = "Salida";
         go.transform.SetParent(room, false);
-        go.transform.localPosition = new Vector3(0f, 0.05f, r.size.y / 2f - (decorations ? 4.6f : 2.5f));   // delante del trono
+        go.transform.localPosition = r.type == RoomType.Jefe
+            ? new Vector3(0f, 0.05f, r.size.y / 2f - (decorations ? 4.6f : 2.5f))   // delante del trono
+            : new Vector3(r.size.x / 2f - 2.4f, 0.05f, -r.size.y / 2f + 3f);        // en un descanso, junto a la entrada y lejos del puesto del mercader
         go.transform.localScale = new Vector3(2.5f, 0.05f, 2.5f);
         DestroyImmediate(go.GetComponent<Collider>());   // no debe bloquear; se detecta por distancia
         var exit = go.AddComponent<FloorExit>();

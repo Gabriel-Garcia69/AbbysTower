@@ -9588,7 +9588,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FloorExit
   unlockedBy: {fileID: 0}
   requiere: []
-  nextScene: Nivel1
+  nextScene: Diorama
   radius: 2.4
   player: {fileID: 0}
   lockedColor: {r: 0.25, g: 0.25, b: 0.3, a: 1}

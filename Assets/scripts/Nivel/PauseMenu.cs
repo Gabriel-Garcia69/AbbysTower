@@ -29,10 +29,13 @@ public class PauseMenu : MonoBehaviour
     static readonly Color PanelFill = new Color(0.07f, 0.05f, 0.12f, 0.95f);
     const int OptionsDiorama = 4;   // botón "Diorama: pueblo" en la página de opciones
     const int OptionsPort = 5;      // botón "Diorama: puerto"
-    const int OptionsBack = 6;      // botón "Volver" en la página de opciones
+    const int OptionsBack = 6;      // botón "Volver" en la página de opciones (con los botones de prueba)
+    /// <summary>Los botones de prueba (Ruta HD-2D, Piso siguiente) solo existen en el editor y en builds de desarrollo.</summary>
+    static bool Pruebas => Application.isEditor || Debug.isDebugBuild;
+    static int Volver => Pruebas ? OptionsBack : OptionsDiorama;   // sin pruebas, "Volver" ocupa el lugar 4
 
     MouseOrbitCamera[] orbit;
-    float savedScale = 1f;
+    float savedScale = 1f, confirmarMenuHasta;
     Page page;
     int sel;
     float selAnim, openedAt, pageAt, stickRepeat, alpha;
@@ -116,7 +119,7 @@ public class PauseMenu : MonoBehaviour
     {
         IsPaused = false; Blocked = false;
         Time.timeScale = 1f;
-        SceneManager.LoadScene(scene);
+        Cargador.Ir(scene);
     }
 
     static void Quit()
@@ -139,17 +142,25 @@ public class PauseMenu : MonoBehaviour
         items.Clear();
         string current = SceneManager.GetActiveScene().name;
         bool outside = current == exteriorScene;
-        // GDD: pausa con Esc; continuar, reiniciar el piso, volver al menú principal o salir (sin dificultad ni mapas de prueba)
+        // Continuar, Opciones, Reiniciar y Salir al menú (el menú principal solo se alcanza desde aquí; no hay "Salir" directo del juego).
+        // Salir al menú pide confirmación: la primera vez cambia a "¿Seguro?" durante 3 s, y hay que pulsarlo otra vez.
         items.Add(new Item { label = "Continuar", action = Resume });
+        items.Add(new Item { label = "Opciones", action = () => OpenPage(Page.Options, 0) });
         items.Add(new Item { label = outside ? "Reiniciar exterior" : "Reiniciar piso", action = () => Load(current) });
         if (Application.CanStreamedLevelBeLoaded(FloorDirector.MenuScene))
-            items.Add(new Item { label = "Menú principal", action = () => Load(FloorDirector.MenuScene) });
-        items.Add(new Item { label = "Salir del juego", action = Quit });
+        {
+            bool seguro = Time.unscaledTime < confirmarMenuHasta;
+            items.Add(new Item
+            {
+                label = seguro ? "¿Seguro? Pulsa otra vez" : "Salir al menú",
+                action = () => { if (Time.unscaledTime < confirmarMenuHasta) Load(FloorDirector.MenuScene); else confirmarMenuHasta = Time.unscaledTime + 3f; }
+            });
+        }
     }
 
     int ItemCount()
     {
-        if (page == Page.Options) return OptionsBack + 1;
+        if (page == Page.Options) return Volver + 1;
         BuildItems();
         return items.Count;
     }
@@ -158,7 +169,7 @@ public class PauseMenu : MonoBehaviour
     {
         if (page == Page.Options)
         {
-            if (i == OptionsBack) OpenPage(Page.Main, 1);
+            if (i == Volver) OpenPage(Page.Main, 1);
             else if (i == OptionsDiorama) { if (Application.CanStreamedLevelBeLoaded(DioramaBuilder.Route[0])) Load(DioramaBuilder.Route[0]); }
             else if (i == OptionsPort)
             {
@@ -257,18 +268,18 @@ public class PauseMenu : MonoBehaviour
         float bw = (w - 4f * u) / 3f;
         var diorama = new Rect(x, sy + 5f * u, bw, bh);
         var port = new Rect(x + bw + 2f * u, sy + 5f * u, bw, bh);
-        var back = new Rect(x + 2f * (bw + 2f * u), sy + 5f * u, bw, bh);
+        var back = Pruebas ? new Rect(x + 2f * (bw + 2f * u), sy + 5f * u, bw, bh) : new Rect(x + (w - bw) / 2f, sy + 5f * u, bw, bh);
         var testColor = new Color(0.55f, 0.85f, 1f);
-        if (sel == OptionsDiorama) DrawHighlight(diorama, testColor, u, t);
-        if (sel == OptionsPort) DrawHighlight(port, testColor, u, t);
-        if (sel == OptionsBack) DrawHighlight(back, Gold, u, t);
-        if (Interact(diorama, OptionsDiorama)) return;
-        if (Interact(port, OptionsPort)) return;
-        if (Interact(back, OptionsBack)) return;
-        DrawButton(diorama, "Ruta HD-2D", sel == OptionsDiorama, u, t);
-        DrawButton(port, "Piso siguiente", sel == OptionsPort, u, t);
-        DrawButton(back, "Volver", sel == OptionsBack, u, t);
-        if (sel == OptionsDiorama || sel == OptionsPort)
+        if (Pruebas && sel == OptionsDiorama) DrawHighlight(diorama, testColor, u, t);
+        if (Pruebas && sel == OptionsPort) DrawHighlight(port, testColor, u, t);
+        if (sel == Volver) DrawHighlight(back, Gold, u, t);
+        if (Pruebas && Interact(diorama, OptionsDiorama)) return;
+        if (Pruebas && Interact(port, OptionsPort)) return;
+        if (Interact(back, Volver)) return;
+        if (Pruebas) DrawButton(diorama, "Ruta HD-2D", sel == OptionsDiorama, u, t);
+        if (Pruebas) DrawButton(port, "Piso siguiente", sel == OptionsPort, u, t);
+        DrawButton(back, "Volver", sel == Volver, u, t);
+        if (Pruebas && (sel == OptionsDiorama || sel == OptionsPort))
         {
             string tip = sel == OptionsDiorama ? "RUTA HD-2D · 10 pisos del abismo con jefe, mercader y salida"
                                                : "Salta al siguiente piso de la ruta HD-2D (para probar) · Q/E giran la cámara, clic derecho para asomarte";

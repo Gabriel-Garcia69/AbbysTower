@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 819452c77564aa249aaf1d5c146c8f22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuPrincipal
-  escenaJugar: Intro
+  escenaJugar: Expedicion
   centro: {x: 22, y: 2, z: 8}
   radio: 52
   altura: 15

@@ -20,7 +20,7 @@ public partial class ExteriorBuilder : MonoBehaviour
     [Header("General")]
     public int seed = 7;
     [Tooltip("Escena que carga el portal de la torre (tiene que estar en Build Settings).")]
-    public string towerScene = "Nivel1";
+    public string towerScene = "Diorama";
     [Tooltip("Abismo: la meseta flotante de antes. Cala: el pueblo costero de Cala Sombría (se genera como prefab en Assets/Prefabs/Exterior/Generado).")]
     public Forma forma = Forma.Abismo;
 

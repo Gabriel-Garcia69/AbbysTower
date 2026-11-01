@@ -63,7 +63,7 @@ public class Musica : MonoBehaviour
     {
         if (n == "Menu" || n == "Intro") Poner(Pista.Menu);
         else if (ConAgua(n)) Poner(Pista.Paisaje);
-        else if (n == "Cima" || n == "Expedicion") Poner(Pista.Combate);
+        else if (n == "Cima" || n == "Expedicion" || n.StartsWith("Cuartos")) Poner(Pista.Combate);   // las zonas de cuartos usan la pista de combate
         Cinematica(n == "Intro");
     }
 

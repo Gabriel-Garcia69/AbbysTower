@@ -625,7 +625,7 @@ MonoBehaviour:
   sombraEnFogata: 0
   torreClasica: 0
   seed: 7
-  towerScene: Nivel1
+  towerScene: Diorama
   forma: 1
   plateauCenter: {x: 0, y: 15}
   plateauRadius: 58

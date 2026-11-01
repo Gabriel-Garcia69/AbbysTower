@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class Cinematica : MonoBehaviour
 {
-    public string siguienteEscena = "Expedicion";
+    public string siguienteEscena = "Exterior";
 
     Camera cam;
     ExteriorSky sky;
@@ -180,7 +180,7 @@ public class Cinematica : MonoBehaviour
         modo = Modo.Nada;
         yield return Fundir(1f, 1.2f);
         yield return MostrarTarjeta(Historia.Titulo, Historia.Subtitulo, 3f);
-        SceneManager.LoadScene(siguienteEscena);
+        Cargador.Ir(siguienteEscena);
     }
 
     // ------------------------------------------------------------------ piezas del guion

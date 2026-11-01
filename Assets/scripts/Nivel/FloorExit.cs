@@ -61,7 +61,11 @@ public class FloorExit : MonoBehaviour
         if (fadeT >= 0f)
         {
             fadeT += Time.unscaledDeltaTime;
-            if (fadeT >= fadeTime) { fadeT = -1f; SceneManager.LoadScene(nextScene); }
+            if (fadeT >= fadeTime && !Cargador.Cargando)
+            {
+                Cargador.Ir(nextScene);   // la pantalla de carga toma el relevo del negro; si no se pudo cargar, se quita el negro
+                if (!Cargador.Cargando) fadeT = -1f;
+            }
             return;
         }
         if (used || !unlocked || player == null) return;

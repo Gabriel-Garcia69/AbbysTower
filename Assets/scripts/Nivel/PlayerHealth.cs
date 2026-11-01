@@ -103,6 +103,9 @@ public class PlayerHealth : MonoBehaviour, IHittable
         Health = fill ? maxHealth : Mathf.Min(Health, maxHealth);
     }
 
+    /// <summary>Pone la vida actual (entre 1 y la máxima): para restaurar la que traía Abby de la escena anterior.</summary>
+    public void SetHealth(float value) { Health = Mathf.Clamp(value, 1f, maxHealth); }
+
     public void Heal(float amount)
     {
         if (IsDead) return;

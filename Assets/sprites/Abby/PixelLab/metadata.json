@@ -1,0 +1,1223 @@
+{
+  "group_id": "54b8abfe-91a0-4d47-94fd-93ccd3336637",
+  "states": [
+    {
+      "character": {
+        "id": "37b6a203-bd3d-45a7-8c88-48761b986ce2",
+        "name": "Idle",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-09T03:59:45.629917+00:00"
+      },
+      "folder": "Idle",
+      "frames": {
+        "rotations": {
+          "south": "Idle/rotations/south.png",
+          "south-east": "Idle/rotations/south-east.png",
+          "east": "Idle/rotations/east.png",
+          "north-east": "Idle/rotations/north-east.png",
+          "north": "Idle/rotations/north.png",
+          "north-west": "Idle/rotations/north-west.png",
+          "west": "Idle/rotations/west.png",
+          "south-west": "Idle/rotations/south-west.png"
+        },
+        "animations": {
+          "idle_breathing": {
+            "east": [
+              "Idle/animations/idle_breathing/east/frame_000.png",
+              "Idle/animations/idle_breathing/east/frame_001.png",
+              "Idle/animations/idle_breathing/east/frame_002.png",
+              "Idle/animations/idle_breathing/east/frame_003.png",
+              "Idle/animations/idle_breathing/east/frame_004.png",
+              "Idle/animations/idle_breathing/east/frame_005.png",
+              "Idle/animations/idle_breathing/east/frame_006.png",
+              "Idle/animations/idle_breathing/east/frame_007.png"
+            ],
+            "north-east": [
+              "Idle/animations/idle_breathing/north-east/frame_000.png",
+              "Idle/animations/idle_breathing/north-east/frame_001.png",
+              "Idle/animations/idle_breathing/north-east/frame_002.png",
+              "Idle/animations/idle_breathing/north-east/frame_003.png",
+              "Idle/animations/idle_breathing/north-east/frame_004.png",
+              "Idle/animations/idle_breathing/north-east/frame_005.png",
+              "Idle/animations/idle_breathing/north-east/frame_006.png",
+              "Idle/animations/idle_breathing/north-east/frame_007.png"
+            ],
+            "south-east": [
+              "Idle/animations/idle_breathing/south-east/frame_000.png",
+              "Idle/animations/idle_breathing/south-east/frame_001.png",
+              "Idle/animations/idle_breathing/south-east/frame_002.png",
+              "Idle/animations/idle_breathing/south-east/frame_003.png",
+              "Idle/animations/idle_breathing/south-east/frame_004.png",
+              "Idle/animations/idle_breathing/south-east/frame_005.png",
+              "Idle/animations/idle_breathing/south-east/frame_006.png",
+              "Idle/animations/idle_breathing/south-east/frame_007.png"
+            ],
+            "north": [
+              "Idle/animations/idle_breathing/north/frame_000.png",
+              "Idle/animations/idle_breathing/north/frame_001.png",
+              "Idle/animations/idle_breathing/north/frame_002.png",
+              "Idle/animations/idle_breathing/north/frame_003.png",
+              "Idle/animations/idle_breathing/north/frame_004.png",
+              "Idle/animations/idle_breathing/north/frame_005.png",
+              "Idle/animations/idle_breathing/north/frame_006.png",
+              "Idle/animations/idle_breathing/north/frame_007.png"
+            ],
+            "north-west": [
+              "Idle/animations/idle_breathing/north-west/frame_000.png",
+              "Idle/animations/idle_breathing/north-west/frame_001.png",
+              "Idle/animations/idle_breathing/north-west/frame_002.png",
+              "Idle/animations/idle_breathing/north-west/frame_003.png",
+              "Idle/animations/idle_breathing/north-west/frame_004.png",
+              "Idle/animations/idle_breathing/north-west/frame_005.png",
+              "Idle/animations/idle_breathing/north-west/frame_006.png",
+              "Idle/animations/idle_breathing/north-west/frame_007.png"
+            ],
+            "south": [
+              "Idle/animations/idle_breathing/south/frame_000.png",
+              "Idle/animations/idle_breathing/south/frame_001.png",
+              "Idle/animations/idle_breathing/south/frame_002.png",
+              "Idle/animations/idle_breathing/south/frame_003.png",
+              "Idle/animations/idle_breathing/south/frame_004.png",
+              "Idle/animations/idle_breathing/south/frame_005.png",
+              "Idle/animations/idle_breathing/south/frame_006.png",
+              "Idle/animations/idle_breathing/south/frame_007.png"
+            ],
+            "south-west": [
+              "Idle/animations/idle_breathing/south-west/frame_000.png",
+              "Idle/animations/idle_breathing/south-west/frame_001.png",
+              "Idle/animations/idle_breathing/south-west/frame_002.png",
+              "Idle/animations/idle_breathing/south-west/frame_003.png",
+              "Idle/animations/idle_breathing/south-west/frame_004.png",
+              "Idle/animations/idle_breathing/south-west/frame_005.png",
+              "Idle/animations/idle_breathing/south-west/frame_006.png",
+              "Idle/animations/idle_breathing/south-west/frame_007.png"
+            ],
+            "west": [
+              "Idle/animations/idle_breathing/west/frame_000.png",
+              "Idle/animations/idle_breathing/west/frame_001.png",
+              "Idle/animations/idle_breathing/west/frame_002.png",
+              "Idle/animations/idle_breathing/west/frame_003.png",
+              "Idle/animations/idle_breathing/west/frame_004.png",
+              "Idle/animations/idle_breathing/west/frame_005.png",
+              "Idle/animations/idle_breathing/west/frame_006.png",
+              "Idle/animations/idle_breathing/west/frame_007.png"
+            ]
+          },
+          "Walking": {
+            "north-west": [
+              "Idle/animations/Walking/north-west/frame_000.png",
+              "Idle/animations/Walking/north-west/frame_001.png",
+              "Idle/animations/Walking/north-west/frame_002.png",
+              "Idle/animations/Walking/north-west/frame_003.png",
+              "Idle/animations/Walking/north-west/frame_004.png",
+              "Idle/animations/Walking/north-west/frame_005.png",
+              "Idle/animations/Walking/north-west/frame_006.png",
+              "Idle/animations/Walking/north-west/frame_007.png"
+            ],
+            "north": [
+              "Idle/animations/Walking/north/frame_000.png",
+              "Idle/animations/Walking/north/frame_001.png",
+              "Idle/animations/Walking/north/frame_002.png",
+              "Idle/animations/Walking/north/frame_003.png",
+              "Idle/animations/Walking/north/frame_004.png",
+              "Idle/animations/Walking/north/frame_005.png",
+              "Idle/animations/Walking/north/frame_006.png",
+              "Idle/animations/Walking/north/frame_007.png"
+            ],
+            "west": [
+              "Idle/animations/Walking/west/frame_000.png",
+              "Idle/animations/Walking/west/frame_001.png",
+              "Idle/animations/Walking/west/frame_002.png",
+              "Idle/animations/Walking/west/frame_003.png",
+              "Idle/animations/Walking/west/frame_004.png",
+              "Idle/animations/Walking/west/frame_005.png",
+              "Idle/animations/Walking/west/frame_006.png",
+              "Idle/animations/Walking/west/frame_007.png"
+            ],
+            "east": [
+              "Idle/animations/Walking/east/frame_000.png",
+              "Idle/animations/Walking/east/frame_001.png",
+              "Idle/animations/Walking/east/frame_002.png",
+              "Idle/animations/Walking/east/frame_003.png",
+              "Idle/animations/Walking/east/frame_004.png",
+              "Idle/animations/Walking/east/frame_005.png",
+              "Idle/animations/Walking/east/frame_006.png",
+              "Idle/animations/Walking/east/frame_007.png"
+            ],
+            "south-east": [
+              "Idle/animations/Walking/south-east/frame_000.png",
+              "Idle/animations/Walking/south-east/frame_001.png",
+              "Idle/animations/Walking/south-east/frame_002.png",
+              "Idle/animations/Walking/south-east/frame_003.png",
+              "Idle/animations/Walking/south-east/frame_004.png",
+              "Idle/animations/Walking/south-east/frame_005.png",
+              "Idle/animations/Walking/south-east/frame_006.png",
+              "Idle/animations/Walking/south-east/frame_007.png"
+            ],
+            "south": [
+              "Idle/animations/Walking/south/frame_000.png",
+              "Idle/animations/Walking/south/frame_001.png",
+              "Idle/animations/Walking/south/frame_002.png",
+              "Idle/animations/Walking/south/frame_003.png",
+              "Idle/animations/Walking/south/frame_004.png",
+              "Idle/animations/Walking/south/frame_005.png",
+              "Idle/animations/Walking/south/frame_006.png",
+              "Idle/animations/Walking/south/frame_007.png"
+            ],
+            "south-west": [
+              "Idle/animations/Walking/south-west/frame_000.png",
+              "Idle/animations/Walking/south-west/frame_001.png",
+              "Idle/animations/Walking/south-west/frame_002.png",
+              "Idle/animations/Walking/south-west/frame_003.png",
+              "Idle/animations/Walking/south-west/frame_004.png",
+              "Idle/animations/Walking/south-west/frame_005.png",
+              "Idle/animations/Walking/south-west/frame_006.png",
+              "Idle/animations/Walking/south-west/frame_007.png"
+            ],
+            "north-east": [
+              "Idle/animations/Walking/north-east/frame_000.png",
+              "Idle/animations/Walking/north-east/frame_001.png",
+              "Idle/animations/Walking/north-east/frame_002.png",
+              "Idle/animations/Walking/north-east/frame_003.png",
+              "Idle/animations/Walking/north-east/frame_004.png",
+              "Idle/animations/Walking/north-east/frame_005.png",
+              "Idle/animations/Walking/north-east/frame_006.png",
+              "Idle/animations/Walking/north-east/frame_007.png"
+            ]
+          },
+          "taking_a_hit_she_gets_struck_from_the_front_flinch": {
+            "north": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north/frame_008.png"
+            ],
+            "east": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/east/frame_008.png"
+            ],
+            "north-west": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-west/frame_008.png"
+            ],
+            "south-west": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-west/frame_008.png"
+            ],
+            "north-east": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/north-east/frame_008.png"
+            ],
+            "west": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/west/frame_008.png"
+            ],
+            "south-east": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south-east/frame_008.png"
+            ],
+            "south": [
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_000.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_001.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_002.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_003.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_004.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_005.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_006.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_007.png",
+              "Idle/animations/taking_a_hit_she_gets_struck_from_the_front_flinch/south/frame_008.png"
+            ]
+          },
+          "defensive_block_she_quickly_brings_the_sword_up_ho": {
+            "south-east": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-east/frame_008.png"
+            ],
+            "south-west": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south-west/frame_008.png"
+            ],
+            "east": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/east/frame_008.png"
+            ],
+            "west": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/west/frame_008.png"
+            ],
+            "south": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/south/frame_008.png"
+            ],
+            "north-west": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-west/frame_008.png"
+            ],
+            "north-east": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north-east/frame_008.png"
+            ],
+            "north": [
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_000.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_001.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_002.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_003.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_004.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_005.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_006.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_007.png",
+              "Idle/animations/defensive_block_she_quickly_brings_the_sword_up_ho/north/frame_008.png"
+            ]
+          },
+          "quick_horizontal_sword_slash_she_raises_the_sword": {
+            "west": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/west/frame_008.png"
+            ],
+            "north": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north/frame_008.png"
+            ],
+            "east": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/east/frame_008.png"
+            ],
+            "south-east": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-east/frame_008.png"
+            ],
+            "south": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south/frame_008.png"
+            ],
+            "south-west": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/south-west/frame_008.png"
+            ],
+            "north-east": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-east/frame_008.png"
+            ],
+            "north-west": [
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_000.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_001.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_002.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_003.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_004.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_005.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_006.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_007.png",
+              "Idle/animations/quick_horizontal_sword_slash_she_raises_the_sword/north-west/frame_008.png"
+            ]
+          },
+          "Running": {
+            "south": [
+              "Idle/animations/Running/south/frame_000.png",
+              "Idle/animations/Running/south/frame_001.png",
+              "Idle/animations/Running/south/frame_002.png",
+              "Idle/animations/Running/south/frame_003.png",
+              "Idle/animations/Running/south/frame_004.png",
+              "Idle/animations/Running/south/frame_005.png",
+              "Idle/animations/Running/south/frame_006.png",
+              "Idle/animations/Running/south/frame_007.png"
+            ]
+          },
+          "Cross_Punch": {
+            "south": [
+              "Idle/animations/Cross_Punch/south/frame_000.png",
+              "Idle/animations/Cross_Punch/south/frame_001.png",
+              "Idle/animations/Cross_Punch/south/frame_002.png",
+              "Idle/animations/Cross_Punch/south/frame_003.png",
+              "Idle/animations/Cross_Punch/south/frame_004.png",
+              "Idle/animations/Cross_Punch/south/frame_005.png"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "character": {
+        "id": "e151004e-36a8-41bb-9958-a0b387131322",
+        "name": "Idle (copy)",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-09T04:06:14.073602+00:00"
+      },
+      "folder": "Idle_copy",
+      "frames": {
+        "rotations": {
+          "south": "Idle_copy/rotations/south.png",
+          "south-east": "Idle_copy/rotations/south-east.png",
+          "east": "Idle_copy/rotations/east.png",
+          "north-east": "Idle_copy/rotations/north-east.png",
+          "north": "Idle_copy/rotations/north.png",
+          "north-west": "Idle_copy/rotations/north-west.png",
+          "west": "Idle_copy/rotations/west.png",
+          "south-west": "Idle_copy/rotations/south-west.png"
+        },
+        "animations": {
+          "Lean_far_forward_into_an_aggressive_sprint_directl": {
+            "north-1f169f3c": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-1f169f3c/frame_008.png"
+            ],
+            "north-427eaea4": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-427eaea4/frame_008.png"
+            ],
+            "north-east": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-east/frame_008.png"
+            ],
+            "west": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/west/frame_008.png"
+            ],
+            "south-west": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-west/frame_008.png"
+            ],
+            "south": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south/frame_008.png"
+            ],
+            "north-west": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/north-west/frame_008.png"
+            ],
+            "east": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/east/frame_008.png"
+            ],
+            "south-east": [
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_000.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_001.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_002.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_003.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_004.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_005.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_006.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_007.png",
+              "Idle_copy/animations/Lean_far_forward_into_an_aggressive_sprint_directl/south-east/frame_008.png"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "character": {
+        "id": "04321e80-3b3e-4d83-9b2b-09ce0aa7b682",
+        "name": "Idle (copy 2)",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-09T08:32:02.718184+00:00"
+      },
+      "folder": "Idle_copy_2",
+      "frames": {
+        "rotations": {
+          "south": "Idle_copy_2/rotations/south.png",
+          "south-east": "Idle_copy_2/rotations/south-east.png",
+          "east": "Idle_copy_2/rotations/east.png",
+          "north-east": "Idle_copy_2/rotations/north-east.png",
+          "north": "Idle_copy_2/rotations/north.png",
+          "north-west": "Idle_copy_2/rotations/north-west.png",
+          "west": "Idle_copy_2/rotations/west.png",
+          "south-west": "Idle_copy_2/rotations/south-west.png"
+        },
+        "animations": {
+          "Running": {
+            "west": [
+              "Idle_copy_2/animations/Running/west/frame_000.png",
+              "Idle_copy_2/animations/Running/west/frame_001.png",
+              "Idle_copy_2/animations/Running/west/frame_002.png",
+              "Idle_copy_2/animations/Running/west/frame_003.png",
+              "Idle_copy_2/animations/Running/west/frame_004.png",
+              "Idle_copy_2/animations/Running/west/frame_005.png",
+              "Idle_copy_2/animations/Running/west/frame_006.png",
+              "Idle_copy_2/animations/Running/west/frame_007.png"
+            ],
+            "south-west": [
+              "Idle_copy_2/animations/Running/south-west/frame_000.png",
+              "Idle_copy_2/animations/Running/south-west/frame_001.png",
+              "Idle_copy_2/animations/Running/south-west/frame_002.png",
+              "Idle_copy_2/animations/Running/south-west/frame_003.png",
+              "Idle_copy_2/animations/Running/south-west/frame_004.png",
+              "Idle_copy_2/animations/Running/south-west/frame_005.png",
+              "Idle_copy_2/animations/Running/south-west/frame_006.png",
+              "Idle_copy_2/animations/Running/south-west/frame_007.png"
+            ],
+            "south-east": [
+              "Idle_copy_2/animations/Running/south-east/frame_000.png",
+              "Idle_copy_2/animations/Running/south-east/frame_001.png",
+              "Idle_copy_2/animations/Running/south-east/frame_002.png",
+              "Idle_copy_2/animations/Running/south-east/frame_003.png",
+              "Idle_copy_2/animations/Running/south-east/frame_004.png",
+              "Idle_copy_2/animations/Running/south-east/frame_005.png",
+              "Idle_copy_2/animations/Running/south-east/frame_006.png",
+              "Idle_copy_2/animations/Running/south-east/frame_007.png"
+            ],
+            "east": [
+              "Idle_copy_2/animations/Running/east/frame_000.png",
+              "Idle_copy_2/animations/Running/east/frame_001.png",
+              "Idle_copy_2/animations/Running/east/frame_002.png",
+              "Idle_copy_2/animations/Running/east/frame_003.png",
+              "Idle_copy_2/animations/Running/east/frame_004.png",
+              "Idle_copy_2/animations/Running/east/frame_005.png",
+              "Idle_copy_2/animations/Running/east/frame_006.png",
+              "Idle_copy_2/animations/Running/east/frame_007.png"
+            ],
+            "north-west": [
+              "Idle_copy_2/animations/Running/north-west/frame_000.png",
+              "Idle_copy_2/animations/Running/north-west/frame_001.png",
+              "Idle_copy_2/animations/Running/north-west/frame_002.png",
+              "Idle_copy_2/animations/Running/north-west/frame_003.png",
+              "Idle_copy_2/animations/Running/north-west/frame_004.png",
+              "Idle_copy_2/animations/Running/north-west/frame_005.png",
+              "Idle_copy_2/animations/Running/north-west/frame_006.png",
+              "Idle_copy_2/animations/Running/north-west/frame_007.png"
+            ],
+            "north": [
+              "Idle_copy_2/animations/Running/north/frame_000.png",
+              "Idle_copy_2/animations/Running/north/frame_001.png",
+              "Idle_copy_2/animations/Running/north/frame_002.png",
+              "Idle_copy_2/animations/Running/north/frame_003.png",
+              "Idle_copy_2/animations/Running/north/frame_004.png",
+              "Idle_copy_2/animations/Running/north/frame_005.png",
+              "Idle_copy_2/animations/Running/north/frame_006.png",
+              "Idle_copy_2/animations/Running/north/frame_007.png"
+            ],
+            "north-east": [
+              "Idle_copy_2/animations/Running/north-east/frame_000.png",
+              "Idle_copy_2/animations/Running/north-east/frame_001.png",
+              "Idle_copy_2/animations/Running/north-east/frame_002.png",
+              "Idle_copy_2/animations/Running/north-east/frame_003.png",
+              "Idle_copy_2/animations/Running/north-east/frame_004.png",
+              "Idle_copy_2/animations/Running/north-east/frame_005.png",
+              "Idle_copy_2/animations/Running/north-east/frame_006.png",
+              "Idle_copy_2/animations/Running/north-east/frame_007.png"
+            ],
+            "south": [
+              "Idle_copy_2/animations/Running/south/frame_000.png",
+              "Idle_copy_2/animations/Running/south/frame_001.png",
+              "Idle_copy_2/animations/Running/south/frame_002.png",
+              "Idle_copy_2/animations/Running/south/frame_003.png",
+              "Idle_copy_2/animations/Running/south/frame_004.png",
+              "Idle_copy_2/animations/Running/south/frame_005.png",
+              "Idle_copy_2/animations/Running/south/frame_006.png",
+              "Idle_copy_2/animations/Running/south/frame_007.png"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "character": {
+        "id": "00a196f2-f3ab-47d1-aa3e-dde4921842dc",
+        "name": "Idle (copy 3)",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-10T08:08:32.129208+00:00"
+      },
+      "folder": "Idle_copy_3",
+      "frames": {
+        "rotations": {
+          "south": "Idle_copy_3/rotations/south.png",
+          "south-east": "Idle_copy_3/rotations/south-east.png",
+          "east": "Idle_copy_3/rotations/east.png",
+          "north-east": "Idle_copy_3/rotations/north-east.png",
+          "north": "Idle_copy_3/rotations/north.png",
+          "north-west": "Idle_copy_3/rotations/north-west.png",
+          "west": "Idle_copy_3/rotations/west.png",
+          "south-west": "Idle_copy_3/rotations/south-west.png"
+        },
+        "animations": {
+          "Raise_the_sword_over_the_right_shoulder_in_a_wind-": {
+            "south-east": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-east/frame_008.png"
+            ],
+            "west": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/west/frame_008.png"
+            ],
+            "north-37dcaee9": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-37dcaee9/frame_008.png"
+            ],
+            "south-west": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south-west/frame_008.png"
+            ],
+            "east": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/east/frame_008.png"
+            ],
+            "north-8f3137de": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-8f3137de/frame_008.png"
+            ],
+            "north-west": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-west/frame_008.png"
+            ],
+            "north-east": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/north-east/frame_008.png"
+            ],
+            "south": [
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_000.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_001.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_002.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_003.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_004.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_005.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_006.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_007.png",
+              "Idle_copy_3/animations/Raise_the_sword_over_the_right_shoulder_in_a_wind-/south/frame_008.png"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "character": {
+        "id": "71db8af1-1658-4a4e-9e41-437218dd37f9",
+        "name": "same character trans",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-21T22:56:26.930186+00:00"
+      },
+      "folder": "same_character_trans",
+      "frames": {
+        "rotations": {
+          "south": "same_character_trans/rotations/south.png",
+          "south-east": "same_character_trans/rotations/south-east.png",
+          "east": "same_character_trans/rotations/east.png",
+          "north-east": "same_character_trans/rotations/north-east.png",
+          "north": "same_character_trans/rotations/north.png",
+          "north-west": "same_character_trans/rotations/north-west.png",
+          "west": "same_character_trans/rotations/west.png",
+          "south-west": "same_character_trans/rotations/south-west.png"
+        },
+        "animations": {
+          "sword_slash_attack_the_dark_shadow_swordsman_keeps": {
+            "north-east": [
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_000.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_001.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_002.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_003.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_004.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_005.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_006.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north-east/frame_007.png"
+            ],
+            "north": [
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_000.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_001.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_002.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_003.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_004.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_005.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_006.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/north/frame_007.png"
+            ],
+            "south": [
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_000.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_001.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_002.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_003.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_004.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_005.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_006.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south/frame_007.png"
+            ],
+            "east": [
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_000.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_001.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_002.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_003.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_004.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_005.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_006.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/east/frame_007.png"
+            ],
+            "south-east": [
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_000.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_001.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_002.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_003.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_004.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_005.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_006.png",
+              "same_character_trans/animations/sword_slash_attack_the_dark_shadow_swordsman_keeps/south-east/frame_007.png"
+            ]
+          },
+          "Walk": {
+            "east": [
+              "same_character_trans/animations/Walk/east/frame_000.png",
+              "same_character_trans/animations/Walk/east/frame_001.png",
+              "same_character_trans/animations/Walk/east/frame_002.png",
+              "same_character_trans/animations/Walk/east/frame_003.png",
+              "same_character_trans/animations/Walk/east/frame_004.png",
+              "same_character_trans/animations/Walk/east/frame_005.png"
+            ],
+            "north-east": [
+              "same_character_trans/animations/Walk/north-east/frame_000.png",
+              "same_character_trans/animations/Walk/north-east/frame_001.png",
+              "same_character_trans/animations/Walk/north-east/frame_002.png",
+              "same_character_trans/animations/Walk/north-east/frame_003.png",
+              "same_character_trans/animations/Walk/north-east/frame_004.png",
+              "same_character_trans/animations/Walk/north-east/frame_005.png"
+            ],
+            "north": [
+              "same_character_trans/animations/Walk/north/frame_000.png",
+              "same_character_trans/animations/Walk/north/frame_001.png",
+              "same_character_trans/animations/Walk/north/frame_002.png",
+              "same_character_trans/animations/Walk/north/frame_003.png",
+              "same_character_trans/animations/Walk/north/frame_004.png",
+              "same_character_trans/animations/Walk/north/frame_005.png"
+            ],
+            "south": [
+              "same_character_trans/animations/Walk/south/frame_000.png",
+              "same_character_trans/animations/Walk/south/frame_001.png",
+              "same_character_trans/animations/Walk/south/frame_002.png",
+              "same_character_trans/animations/Walk/south/frame_003.png",
+              "same_character_trans/animations/Walk/south/frame_004.png",
+              "same_character_trans/animations/Walk/south/frame_005.png"
+            ],
+            "south-east": [
+              "same_character_trans/animations/Walk/south-east/frame_000.png",
+              "same_character_trans/animations/Walk/south-east/frame_001.png",
+              "same_character_trans/animations/Walk/south-east/frame_002.png",
+              "same_character_trans/animations/Walk/south-east/frame_003.png",
+              "same_character_trans/animations/Walk/south-east/frame_004.png",
+              "same_character_trans/animations/Walk/south-east/frame_005.png"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "character": {
+        "id": "52a96ccc-4cb8-4786-ac59-1989b39bb8dc",
+        "name": "exact same character",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-22T08:28:01.593949+00:00"
+      },
+      "folder": "exact_same_character",
+      "frames": {
+        "rotations": {
+          "south": "exact_same_character/rotations/south.png",
+          "south-east": "exact_same_character/rotations/south-east.png",
+          "east": "exact_same_character/rotations/east.png",
+          "north-east": "exact_same_character/rotations/north-east.png",
+          "north": "exact_same_character/rotations/north.png",
+          "north-west": "exact_same_character/rotations/north-west.png",
+          "west": "exact_same_character/rotations/west.png",
+          "south-west": "exact_same_character/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    },
+    {
+      "character": {
+        "id": "c6792fbe-efcf-4445-94d8-bb0f96c3714a",
+        "name": "exact same character",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-22T08:28:23.809319+00:00"
+      },
+      "folder": "exact_same_character_2",
+      "frames": {
+        "rotations": {
+          "south": "exact_same_character_2/rotations/south.png",
+          "south-east": "exact_same_character_2/rotations/south-east.png",
+          "east": "exact_same_character_2/rotations/east.png",
+          "north-east": "exact_same_character_2/rotations/north-east.png",
+          "north": "exact_same_character_2/rotations/north.png",
+          "north-west": "exact_same_character_2/rotations/north-west.png",
+          "west": "exact_same_character_2/rotations/west.png",
+          "south-west": "exact_same_character_2/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    },
+    {
+      "character": {
+        "id": "0eb9b782-0a98-46ad-9419-d9229a9b30d7",
+        "name": "exact same character",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-22T09:38:53.985035+00:00"
+      },
+      "folder": "exact_same_character_3",
+      "frames": {
+        "rotations": {
+          "south": "exact_same_character_3/rotations/south.png",
+          "south-east": "exact_same_character_3/rotations/south-east.png",
+          "east": "exact_same_character_3/rotations/east.png",
+          "north-east": "exact_same_character_3/rotations/north-east.png",
+          "north": "exact_same_character_3/rotations/north.png",
+          "north-west": "exact_same_character_3/rotations/north-west.png",
+          "west": "exact_same_character_3/rotations/west.png",
+          "south-west": "exact_same_character_3/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    },
+    {
+      "character": {
+        "id": "70bfdf1f-b990-4db2-9b78-d097446110f3",
+        "name": "exact same character",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-22T09:39:10.674033+00:00"
+      },
+      "folder": "exact_same_character_4",
+      "frames": {
+        "rotations": {
+          "south": "exact_same_character_4/rotations/south.png",
+          "south-east": "exact_same_character_4/rotations/south-east.png",
+          "east": "exact_same_character_4/rotations/east.png",
+          "north-east": "exact_same_character_4/rotations/north-east.png",
+          "north": "exact_same_character_4/rotations/north.png",
+          "north-west": "exact_same_character_4/rotations/north-west.png",
+          "west": "exact_same_character_4/rotations/west.png",
+          "south-west": "exact_same_character_4/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    },
+    {
+      "character": {
+        "id": "5ebadbf6-699e-4ff3-b4cb-74af366cd82a",
+        "name": "sword attack pose: s",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-28T01:27:53.678074+00:00"
+      },
+      "folder": "sword_attack_pose_s",
+      "frames": {
+        "rotations": {
+          "south": "sword_attack_pose_s/rotations/south.png",
+          "south-east": "sword_attack_pose_s/rotations/south-east.png",
+          "east": "sword_attack_pose_s/rotations/east.png",
+          "north-east": "sword_attack_pose_s/rotations/north-east.png",
+          "north": "sword_attack_pose_s/rotations/north.png",
+          "north-west": "sword_attack_pose_s/rotations/north-west.png",
+          "west": "sword_attack_pose_s/rotations/west.png",
+          "south-west": "sword_attack_pose_s/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    },
+    {
+      "character": {
+        "id": "a7add0b5-3ddf-4702-9f22-085b4c552780",
+        "name": "defensive guard pose",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-28T01:28:46.813022+00:00"
+      },
+      "folder": "defensive_guard_pose",
+      "frames": {
+        "rotations": {
+          "south": "defensive_guard_pose/rotations/south.png",
+          "south-east": "defensive_guard_pose/rotations/south-east.png",
+          "east": "defensive_guard_pose/rotations/east.png",
+          "north-east": "defensive_guard_pose/rotations/north-east.png",
+          "north": "defensive_guard_pose/rotations/north.png",
+          "north-west": "defensive_guard_pose/rotations/north-west.png",
+          "west": "defensive_guard_pose/rotations/west.png",
+          "south-west": "defensive_guard_pose/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    },
+    {
+      "character": {
+        "id": "7f1f8d85-66d6-41b1-b63a-87785b5082ca",
+        "name": "sword slash pose: sh",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-28T01:36:51.270351+00:00"
+      },
+      "folder": "sword_slash_pose_sh",
+      "frames": {
+        "rotations": {
+          "south": "sword_slash_pose_sh/rotations/south.png",
+          "south-east": "sword_slash_pose_sh/rotations/south-east.png",
+          "east": "sword_slash_pose_sh/rotations/east.png",
+          "north-east": "sword_slash_pose_sh/rotations/north-east.png",
+          "north": "sword_slash_pose_sh/rotations/north.png",
+          "north-west": "sword_slash_pose_sh/rotations/north-west.png",
+          "west": "sword_slash_pose_sh/rotations/west.png",
+          "south-west": "sword_slash_pose_sh/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    },
+    {
+      "character": {
+        "id": "2ca9d0c2-f7f5-413c-875b-890a257b2756",
+        "name": "calm idle standing p",
+        "prompt": "Ejemplo de texto: \"A retro pixel art character sheet for a woman with purple hair in a low ponytail, wearing a denim jacket, dark grey pants, and boots, holding a katana. High definition pixel accuracy on the face and clothes.\" (Una hoja de personaje de pixel art retro para una mujer con cabello violeta en una coleta baja, usando una chaqueta de mezclilla, pantalones gris oscuro y botas, sosteniendo una katana. Precisi\u00f3n de p\u00edxeles de alta definici\u00f3n en la cara y la ropa.) hazlo hd ya que el sprite original no se ve hd...",
+        "size": {
+          "width": 128,
+          "height": 128
+        },
+        "template_id": "mannequin",
+        "directions": 8,
+        "view": "low top-down",
+        "created_at": "2026-10-30T22:55:32.877800+00:00"
+      },
+      "folder": "calm_idle_standing_p",
+      "frames": {
+        "rotations": {
+          "south": "calm_idle_standing_p/rotations/south.png",
+          "south-east": "calm_idle_standing_p/rotations/south-east.png",
+          "east": "calm_idle_standing_p/rotations/east.png",
+          "north-east": "calm_idle_standing_p/rotations/north-east.png",
+          "north": "calm_idle_standing_p/rotations/north.png",
+          "north-west": "calm_idle_standing_p/rotations/north-west.png",
+          "west": "calm_idle_standing_p/rotations/west.png",
+          "south-west": "calm_idle_standing_p/rotations/south-west.png"
+        },
+        "animations": {}
+      }
+    }
+  ],
+  "export_version": "3.1",
+  "export_date": "2026-11-01T18:21:34.568182"
+}

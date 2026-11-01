@@ -8,7 +8,7 @@ using UnityEditor.SceneManagement;
 /// <summary>
 /// Forma "Cala": el pueblo costero de Cala Sombría con la torre en medio (forma = Cala en el ExteriorBuilder).
 /// - Bahía al norte (malecón en z = 34, agua a y = -1.4 como en el Puerto: muelle, embarcadero y barcas encajan sin ajustes).
-/// - Torre provisional en (0, 0) dentro de una plaza de r 26, portal al sur; Calle Mayor de tierra hacia el sur.
+/// - Torre ancha (ExteriorBuilder.Torre.cs) en CalaTorre (-12, -18) sobre un podio de r 44 dentro de una plaza de r 50, portal al sur; Calle Mayor de tierra hacia el sur (z -62 a -110).
 /// - Barrios: pescadores frente al mar, piedra y entramado a los lados de la Calle Mayor, pizarra en la terraza este (y +3).
 /// - Acantilado al este, cabo bajo al oeste, loma al sur; siluetas de montes al otro lado de la bahía.
 /// Casas, muelles, botes, faroles, braseros, carpas y pinos son los prefabs de Assets/Prefabs/Exterior (Abby → Exterior →
@@ -22,11 +22,12 @@ public partial class ExteriorBuilder
     // ------------------------------------------------------------------ trazado (metros; x = este, z = norte)
     // público: ExteriorIntro arma sus tomas con estos datos
 
-    public static readonly Vector2 CalaSpawn = new Vector2(0f, -45f);
-    public static readonly Vector2 CalaCampamento = new Vector2(20f, -26f);
+    public static readonly Vector2 CalaSpawn = new Vector2(-12f, -70f);
+    public static readonly Vector2 CalaCampamento = new Vector2(22f, -80f);
     public static readonly Vector2 CalaEmbarcadero = new Vector2(-31f, 46f);
-    public const float CalaPlazaRadio = 26f;
+    public const float CalaPlazaRadio = 50f;   // centrada en CalaTorre; se recorta contra la terraza (x 27), el paseo (z 14) y el límite oeste
     public const float CalaMalecon = 34f;   // borde del malecón; al norte, la bahía
+    public const float CalaSur = -110f;     // límite sur del pueblo; detrás sube la loma
     public const float CalaMar = -1.4f;     // nivel del agua
     const float CalaTerraza = 3f;           // altura del barrio de pizarra
 
@@ -41,8 +42,11 @@ public partial class ExteriorBuilder
                      * (18f + 17f * Mathf.PerlinNoise(3.1f, z * 0.025f + 7f) + 4f * (Mathf.PerlinNoise(x * 0.08f, z * 0.08f) - 0.5f));
         float oeste = S01((-62f - x) / 9f) * S01((100f - z) / 15f)
                       * (8f + 6f * Mathf.PerlinNoise(z * 0.03f + 11f, 1.7f) + 3f * (Mathf.PerlinNoise(x * 0.09f + 5f, z * 0.09f) - 0.5f));
-        float sur = S01((-68f - z) / 12f) * (10f + 6f * Mathf.PerlinNoise(x * 0.025f + 2f, 4.4f));
-        return Mathf.Max(h, Mathf.Max(este, Mathf.Max(oeste, sur)));
+        float sur = S01((CalaSur - z) / 12f) * (10f + 6f * Mathf.PerlinNoise(x * 0.025f + 2f, 4.4f));
+        h = Mathf.Max(h, Mathf.Max(este, Mathf.Max(oeste, sur)));
+        // bajo el podio de la torre el suelo es plano; se mezcla con el terreno entre PodioRadio y PodioRadio + 6
+        float d = Mathf.Sqrt((x - CalaTorre.x) * (x - CalaTorre.x) + (z - CalaTorre.y) * (z - CalaTorre.y));
+        return h * S01((d - PodioRadio) / 6f);
     }
 
 #if UNITY_EDITOR
@@ -57,13 +61,16 @@ public partial class ExteriorBuilder
         MatDir = "Assets/Materials/Cala"; TexDir = "Assets/Textures/Cala";
         CreateAssets();
         CreateCalaAssets();
+        if (!torreClasica) CreateTorreAssets();
+        if (EsNoche) CreateNocheAssets();
         lucesCala = 0;
 
         var root = Group("Cala");
         CalaTerreno(root);
         CalaMaleconYMar(root);
         CalaCalles(root);
-        BuildTower(root, Vector3.zero, true);
+        if (torreClasica) BuildTower(root, Vector3.zero, true);
+        else BuildTorreCala(root);
         lucesCala++;   // la del portal
         CalaCasas(root);
         CalaPuerto(root);
@@ -71,9 +78,12 @@ public partial class ExteriorBuilder
         CalaVegetacion(root);
         CalaFondo(root);
         CalaLimites(root);
+        if (EsNoche) { BuildNoche(root); NocheAjustes(root); }
 
         GuardarComoPrefab(root.gameObject);
+        AplicarEscenaHora();
         PlacePlayer();
+        if (!torreClasica) ReportarCala(root);
         EditorUtility.SetDirty(gameObject);
         Debug.Log($"[Exterior] Cala generada en {GenDir}/Ext_Cala.prefab: {lucesCala} luces puntuales encendidas (+ el sol).");
     }
@@ -87,7 +97,8 @@ public partial class ExteriorBuilder
             return pal[Mathf.Clamp((int)(n * 4f), 0, 3)];
         });
         mDirt = Lit("Tierra", dirt, Color.white, 0.03f);
-        mSea = Water("Mar", new Color(0.12f, 0.28f, 0.34f, 0.55f), new Color(0.02f, 0.05f, 0.1f, 0.97f), 4f, 0.85f);
+        mSea = EsNoche ? Water("Mar", new Color(0.04f, 0.09f, 0.2f, 0.6f), new Color(0.01f, 0.02f, 0.07f, 0.97f), 4f, 0.85f)   // agua más oscura de noche
+                       : Water("Mar", new Color(0.12f, 0.28f, 0.34f, 0.55f), new Color(0.02f, 0.05f, 0.1f, 0.97f), 4f, 0.85f);
         AssetDatabase.SaveAssets();
     }
 
@@ -95,7 +106,7 @@ public partial class ExteriorBuilder
 
     void CalaTerreno(Transform root)
     {
-        const float cell = 2f, x0 = -150f, x1 = 150f, z0 = -140f, z1 = 220f;
+        const float cell = 2f, x0 = -150f, x1 = 150f, z0 = -180f, z1 = 220f;
         int nx = Mathf.RoundToInt((x1 - x0) / cell), nz = Mathf.RoundToInt((z1 - z0) / cell);
         var v = new Vector3[(nx + 1) * (nz + 1)];
         var uv = new Vector2[v.Length];
@@ -153,13 +164,23 @@ public partial class ExteriorBuilder
     void CalaCalles(Transform root)
     {
         var g = Group("Calles", root);
-        MeshObject(g, "Plaza", Disc(CalaPlazaRadio, 96, 10, 2f, 0.03f), mStone, false, false);
-        MeshObject(g, "Atrio", Quad(20f, 12f, 2f), mStone, false, false).transform.localPosition = new Vector3(0f, 0.035f, -32f);
-        Calle(g, "CalleMayor", new Vector2(0f, -68f), new Vector2(0f, -26f), 6f, mDirt);
+        // la plaza (r 50) se recorta contra la terraza este (x 27), el paseo del muelle (z 14) y el límite oeste; el podio de la torre pasa por encima
+        var disco = Disc(CalaPlazaRadio, 128, 18, 2f, 0.03f);
+        var pv = disco.vertices; var puv = new Vector2[pv.Length];
+        for (int i = 0; i < pv.Length; i++)
+        {
+            pv[i].x = Mathf.Min(pv[i].x, 27f - CalaTorre.x);
+            pv[i].x = Mathf.Max(pv[i].x, -61.5f - CalaTorre.x);
+            pv[i].z = Mathf.Min(pv[i].z, 14f - CalaTorre.y);
+            puv[i] = new Vector2(pv[i].x, pv[i].z) / 2f;
+        }
+        disco.vertices = pv; disco.uv = puv; disco.RecalculateBounds();
+        MeshObject(g, "Plaza", disco, mStone, false, false).transform.localPosition = new Vector3(CalaTorre.x, 0f, CalaTorre.y);
+        MeshObject(g, "Atrio", Quad(20f, 12f, 2f), mStone, false, false).transform.localPosition = new Vector3(CalaTorre.x, 0.035f, -68f);
+        Calle(g, "CalleMayor", new Vector2(CalaTorre.x, CalaSur), new Vector2(CalaTorre.x, -62f), 6f, mDirt);
         Calle(g, "Paseo", new Vector2(-61.5f, 30.2f), new Vector2(42f, 30.2f), 6.4f, mStone);
         Calle(g, "CalleOeste", new Vector2(-61.5f, 0f), new Vector2(-25.5f, 0f), 5f, mDirt);
         Calle(g, "CalleEste", new Vector2(25.5f, 0f), new Vector2(34f, 0f), 5f, mDirt);
-        Calle(g, "Mirador", new Vector2(-15f, 19f), new Vector2(-27f, 27.5f), 5f, mDirt);   // el hueco hacia la bahía
     }
 
     /// <summary>Franja de calle de a hacia b que sigue el suelo (sirve igual en plano y en la subida a la terraza).</summary>
@@ -194,18 +215,17 @@ public partial class ExteriorBuilder
         // barrio del puerto: miran al mar
         Pieza(g, "CasaPescador_A", -57.5f, 20f, 0f);
         Pieza(g, "CasaPescador_B", -48.5f, 20f, 0f);
-        Pieza(g, "CasaPescador_A", -39f, 20f, 0f);
         Pieza(g, "CasaPescador_B", 22f, 20f, 0f);
-        // piedra: oeste de la Calle Mayor (la de z -36 se movió a -28,-20 para abrir la vista a la bahía) y sur de la calle oeste
-        Pieza(g, "CasaPiedra_B", -9f, -47f, 90f);
-        Pieza(g, "CasaPiedra_A", -9f, -58f, 90f);
-        Pieza(g, "CasaPiedra_A", -28f, -20f, 54.5f);   // mira a la torre
-        Pieza(g, "CasaPiedra_B", -38f, -8f, 0f);
-        Pieza(g, "CasaPiedra_A", -48f, -8f, 0f);
+        // piedra: oeste de la Calle Mayor y barrio suroeste (todo fuera de la plaza de r 50 alrededor de la torre)
+        Pieza(g, "CasaPiedra_B", CalaTorre.x - 9f, -76f, 90f);
+        Pieza(g, "CasaPiedra_A", CalaTorre.x - 9f, -87f, 90f);
+        Pieza(g, "CasaPiedra_A", -40f, -72f, 90f);
+        Pieza(g, "CasaPiedra_B", -48f, -86f, 80f);
+        Pieza(g, "CasaPiedra_A", -40f, -98f, 90f);
         // entramado: este de la Calle Mayor
-        Pieza(g, "CasaEntramado_A", 9f, -36f, -90f);
-        Pieza(g, "CasaEntramado_B", 9f, -47f, -90f);
-        Pieza(g, "CasaEntramado_A", 9f, -58f, -90f);
+        Pieza(g, "CasaEntramado_A", 33f, -64f, -90f);
+        Pieza(g, "CasaEntramado_B", CalaTorre.x + 9f, -76f, -90f);
+        Pieza(g, "CasaEntramado_A", CalaTorre.x + 9f, -87f, -90f);
         // pizarra: terraza alta, miran a la plaza
         foreach (var (z, p) in new[] { (10f, "A"), (-2f, "B"), (-14f, "A"), (-26f, "B") })
             Pieza(g, "CasaPizarra_" + p, 37f, z, -90f);
@@ -232,21 +252,22 @@ public partial class ExteriorBuilder
     void CalaPlaza(Transform root)
     {
         var g = Group("Plaza", root);
-        foreach (float x in new[] { -5f, 5f })
-            Luces(Pieza(g, "Brasero", x, -17f, 0f, 0.25f), l => true);   // sobre el zócalo de la torre
-        // faroles: 10, solo 4 con luz real (los demás brillan con su material)
+        foreach (float x in new[] { -13f, 13f })   // sobre el podio, a los lados del marco del portal
+            Luces(torreClasica ? Pieza(g, "Brasero", CalaTorre.x + x / 2.6f, CalaTorre.y - 12f, 0f, 0.25f)
+                               : Pieza(g, "Brasero", CalaTorre.x + x, CalaTorre.y - Mathf.Sqrt(34f * 34f - x * x), 0f, 0.75f), l => true);
+        // faroles: 10; con luz real 4 de día y 7 de noche (los demás brillan con su material)
         var faroles = new[]
         {
-            (-3.8f, -60f, false), (3.8f, -50f, true), (-3.8f, -40f, true), (3.8f, -30f, false),   // Calle Mayor
-            (-10.5f, -27f, false), (10.5f, -27f, false),                                          // atrio
-            (-45f, 31f, false), (-20f, 31f, true), (0f, 31f, true), (25f, 31f, false),            // paseo del muelle
+            (-15.8f, -100f, false, false), (-8.2f, -90f, true, true), (-15.8f, -82f, true, true), (-8.2f, -72f, false, true),   // Calle Mayor
+            (-22.5f, -72f, false, true), (-1.5f, -72f, false, true),                                                            // atrio
+            (-45f, 31f, false, false), (-20f, 31f, true, true), (0f, 31f, true, true), (25f, 31f, false, false),               // paseo del muelle
         };
-        foreach (var (x, z, luz) in faroles)
-            Luces(Pieza(g, "Farol", x, z, 0f), l => luz);
+        foreach (var (x, z, dia, noche) in faroles)
+            Luces(Pieza(g, "Farol", x, z, 0f), l => EsNoche ? noche : dia);
         // campamento de la expedición
-        Pieza(g, "Carpa", 17f, -30f, 20f);
-        Pieza(g, "Carpa", 23f, -25f, -25f);
-        Luces(Pieza(g, "Fogata", 20f, -20.5f, 0f), l => true);
+        Pieza(g, "Carpa", 14f, -84f, 20f);
+        Pieza(g, "Carpa", 30f, -86f, -25f);
+        Luces(Pieza(g, "Fogata", CalaCampamento.x, CalaCampamento.y, 0f), l => true);
         Letrero(g, new Vector3(-27f, 0f, 29.5f));
     }
 
@@ -295,9 +316,9 @@ public partial class ExteriorBuilder
             }
         }
         Zona(Rect.MinMaxRect(-95f, -60f, -66f, 88f), 25);   // cabo oeste
-        Zona(Rect.MinMaxRect(-60f, -100f, 42f, -74f), 20);   // loma sur
+        Zona(Rect.MinMaxRect(-60f, -150f, 42f, -116f), 20);   // loma sur
         Zona(Rect.MinMaxRect(54f, -60f, 80f, 105f), 15);     // arriba del acantilado este
-        foreach (var p in new[] { new Vector2(-22f, -55f), new Vector2(-24f, -40f), new Vector2(-38f, -28f), new Vector2(18f, -60f), new Vector2(20f, -46f), new Vector2(28f, -52f) })
+        foreach (var p in new[] { new Vector2(-30f, -70f), new Vector2(-36f, -62f), new Vector2(-52f, -62f), new Vector2(18f, -60f), new Vector2(14f, -66f), new Vector2(34f, -56f) })
             Pieza(g, "Arbol", p.x, p.y, R(0f, 360f));
     }
 
@@ -329,9 +350,9 @@ public partial class ExteriorBuilder
     void CalaLimites(Transform root)
     {
         var g = Group("Limites", root);
-        Solido(g, "Oeste", new Vector3(-61.8f, 4f, -17f), new Vector3(0.6f, 8f, 102f));
-        Solido(g, "Este", new Vector3(42f, 7f, -17f), new Vector3(0.6f, 14f, 102f));
-        Solido(g, "Sur", new Vector3(-10f, 4f, -68f), new Vector3(104f, 8f, 0.6f));
+        Solido(g, "Oeste", new Vector3(-61.8f, 4f, (CalaSur + CalaMalecon) / 2f), new Vector3(0.6f, 8f, CalaMalecon - CalaSur));
+        Solido(g, "Este", new Vector3(42f, 7f, (CalaSur + CalaMalecon) / 2f), new Vector3(0.6f, 14f, CalaMalecon - CalaSur));
+        Solido(g, "Sur", new Vector3(-10f, 4f, CalaSur), new Vector3(104f, 8f, 0.6f));
     }
 
     // ---------------- ayudantes
@@ -421,7 +442,7 @@ public partial class ExteriorBuilder
             if (!usadas.Contains(p)) AssetDatabase.DeleteAsset(p);
         }
         foreach (var t in root.GetComponentsInChildren<Transform>(true))
-            if (!PrefabUtility.IsPartOfPrefabInstance(t) && t.GetComponent<TextMesh>() == null && t.GetComponent<Light>() == null)
+            if (!PrefabUtility.IsPartOfPrefabInstance(t) && t.GetComponent<TextMesh>() == null && t.GetComponent<Light>() == null && t.GetComponent<TorreHalo>() == null && t.GetComponentInParent<ExteriorNoche>(true) == null)
                 GameObjectUtility.SetStaticEditorFlags(t.gameObject, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccluderStatic | StaticEditorFlags.OccludeeStatic);
         AssetDatabase.SaveAssets();
         PrefabUtility.SaveAsPrefabAssetAndConnect(root, GenDir + "/Ext_Cala.prefab", InteractionMode.AutomatedAction);
@@ -444,7 +465,15 @@ public partial class ExteriorBuilder
         var p = GameObject.FindWithTag("Player");
         if (p != null) p.transform.SetPositionAndRotation(PlayerSpawn + Vector3.up * 0.05f, rot);
         var rig = FindAnyObjectByType<CameraRig>();
-        if (rig != null) rig.transform.SetPositionAndRotation(PlayerSpawn, rot);
+        if (rig != null)
+        {
+            rig.transform.SetPositionAndRotation(PlayerSpawn, rot);
+            // la torre mide ~165 m y la niebla llega a fogEnd: el far clip no puede cortar antes que la niebla
+            var cam = rig.GetComponentInChildren<Camera>();
+            var sky = FindAnyObjectByType<ExteriorSky>();
+            float far = Mathf.Max(600f, (sky != null ? sky.fogEnd : 650f) + 50f);
+            if (cam != null && cam.farClipPlane < far) { cam.farClipPlane = far; EditorUtility.SetDirty(cam); }
+        }
         if (gameObject.scene.IsValid()) EditorSceneManager.MarkSceneDirty(gameObject.scene);
     }
 

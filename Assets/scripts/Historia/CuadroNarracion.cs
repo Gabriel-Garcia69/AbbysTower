@@ -97,8 +97,13 @@ public static class CuadroNarracion
     }
 
     /// <summary>Diálogo: caja abajo con placa dorada del que habla.</summary>
+    static float ultimoDialogo; static int cuadroDialogo = -10;
+    /// <summary>Qué tan visible está el cuadro de diálogo (0 = nada); el HUD atenúa su barra de controles con esto para no encimarse.</summary>
+    public static float DialogoVisible => Time.frameCount - cuadroDialogo <= 2 ? ultimoDialogo : 0f;
+
     public static void Dialogo(string quien, string texto, int letras, float alpha)
     {
+        ultimoDialogo = alpha; cuadroDialogo = Time.frameCount;
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         float w = Mathf.Min(sw * 0.8f, u * 160f);
         var st = Estilo(2.5f);

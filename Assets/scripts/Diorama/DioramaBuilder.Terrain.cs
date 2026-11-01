@@ -186,7 +186,7 @@ public partial class DioramaBuilder
     void BuildTerrainChunk(Transform parent, float[,] hgt, int nx, int nz, int i0, int j0, int i1, int j1, Rect area, float cell, bool collider)
     {
         var v = new List<Vector3>(); var n = new List<Vector3>(); var uv = new List<Vector2>();
-        var tops = new List<int>(); var sides = new List<int>(); var beds = new List<int>();
+        var tops = new List<int>(); var sides = new List<int>(); var beds = new List<int>(); var gravas = new List<int>();
         const float tile = 0.5f, wallTile = 4f;   // 2 m por repetición arriba; 4 m de alto en la roca
 
         void Quad(List<int> tris, Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal, Vector2 ua, Vector2 ub, Vector2 uc, Vector2 ud)
@@ -206,7 +206,10 @@ public partial class DioramaBuilder
         {
             float h = hgt[i, j];
             if (h <= VoidY) return -1;
-            return h <= BedBelow || h >= SnowAbove || IsBedAt(area.xMin + (i + 0.5f) * cell, area.yMin + (j + 0.5f) * cell, h) ? 1 : 0;
+            float cx = area.xMin + (i + 0.5f) * cell, cz = area.yMin + (j + 0.5f) * cell;
+            if (h <= BedBelow || h >= SnowAbove || IsBedAt(cx, cz, h)) return 1;
+            // gruta del tutorial: manchas de grava (suelo_grava) entre la roca del suelo, por ruido de baja frecuencia y con bordes duros
+            return layout == Layout.Expedicion && mExpGrava != null && Mathf.PerlinNoise(cx * 0.06f + 13f, cz * 0.06f + 7f) > 0.56f ? 2 : 0;
         }
         // pared hacia un vecino más bajo; pa -> pb con la cara mirando al vecino; v = 1 en la orilla de arriba (musgo)
         void Side(Vector3 pa, Vector3 pb, float ua, float ub, Vector3 normal, float h, float lo)
@@ -228,7 +231,7 @@ public partial class DioramaBuilder
                 if (sub >= 0)
                 {
                     float xa = area.xMin + i * cell, xb = area.xMin + e * cell;
-                    Quad(sub == 1 ? beds : tops, new Vector3(xa, h, z0), new Vector3(xb, h, z0), new Vector3(xa, h, z1), new Vector3(xb, h, z1), Vector3.up,
+                    Quad(sub == 1 ? beds : sub == 2 ? gravas : tops, new Vector3(xa, h, z0), new Vector3(xb, h, z0), new Vector3(xa, h, z1), new Vector3(xb, h, z1), Vector3.up,
                          new Vector2(xa, z0) * tile, new Vector2(xb, z0) * tile, new Vector2(xa, z1) * tile, new Vector2(xb, z1) * tile);
                 }
                 i = e;
@@ -267,14 +270,16 @@ public partial class DioramaBuilder
 
         var m = new Mesh { name = "Terreno", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
         m.SetVertices(v); m.SetNormals(n); m.SetUVs(0, uv);
-        m.subMeshCount = 3;
+        bool conGrava = layout == Layout.Expedicion && mExpGrava != null;
+        m.subMeshCount = conGrava ? 4 : 3;
         m.SetTriangles(tops, 0); m.SetTriangles(sides, 1); m.SetTriangles(beds, 2);
+        if (conGrava) m.SetTriangles(gravas, 3);
         m.RecalculateBounds();
         var go = new GameObject("Terreno_" + i0 + "_" + j0);
         go.transform.SetParent(parent, false);
         go.AddComponent<MeshFilter>().sharedMesh = m;
         var mr = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterials = new[] { TopMat, WallMat, BedMat };
+        mr.sharedMaterials = conGrava ? new[] { TopMat, WallMat, BedMat, mExpGrava } : new[] { TopMat, WallMat, BedMat };
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
         if (collider) go.AddComponent<MeshCollider>().sharedMesh = m;
     }

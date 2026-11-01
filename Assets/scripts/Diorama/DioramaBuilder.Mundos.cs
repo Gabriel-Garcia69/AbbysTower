@@ -9,11 +9,11 @@ public partial class DioramaBuilder
 {
     Material mSandPix, mSnowPix, mSandstone, mCaveRock, mCaveBrick, mStoneBrick, mIce, mCrystalA, mCrystalB, mMushroom, mCloud;
 
-    Material TopMat => layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? mSnowPix : layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : mGrass;
+    Material TopMat => layout == Layout.Expedicion && mExpSuelo != null ? mExpSuelo : layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? mSnowPix : layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : mGrass;
     /// <summary>Arriba de esta altura el suelo usa el material del lecho (en la Montaña: nieve).</summary>
     float SnowAbove => layout == Layout.Montana ? MountSnowLine : 99999f;
     Material WallMat => layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : layout == Layout.Templo ? mSandPix : mRock;
-    Material BedMat => layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
+    Material BedMat => layout == Layout.Expedicion && mExpSuelo != null ? mExpSuelo : layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
 
     void LoadWorldMaterials()
     {
@@ -139,10 +139,13 @@ public partial class DioramaBuilder
     /// <summary>Estalagmita (cono de roca).</summary>
     void Stalagmite(Transform parent, Vector3 pos, float h)
     {
-        var m = MeshObject(parent, "Estalagmita", Cone(1f, 1f, 7), mCaveRock, true);
+        // en la gruta del tutorial la malla trae el UV en metros (32 px/m); en los demás mapas, el cono de siempre escalado
+        bool exp = layout == Layout.Expedicion;
+        var m = MeshObject(parent, "Estalagmita", exp ? ConoMetrico(h * 0.28f, h, 7, 0.25f) : Cone(1f, 1f, 7), mCaveRock, true);
         m.transform.localPosition = pos;
-        m.transform.localScale = new Vector3(h * 0.28f, h, h * 0.28f);
+        if (!exp) m.transform.localScale = new Vector3(h * 0.28f, h, h * 0.28f);
         m.transform.localRotation = Quaternion.Euler(R(-5f, 5f), R(0f, 360f), R(-5f, 5f));
+        if (exp) MarcarOcluible(m.GetComponent<MeshRenderer>());
     }
 
     void Mushrooms(Transform parent, Vector3 pos)

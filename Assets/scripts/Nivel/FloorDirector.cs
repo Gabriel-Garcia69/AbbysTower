@@ -36,7 +36,7 @@ public class FloorDirector : MonoBehaviour
     Transform player;
     PlayerHealth health;
     AbbyBlock block;
-    Sprite retrato;
+    Sprite retrato, retratoFijo;
     RoomEncounter[] rooms;
     RoomEncounter activeRoom;
     TowerEnemy boss;
@@ -82,7 +82,7 @@ public class FloorDirector : MonoBehaviour
             if (p.GetComponent<AbbyAttack>() == null) p.AddComponent<AbbyAttack>();
             block = p.GetComponent<AbbyBlock>();
             var anim = p.GetComponentInChildren<AbbySpriteAnimator>(true);
-            if (anim != null && anim.idle != null && anim.idle.Length > 6) retrato = anim.idle[6];
+            retrato = retratoFijo != null ? retratoFijo : anim != null ? anim.Retrato : null;
             health.Died += OnPlayerDied;
             health.Damaged += _ => hurtVignette = 1f;
             shownHealth = health.Normalized;
@@ -390,14 +390,13 @@ public class FloorDirector : MonoBehaviour
         // GDD: controles siempre visibles en la parte inferior (y la tecla de la fuente cuando Abby está junto a una)
         if (!dead && !completed)
         {
-            Box(new Rect(0, sh - u * 4.4f, sw, u * 4.4f), new Color(0f, 0f, 0f, 0.45f));
+            BarraControles(sw, sh, u);
             var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 1.9f), alignment = TextAnchor.MiddleCenter };
-            Text(new Rect(0, sh - u * 4.4f, sw, u * 4.4f), Controles, st, new Color(1f, 1f, 1f, 0.85f));
             if (HealingShrine.Cerca != null)
             {
                 var big = new GUIStyle(st) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Bold };
                 float blink = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f);
-                Text(new Rect(0, sh - u * 11f, sw, u * 5f), "E  ·  Usar la fuente de curación", big, new Color(0.6f, 1f, 0.75f, blink));
+                Text(new Rect(0, sh - u * 26f, sw, u * 5f), "E  ·  Usar la fuente de curación", big, new Color(0.6f, 1f, 0.75f, blink));
             }
         }
 
@@ -440,6 +439,53 @@ public class FloorDirector : MonoBehaviour
 
     /// <summary>Barra de controles del GDD (teclado y mouse).</summary>
     public const string Controles = "WASD  Mover     Clic izq.  Atacar (combo de 3)     Clic der.  Bloquear     Espacio  Saltar     Shift  Impulso     E  Interactuar     F3  Cámara libre     Esc  Pausa";
+
+    /// <summary>Retrato propio del HUD (el tutorial se juega con Dante); se queda aunque Start corra antes o después.</summary>
+    public void PonerRetrato(Sprite s) { retratoFijo = s; if (s != null) retrato = s; }
+
+    /// <summary>Barra de controles: cada tecla en un chip y la acción al lado; dos filas centradas.</summary>
+    static readonly (string tecla, string accion)[][] FilasControles =
+    {
+        new[] { ("WASD", "Mover"), ("Espacio", "Saltar"), ("Shift", "Impulso"), ("Clic izq.", "Atacar (combo de 3)"), ("Clic der.", "Bloquear") },
+        new[] { ("E", "Interactuar"), ("F3", "Cámara libre"), ("Esc", "Pausa") },
+    };
+
+    void BarraControles(float sw, float sh, float u)
+    {
+        // con el cuadro de diálogo a la vista la barra se atenúa (casi desaparece) para no encimarse con él
+        float k = 1f - CuadroNarracion.DialogoVisible * 0.92f;
+        if (k < 0.04f) return;
+        void Box(Rect r, Color c) { c.a *= k; GUI.color = c; GUI.DrawTexture(r, Texture2D.whiteTexture); }   // el de OnGUI es local a OnGUI
+        float alto = u * 7.4f;
+        Box(new Rect(0, sh - alto, sw, alto), new Color(0f, 0f, 0f, 0.6f));
+        Box(new Rect(0, sh - alto, sw, u * 0.2f), new Color(0.75f, 0.6f, 1f, 0.5f));
+        var tecla = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 1.9f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        var accion = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2f), alignment = TextAnchor.MiddleLeft };
+        float hFila = u * 3.2f, hueco = u * 3f;
+        for (int f = 0; f < FilasControles.Length; f++)
+        {
+            var fila = FilasControles[f];
+            var anchoT = new float[fila.Length]; var anchoA = new float[fila.Length];
+            float total = 0f;
+            for (int i = 0; i < fila.Length; i++)
+            {
+                anchoT[i] = tecla.CalcSize(new GUIContent(fila[i].tecla)).x + u * 2f;
+                anchoA[i] = accion.CalcSize(new GUIContent(fila[i].accion)).x + u * 0.6f;
+                total += anchoT[i] + u * 0.8f + anchoA[i] + (i < fila.Length - 1 ? hueco : 0f);
+            }
+            float x = (sw - total) / 2f, y = sh - alto + u * 0.6f + f * hFila;
+            for (int i = 0; i < fila.Length; i++)
+            {
+                var chip = new Rect(x, y + u * 0.25f, anchoT[i], hFila - u * 0.5f);
+                Box(chip, new Color(0.1f, 0.08f, 0.18f, 0.95f));
+                Box(new Rect(chip.x, chip.y, chip.width, 2f), new Color(0.75f, 0.6f, 1f, 0.9f));
+                Text(chip, fila[i].tecla, tecla, new Color(1f, 0.85f, 0.5f, k));
+                x += anchoT[i] + u * 0.8f;
+                Text(new Rect(x, y, anchoA[i], hFila), fila[i].accion, accion, new Color(1f, 1f, 1f, 0.92f * k));
+                x += anchoA[i] + hueco;
+            }
+        }
+    }
 
     static void Text(Rect r, string text, GUIStyle st, Color c)
     {

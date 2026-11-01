@@ -47,6 +47,7 @@ public class ExteriorIntro : MonoBehaviour
         if (cam == null) { enabled = false; return; }
         camLocalPos = cam.transform.localPosition;
         camLocalRot = cam.transform.localRotation;
+        cam.farClipPlane = Mathf.Max(cam.farClipPlane, 700f);   // la torre y la niebla (hasta 650 m) no se cortan
 
         var list = new List<Behaviour>();
         if (disableDuring != null) foreach (var b in disableDuring) if (b != null) list.Add(b);
@@ -187,8 +188,8 @@ public class ExteriorIntro : MonoBehaviour
 
         shots.Add(new Shot
         {
-            pos = new[] { W(-60f, 9f, 175f), W(-38f, 12f, 140f), W(-18f, 16f, 112f) },
-            look = new[] { W(0f, 25f, 0f), W(0f, 30f, 0f), W(4f, 40f, 0f) },
+            pos = new[] { W(-90f, 12f, 270f), W(-60f, 18f, 225f), W(-30f, 24f, 180f) },   // la torre mide ~165 m: desde lejos entra entera
+            look = new[] { W(-12f, 80f, -18f), W(-12f, 88f, -18f), W(-8f, 98f, -18f) },
             duration = 7f, fovA = 40f, fovB = 34f, caption = Historia.Ciudad,
         });
         shots.Add(new Shot
@@ -200,21 +201,21 @@ public class ExteriorIntro : MonoBehaviour
         shots.Add(new Shot
         {
             pos = new[] { W(camp.x + 4f, 1.8f, camp.y - 16f), W(camp.x + 1f, 2.2f, camp.y - 9f) },
-            look = new[] { W(camp.x, 1f, camp.y), W(10f, 25f, 0f) },
+            look = new[] { W(camp.x, 1f, camp.y), W(-12f, 60f, -18f) },
             duration = 6f, fovA = 40f, fovB = 46f, caption = "Campamento de la expedición",
         });
         // la torre desde el atrio, de los braseros hasta la punta (aquí aparece el título)
         shots.Add(new Shot
         {
-            pos = new[] { W(7f, 1.4f, -38f), W(3f, 2f, -25f) },
-            look = new[] { W(0f, 6f, -14f), W(0f, 150f, 0f) },
+            pos = new[] { W(-6f, 1.4f, -90f), W(-9f, 2f, -58f) },
+            look = new[] { W(-12f, 12f, -43f), W(-12f, 140f, -18f) },
             duration = 7f, fovA = 44f, fovB = 58f, caption = null,
         });
         // llegada: desde lo alto sobre la loma sur, bajando por la Calle Mayor hasta la vista de juego
         shots.Add(new Shot
         {
-            pos = new[] { W(14f, 30f, -100f), W(5f, 12f, -72f) },
-            look = new[] { W(0f, 30f, 0f), W(0f, 2f, -30f) },
+            pos = new[] { W(2f, 40f, -165f), W(-8f, 12f, -100f) },
+            look = new[] { W(-12f, 70f, -18f), W(-12f, 2f, -55f) },
             duration = 5.5f, fovA = 50f, fovB = endFov, finalShot = true,
         });
     }

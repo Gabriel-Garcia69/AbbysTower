@@ -15,7 +15,7 @@ public partial class DioramaBuilder
     /// <summary>Zonas de camino (están en 'blocked' para que no crezcan árboles) y puntos del camino cada ~2 m (para las hordas).</summary>
     readonly HashSet<Rect> rectsCamino = new HashSet<Rect>();
     readonly List<Vector2> puntosCamino = new List<Vector2>();
-    Material mGrava, mTierraOscura;
+    Material mGrava, mTierraOscura, mSenderoExp;
 
     void AnotarCamino(Material mat, TramoCamino t)
     {
@@ -37,7 +37,10 @@ public partial class DioramaBuilder
         switch (layout)
         {
             case Layout.Cascadas: case Layout.Lago: return mGrava;
-            case Layout.Expedicion: case Layout.Cueva: return mTierraOscura;
+            case Layout.Expedicion:
+                if (mSenderoExp == null) mSenderoExp = Saved("Dio_SenderoExp", () => { var m = new Material(mDirt); m.SetColor("_BaseColor", new Color(1.2f, 1.08f, 0.95f)); return m; });   // más claro que la roca: el camino se lee
+                return mSenderoExp;
+            case Layout.Cueva: return mTierraOscura;
             default: return mDirt;
         }
     }

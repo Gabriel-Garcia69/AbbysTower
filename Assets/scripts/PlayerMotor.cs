@@ -23,6 +23,8 @@ public class PlayerMotor : MonoBehaviour
     /// <summary>Última dirección de movimiento en el mundo (plano XZ). Se conserva al detenerse.</summary>
     public Vector3 WorldMoveDirection { get; private set; }
     public bool IsMoving { get; private set; }
+    /// <summary>Rapidez horizontal real (m/s), sin contar empujes: el sprite ajusta el ritmo de los pasos con ella.</summary>
+    public float HorizontalSpeed => _horizontalVelocity.magnitude;
     public bool IsGrounded { get; private set; }
     /// <summary>Multiplicador de velocidad vigente (1 = normal). Lo bajan la niebla de la Pereza, el empacho de la Gula, etc.</summary>
     public float SpeedScale => Time.time < _slowUntil ? _slowFactor : 1f;

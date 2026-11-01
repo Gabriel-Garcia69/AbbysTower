@@ -240,8 +240,8 @@ public partial class DioramaBuilder
         float hx = ancho / 2f, hz = largo / 2f;
         var v = new List<Vector3> { new Vector3(-hx, 0, -hz), new Vector3(hx, 0, -hz), new Vector3(-hx, 0, hz), new Vector3(hx, 0, hz) };
         v.AddRange(v.ToArray());
-        var uv = new List<Vector2> { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 1), new Vector2(1, 1) };
-        uv.AddRange(uv.ToArray());
+        var uv = new List<Vector2>();
+        foreach (var p in v) uv.Add(new Vector2(p.x, p.z) * 0.5f);   // en metros: 2 m por repetición de la lona
         var t = new List<int> { 0, 2, 3, 0, 3, 1, 4, 7, 6, 4, 5, 7 };
         var m = new Mesh { name = "Lona" };
         m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
@@ -257,7 +257,8 @@ public partial class DioramaBuilder
         v.AddRange(v.ToArray());
         var t = new List<int> { 0, 2, 1, 3, 4, 5 };
         var m = new Mesh { name = "Triangulo" };
-        m.SetVertices(v); m.SetTriangles(t, 0);
+        var uv = new List<Vector2>(); foreach (var p in v) uv.Add(new Vector2(p.x, p.y) * 0.5f);
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
         m.SetNormals(new List<Vector3> { Vector3.back, Vector3.back, Vector3.back, Vector3.forward, Vector3.forward, Vector3.forward });
         m.RecalculateBounds();
         return m;
@@ -270,7 +271,8 @@ public partial class DioramaBuilder
         v.AddRange(v.ToArray());
         var t = new List<int> { 0, 2, 1, 3, 4, 5 };
         var m = new Mesh { name = "PanoFrente" };
-        m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals();
+        var uv = new List<Vector2>(); foreach (var p in v) uv.Add(new Vector2(p.x, p.y) * 0.5f);
+        m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0); m.RecalculateNormals();
         var n = new Vector3[6]; for (int i = 0; i < 3; i++) { n[i] = Vector3.forward; n[i + 3] = Vector3.back; }
         m.normals = n; m.RecalculateBounds();
         return m;

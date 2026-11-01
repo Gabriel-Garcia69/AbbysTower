@@ -22,6 +22,7 @@ public class ExpedicionPiso20 : MonoBehaviour
     RoomEncounter entrenamiento, oleada;
     Transform coloso;
 
+    Light luzDante, luzGrupo;
     string pista;                 // indicación de controles (arriba)
     float pistaAlpha;
     string quien, texto;          // diálogo (abajo)
@@ -37,10 +38,32 @@ public class ExpedicionPiso20 : MonoBehaviour
         player = p.transform;
         health = p.GetComponent<PlayerHealth>();
         input = p.GetComponent<PlayerInputReader>();
-        // se juega con el hermano de Abby (mismo cuerpo, otro color y un poco más alto, hasta que haya sprite propio)
-        foreach (var sr in p.GetComponentsInChildren<SpriteRenderer>()) sr.color = new Color(0.72f, 0.82f, 1f);
+        // se juega con Dante: su conjunto de sprites (Resources/Personajes/Dante). Mientras no exista, el de Abby con un tinte azul
+        var anim = p.GetComponentInChildren<AbbySpriteAnimator>(true);
+        var conjunto = Resources.Load<ConjuntoSprites>("Personajes/Dante");
+        if (conjunto == null)
+        {
+            conjunto = ScriptableObject.CreateInstance<ConjuntoSprites>();
+            conjunto.nombre = Historia.Hermano;
+            conjunto.provisional = true;
+            conjunto.tinte = new Color(0.8f, 0.88f, 1f);
+        }
+        if (anim != null) anim.Aplicar(conjunto);
+        if (conjunto.provisional)
+        {
+            Debug.LogWarning("[TODO] Dante sin sprites propios: el tutorial usa los de Abby con un tinte azul. Crea Resources/Personajes/Dante (Abby > Conjunto de sprites) con sus animaciones y su retrato.");
+            Debug.LogWarning("[TODO] El capitán y los miembros de la expedición usan el sprite del cazador (References/Pixel_art_human_NPC...): faltan sus propios sprites.");
+        }
         var fd = FindAnyObjectByType<FloorDirector>();
-        if (fd != null) fd.heroName = Historia.Hermano.ToUpper();
+        if (fd != null)
+        {
+            fd.heroName = Historia.Hermano.ToUpper();
+            fd.PonerRetrato(conjunto.retrato != null ? conjunto.retrato : anim != null ? anim.Retrato : null);
+        }
+        // SpriteLit3D usa la normal hacia ARRIBA: los sprites se alumbran por lo que tienen encima, así que las luces van arriba y hacia la
+        // cámara (no pegadas al cuerpo: ahí hacen un punto blanco en la cabeza). Una para Dante y una compartida para la expedición.
+        luzDante = NuevaLuz("LuzDante", 0.6f, 9f);
+        luzGrupo = NuevaLuz("LuzExpedicion", 0.8f, 12f);
         var exp = GameObject.Find("Expedicion");
         if (exp != null)
             foreach (Transform t in exp.transform) { if (t.name == "Capitan") capitan = t; else miembros.Add(t); }
@@ -52,6 +75,30 @@ public class ExpedicionPiso20 : MonoBehaviour
         var c = GameObject.Find("Coloso");
         if (c != null) coloso = c.transform;
         StartCoroutine(Guion());
+    }
+
+    static Light NuevaLuz(string nombre, float intensidad, float rango)
+    {
+        var l = new GameObject(nombre).AddComponent<Light>();
+        l.type = LightType.Point; l.color = new Color(0.72f, 0.77f, 1f); l.range = rango; l.intensity = intensidad; l.shadows = LightShadows.None;
+        return l;
+    }
+
+    void LateUpdate()
+    {
+        var cam = Camera.main;
+        if (cam == null) return;
+        Vector3 f = cam.transform.forward; f.y = 0f;
+        if (f.sqrMagnitude < 0.0001f) return;
+        f.Normalize();
+        if (luzDante != null && player != null) luzDante.transform.position = player.position + Vector3.up * 2.5f - f * 2.5f;   // arriba y hacia la cámara
+        if (luzGrupo != null)
+        {
+            Vector3 c = Vector3.zero; int n = 0;
+            if (capitan != null) { c += capitan.position; n++; }
+            foreach (var m in miembros) if (m != null) { c += m.position; n++; }
+            if (n > 0) luzGrupo.transform.position = c / n + Vector3.up * 3.5f - f * 2.5f;
+        }
     }
 
     void Update()
@@ -191,22 +238,29 @@ public class ExpedicionPiso20 : MonoBehaviour
 
     void Mover(float z)
     {
-        // el capitán al frente; los demás en dos filas detrás
-        if (capitan != null) StartCoroutine(Caminar(capitan, new Vector3(0f, 0f, z + 3f)));
-        for (int i = 0; i < miembros.Count; i++)
-            StartCoroutine(Caminar(miembros[i], new Vector3(-7.5f + (i % 3) * 7.5f + (i / 3) * 2f, 0f, z - (i / 3) * 3f)));
+        // la expedición se reparte a los dos lados del sendero (entre él y los braseros), nunca encima de él, a 1,2 m o más entre sí y a 2 m
+        // o más de Dante; el capitán toma el puesto de más adelante
+        var rng = new System.Random(Mathf.RoundToInt(z * 10f));
+        Vector2? yo = player != null ? new Vector2(player.position.x, player.position.z) : (Vector2?)null;
+        var n = miembros.Count + (capitan != null ? 1 : 0);
+        var puestos = DistribucionExpedicion.Puestos(DistribucionExpedicion.Franjas(DioramaBuilder.SenderoX, z, 5f), n, yo, DioramaBuilder.SenderoX, rng);
+        int k = 0;
+        if (capitan != null) { if (k < puestos.Length) StartCoroutine(Caminar(capitan, new Vector3(puestos[k].x, 0f, puestos[k].y))); k++; }
+        for (int i = 0; i < miembros.Count && k < puestos.Length; i++, k++)
+            StartCoroutine(Caminar(miembros[i], new Vector3(puestos[k].x, 0f, puestos[k].y)));
     }
 
     IEnumerator Caminar(Transform t, Vector3 destino)
     {
         Vector3 a = t.position;
+        bool billboard = t.GetComponentInChildren<FiguraBillboard>() != null;
         float dist = Vector3.Distance(Plano(a), Plano(destino)), dur = Mathf.Max(0.5f, dist / 4.5f);
         Vector3 dir = (destino - a); dir.y = 0f;
         if (dir.sqrMagnitude > 0.01f) t.rotation = Quaternion.LookRotation(-dir.normalized);   // las figuras miran hacia -Z local
         for (float k = 0f; k < dur; k += Time.deltaTime)
         {
             var p = Vector3.Lerp(a, destino, k / dur);
-            p.y = Suelo(p) + Mathf.Abs(Mathf.Sin(k * 9f)) * 0.08f;   // un saltito al caminar
+            p.y = Suelo(p) + (billboard ? 0f : Mathf.Abs(Mathf.Sin(k * 9f)) * 0.08f);   // un saltito al caminar (los sprites ya hacen su balanceo)
             t.position = p;
             yield return null;
         }
@@ -241,10 +295,13 @@ public class ExpedicionPiso20 : MonoBehaviour
     IEnumerator Caer(Transform t)
     {
         yield return new WaitForSeconds(Random.Range(0f, 0.25f));
+        var fb = t.GetComponentInChildren<FiguraBillboard>();   // los sprites caen girando su propio billboard
         Quaternion a = t.rotation, b = a * Quaternion.Euler(-85f, 0f, Random.Range(-20f, 20f));
+        Quaternion cb = Quaternion.Euler(-85f, 0f, Random.Range(-20f, 20f));
         Vector3 p0 = t.position, p1 = p0 + new Vector3(Random.Range(-2f, 2f), 0f, -Random.Range(3f, 6f));
         for (float k = 0f; k < 0.6f; k += Time.deltaTime)
         {
+            if (fb != null) fb.caida = Quaternion.Slerp(Quaternion.identity, cb, k / 0.6f); else
             t.rotation = Quaternion.Slerp(a, b, k / 0.6f);
             t.position = Vector3.Lerp(p0, p1, k / 0.6f) + Vector3.up * Mathf.Sin(k / 0.6f * Mathf.PI) * 1.2f;
             yield return null;
@@ -307,7 +364,7 @@ public class ExpedicionPiso20 : MonoBehaviour
         {
             var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.3f), alignment = TextAnchor.MiddleCenter, wordWrap = true };
             float w = Mathf.Min(sw * 0.6f, st.CalcSize(new GUIContent(pista)).x + u * 8f);
-            var r = new Rect((sw - w) / 2f, u * 12f, w, u * 6f);
+            var r = new Rect((sw - w) / 2f, u * 16f, w, u * 6f);   // debajo del marco del HUD (que llega a ~14u)
             CuadroNarracion.Marco(r, pistaAlpha * 0.95f);
             GUI.color = Color.white;
             st.normal.textColor = new Color(1f, 0.93f, 0.75f, pistaAlpha);

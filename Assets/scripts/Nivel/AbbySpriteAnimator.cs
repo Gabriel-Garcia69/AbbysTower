@@ -21,6 +21,11 @@ public class AbbySpriteAnimator : MonoBehaviour
         public bool Has => frames != null && frames.Length > 0;
     }
 
+    [Header("Conjunto de otro personaje (vacío = los sprites de Abby de este prefab)")]
+    public ConjuntoSprites conjunto;
+    [Tooltip("Se multiplica por el color del sprite en todo momento; Aplicar lo toma del conjunto.")]
+    public Color tinteBase = Color.white;
+
     [Header("Referencias (vacío = se buscan solas)")]
     public PlayerMotor motor;
     public AbbyDash dash;
@@ -36,6 +41,8 @@ public class AbbySpriteAnimator : MonoBehaviour
     public Frames[] blockFrames = new Frames[8];
     public Frames[] hurt = new Frames[8];
     public Frames[] idleAnim = new Frames[8];
+    [Tooltip("Correr (8 direcciones). Si falta una dirección, se usa la de caminar.")]
+    public Frames[] run = new Frames[8];
     [Header("Poses (un solo dibujo por dirección, mismo personaje): golpe y guardia")]
     public Sprite[] golpePose = new Sprite[8];
     public Sprite[] guardia = new Sprite[8];
@@ -47,7 +54,15 @@ public class AbbySpriteAnimator : MonoBehaviour
     public PlayerHealth health;
 
     [Header("Ritmo")]
+    [Header("Pasos (el ritmo sigue a la velocidad real para que los pies no patinen)")]
     public float walkFps = 12f;
+    [Tooltip("Velocidad (m/s) a la que el caminar corre a walkFps; a más velocidad, más rápido.")]
+    public float walkRefSpeed = 2.5f;
+    public float runFps = 14f;
+    [Tooltip("Velocidad (m/s) a la que el correr corre a runFps (la velocidad normal de Abby es 5).")]
+    public float runRefSpeed = 5f;
+    [Tooltip("Pasa a correr por encima de runEnter y vuelve a caminar por debajo de runExit (m/s).")]
+    public float runEnter = 3.6f, runExit = 3f;
     [Tooltip("Cuadros del dash que se usan como pose de ataque (estocada).")]
     public int attackPoseFrom = 2, attackPoseTo = 5;
     [Tooltip("Respiración en reposo: cuánto se estira el sprite en vertical.")]
@@ -56,9 +71,36 @@ public class AbbySpriteAnimator : MonoBehaviour
     [Tooltip("Lo que dura la reacción al recibir un golpe.")]
     public float hurtTime = 0.3f;
 
+    /// <summary>Retrato del HUD: el del conjunto si lo trae, si no el sprite de Abby de frente.</summary>
+    public Sprite Retrato => conjunto != null && conjunto.retrato != null ? conjunto.retrato : (idle != null && idle.Length > 6 ? idle[6] : null);
+
+    /// <summary>Carga un conjunto de sprites: lo que el conjunto trae reemplaza a lo de Abby; lo que deja vacío se queda.</summary>
+    public void Aplicar(ConjuntoSprites c)
+    {
+        conjunto = c;
+        tinteBase = c != null ? c.tinte : Color.white;
+        if (c == null) return;
+        if (Alguno(c.idle)) idle = c.idle;
+        if (Alguno(c.golpePose)) golpePose = c.golpePose;
+        if (Alguno(c.guardia)) guardia = c.guardia;
+        if (Alguno(c.rodilla)) rodilla = c.rodilla;
+        if (Alguno(c.tendida)) tendida = c.tendida;
+        if (Alguno(c.walk)) walk = c.walk;
+        if (Alguno(c.run)) run = c.run;
+        if (Alguno(c.dashFrames)) dashFrames = c.dashFrames;
+        if (Alguno(c.slash)) slash = c.slash;
+        if (Alguno(c.blockFrames)) blockFrames = c.blockFrames;
+        if (Alguno(c.hurt)) hurt = c.hurt;
+        if (Alguno(c.idleAnim)) idleAnim = c.idleAnim;
+    }
+
+    static bool Alguno(Sprite[] s) { if (s != null) foreach (var x in s) if (x != null) return true; return false; }
+    static bool Alguno(Frames[] f) { if (f != null) foreach (var x in f) if (x != null && x.Has) return true; return false; }
+
     static readonly string[] Names = { "east", "north-east", "north", "north-west", "west", "south-west", "south", "south-east" };
 
     int dir = 6;
+    bool correndo;
     float walkTime, dashTime, attackTime, idleTime, blockTime, hurtLeft;
     int lastSwing;
     float muerteTime;
@@ -112,7 +154,7 @@ public class AbbySpriteAnimator : MonoBehaviour
         }
         else dashTime = 0f;
 
-        float giro = 0f; Vector3 empuje = Vector3.zero; Color tinte = Color.white;
+        float giro = 0f; Vector3 empuje = Vector3.zero; Color tinte = tinteBase;
         if (health != null && health.IsDead)
         {
             // derrota: de rodillas un momento y luego tendida en el suelo (mirando hacia donde miraba)
@@ -124,12 +166,12 @@ public class AbbySpriteAnimator : MonoBehaviour
             {
                 float k = Mathf.Clamp01(muerteTime / 0.25f);
                 stretch = muerteTime < tiempoRodilla ? 1f - 0.06f * (1f - k) : 1f;
-                tinte = Color.Lerp(new Color(1f, 0.55f, 0.55f), new Color(0.82f, 0.78f, 0.9f), Mathf.Clamp01(muerteTime / 1.5f));
+                tinte = tinteBase * Color.Lerp(new Color(1f, 0.55f, 0.55f), new Color(0.82f, 0.78f, 0.9f), Mathf.Clamp01(muerteTime / 1.5f));
             }
         }
         else muerteTime = 0f;
         if (s != null) { }
-        else if (attacking && golpePose != null && golpePose.Length > dir && golpePose[dir] != null)
+        else if (attacking && !Has(slash, dir) && golpePose != null && golpePose.Length > dir && golpePose[dir] != null)
         {
             // pose de golpe: un instante de carga (se encoge con el dibujo de pie) y luego el tajo, sin voltear la espada
             if (attack.Swings != lastSwing) { lastSwing = attack.Swings; attackTime = 0f; }
@@ -173,7 +215,7 @@ public class AbbySpriteAnimator : MonoBehaviour
         else if (!attacking) attackTime = 0f;
 
         bool blocking = block != null && block.Blocking && !dashing && !attacking;
-        if (s == null && blocking && guardia != null && guardia.Length > dir && guardia[dir] != null)
+        if (s == null && blocking && !Has(blockFrames, dir) && guardia != null && guardia.Length > dir && guardia[dir] != null)
         {
             s = guardia[dir];
             blockTime += dt;
@@ -203,11 +245,18 @@ public class AbbySpriteAnimator : MonoBehaviour
 
         if (s == null && motor.IsMoving)
         {
-            walkTime += dt;
-            var f = walk[dir];
-            if (f != null && f.Has) s = f.frames[Mathf.FloorToInt(walkTime * walkFps) % f.frames.Length];
+            float vel = motor.HorizontalSpeed;
+            correndo = vel > (correndo ? runExit : runEnter);
+            bool corre = correndo && Has(run, dir);
+            var f = corre ? run[dir] : walk[dir];
+            if (f != null && f.Has)
+            {
+                float fps = (corre ? runFps : walkFps) * Mathf.Clamp(vel / Mathf.Max(0.1f, corre ? runRefSpeed : walkRefSpeed), 0.4f, 1.8f);
+                walkTime += dt * fps;   // fase en cuadros: el ritmo cambia sin saltos de cuadro
+                s = f.frames[Mathf.FloorToInt(walkTime) % f.frames.Length];
+            }
         }
-        else if (!motor.IsMoving) walkTime = 0f;
+        else if (!motor.IsMoving) { walkTime = 0f; correndo = false; }
 
         if (s == null)
         {
@@ -226,7 +275,7 @@ public class AbbySpriteAnimator : MonoBehaviour
         if (hurtLeft > 0f && !Has(hurt, dir))
         {
             float k = hurtLeft / hurtTime;
-            tinte = Color.Lerp(Color.white, new Color(1f, 0.45f, 0.45f), k);
+            tinte = tinteBase * Color.Lerp(Color.white, new Color(1f, 0.45f, 0.45f), k);
             empuje += Vector3.right * Mathf.Sin(Time.time * 80f) * 0.05f * k;
             giro += DirX(dir) * -8f * k;
             stretch *= 1f - 0.05f * k;
@@ -269,23 +318,35 @@ public class AbbySpriteAnimator : MonoBehaviour
 
 #if UNITY_EDITOR
     const string Root = "Assets/sprites/Abby/Idle";
+    const string PixelLab = "Assets/sprites/Abby/PixelLab";
+
+    /// <summary>Carpeta de PixelLab cuyo nombre (largo, generado) empieza por el prefijo.</summary>
+    static string Carpeta(string prefijo)
+    {
+        foreach (var sub in AssetDatabase.GetSubFolders(PixelLab + "/Idle/animations"))
+            if (System.IO.Path.GetFileName(sub).StartsWith(prefijo)) return System.IO.Path.GetFileName(sub);
+        return prefijo;
+    }
 
     [ContextMenu("Auto-asignar sprites de Abby")]
     public void AutoAssign()
     {
         Undo.RecordObject(this, "Auto-asignar sprites de Abby");
         idle = new Sprite[8]; walk = new Frames[8]; dashFrames = new Frames[8];
-        slash = new Frames[8]; blockFrames = new Frames[8]; hurt = new Frames[8]; idleAnim = new Frames[8];
+        slash = new Frames[8]; blockFrames = new Frames[8]; hurt = new Frames[8]; idleAnim = new Frames[8]; run = new Frames[8];
         for (int i = 0; i < 8; i++)
         {
             idle[i] = AssetDatabase.LoadAssetAtPath<Sprite>($"{Root}/rotations/{Names[i]}.png");
-            walk[i] = new Frames { frames = LoadFrames($"{Root}/animations/Walking/{Names[i]}") };
             dashFrames[i] = new Frames { frames = LoadFrames($"{Root}/animations/Dash/{Names[i]}") };
-            slash[i] = new Frames { frames = LoadFrames($"{Root}/animations/Espadazo/{Names[i]}") };
-            blockFrames[i] = new Frames { frames = LoadFrames($"{Root}/animations/Bloqueo/{Names[i]}") };
-            hurt[i] = new Frames { frames = LoadFrames($"{Root}/animations/Golpe/{Names[i]}") };
-            idleAnim[i] = new Frames { frames = LoadFrames($"{Root}/animations/Idle/{Names[i]}") };
+            idleAnim[i] = new Frames { frames = LoadFrames($"{PixelLab}/Idle/animations/{Carpeta("idle_breathing")}/{Names[i]}") };
+            walk[i] = new Frames { frames = LoadFrames($"{PixelLab}/Idle/animations/Walking/{Names[i]}") };
+            slash[i] = new Frames { frames = LoadFrames($"{PixelLab}/Idle/animations/{Carpeta("quick_horizontal_sword_slash")}/{Names[i]}") };
+            blockFrames[i] = new Frames { frames = LoadFrames($"{PixelLab}/Idle/animations/{Carpeta("defensive_block")}/{Names[i]}") };
+            hurt[i] = new Frames { frames = LoadFrames($"{PixelLab}/Idle/animations/{Carpeta("taking_a_hit")}/{Names[i]}") };
+            run[i] = new Frames { frames = LoadFrames($"{PixelLab}/Idle_copy_2/animations/Running/{Names[i]}") };
         }
+        // Noroeste: la espada queda detrás del cuerpo en el Walking (0-1 px); el Running tiene más píxeles de espada
+        if (Has(run, 3)) walk[3] = run[3];
         if (sr == null) sr = GetComponent<SpriteRenderer>();
         if (motor == null) motor = GetComponentInParent<PlayerMotor>();
         EditorUtility.SetDirty(this);

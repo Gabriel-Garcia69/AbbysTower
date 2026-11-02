@@ -85,8 +85,10 @@ public class MouseOrbitCamera : MonoBehaviour
     [System.NonSerialized] CameraStyleProfile pulido = new CameraStyleProfile();
     [System.NonSerialized] CameraStyleProfile terceraPersona = new CameraStyleProfile
     {
-        fov = 48f, distance = 6.5f, pivotHeight = 1f, startPitch = 14f, minPitch = -18f, maxPitch = 42f,
-        lookUp = 4f, lookAhead = 1.6f, freeOrbit = true, rotationSmoothTime = 0.04f, interior = true
+        // libre (F3): sin "interior" (que la pegaba a cada columna y la soltaba de golpe): lo que tapa se recorta
+        // como en la cámara del juego y la cámara nunca baja del suelo; giro y mirada adelante suaves para no marear
+        fov = 48f, distance = 7.5f, pivotHeight = 1.1f, startPitch = 18f, minPitch = 2f, maxPitch = 55f,
+        lookUp = 4f, lookAhead = 0.6f, freeOrbit = true, rotationSmoothTime = 0.09f
     };
     [System.NonSerialized] CameraStyleProfile isometrica = new CameraStyleProfile
     {
@@ -427,7 +429,10 @@ public class MouseOrbitCamera : MonoBehaviour
         zoomedDistance = Mathf.SmoothDamp(zoomedDistance, targetDistance, ref zoomVel, smooth, Mathf.Infinity, dt);
         float allowed = zoomedDistance;
 
-        if (collisionEnabled || active.interior || outdoorScene)   // al aire libre (también en maqueta) el terreno no deja que la cámara se meta en la roca
+        // la cámara del juego no se acerca a Abby por lo que estorbe (antes un cerro o un tronco la pegaba a su cara):
+        // lo de enfrente se transparenta y, si queda bajo el terreno, sube (DentroDelSuelo). Solo la libre (F3) choca.
+        bool choca = libre || collisionEnabled || active.interior;
+        if (choca)
         {
             Vector3 pivot = arm.position, dir = -arm.forward;
             int n = Physics.SphereCastNonAlloc(pivot, collisionRadius, dir, hits, zoomedDistance, collisionMask, QueryTriggerInteraction.Ignore);
@@ -438,12 +443,12 @@ public class MouseOrbitCamera : MonoBehaviour
                 if (player != null && h.collider.transform.IsChildOf(player)) continue;
                 if (!Blocks(h.collider)) continue;
                 if (!collisionEnabled && !Structural(h.collider)) continue;   // estilo interior en los pisos: solo muros, techos y cosas grandes
-                allowed = Mathf.Min(allowed, Mathf.Max(minCollisionDistance, h.distance));
+                allowed = Mathf.Min(allowed, Mathf.Max(MinChoque, h.distance));
             }
             // con Abby pegada a una pared la esfera empieza dentro de ella y no la cuenta: un rayo fino sí
             if (Physics.Raycast(pivot, dir, out var thin, zoomedDistance, collisionMask, QueryTriggerInteraction.Ignore)
                 && (player == null || !thin.collider.transform.IsChildOf(player)) && Blocks(thin.collider) && (collisionEnabled || Structural(thin.collider)))
-                allowed = Mathf.Min(allowed, Mathf.Max(minCollisionDistance, thin.distance - collisionRadius));
+                allowed = Mathf.Min(allowed, Mathf.Max(MinChoque, thin.distance - collisionRadius));
         }
 
         if (allowed < currentDistance - 0.01f)
@@ -467,9 +472,54 @@ public class MouseOrbitCamera : MonoBehaviour
         cam.transform.localPosition = new Vector3(lp.x, lp.y - appliedLift + lift, -currentDistance);
         appliedLift = lift;
         if (lift > 0.01f) cam.transform.localRotation *= Quaternion.Euler(Mathf.Atan2(lift, Mathf.Max(currentDistance, 0.6f)) * Mathf.Rad2Deg * 0.85f, 0f, 0f);
+
+        // nunca dentro del suelo: si la cámara queda bajo el terreno o bajo un piso, sube por encima (suave, sin saltos)
+        float bajo = DentroDelSuelo(cam.transform.position);
+        sueloAlzado = bajo > sueloAlzado ? bajo : Mathf.SmoothDamp(sueloAlzado, bajo, ref sueloVel, 0.4f, Mathf.Infinity, dt);
+        if (sueloAlzado > 0.001f)
+        {
+            Vector3 antes = cam.transform.position, mira = arm.position;
+            cam.transform.position = antes + Vector3.up * sueloAlzado;
+            cam.transform.rotation = Quaternion.LookRotation(mira - cam.transform.position, Vector3.up) * Quaternion.Euler(-viewLookUp, 0f, 0f);
+        }
     }
 
-    float appliedLift;
+    /// <summary>Lo más cerca que un choque deja a la cámara: nunca en la cara de Abby (se ve entera y algo de alrededor).</summary>
+    float MinChoque => Mathf.Max(minCollisionDistance, 2.5f);
+
+    float appliedLift, sueloAlzado, sueloVel;
+    const float SueloLibre = 0.6f;
+
+    /// <summary>
+    /// Cuánto hay que subir la cámara para quedar SueloLibre por encima del suelo que tiene debajo (0 = está bien).
+    /// Un rayo hacia arriba busca el techo (si lo hay) para no confundirlo con el suelo; luego uno hacia abajo
+    /// desde ahí encuentra la superficie. Si la cámara está dentro del terreno, el rayo de arriba no choca (las
+    /// caras de adentro no cuentan) y el de abajo encuentra la superficie encima de ella.
+    /// </summary>
+    float DentroDelSuelo(Vector3 p)
+    {
+        const float alto = 8f;
+        float arriba = alto;
+        if (Physics.Raycast(p, Vector3.up, out var techo, alto, collisionMask, QueryTriggerInteraction.Ignore) && !EsDeAbby(techo.collider))
+            arriba = Mathf.Max(0f, techo.distance - 0.05f);
+        int n = Physics.RaycastNonAlloc(p + Vector3.up * arriba, Vector3.down, hits, arriba + SueloLibre, collisionMask, QueryTriggerInteraction.Ignore);
+        float subir = 0f;
+        for (int i = 0; i < n; i++)
+        {
+            var h = hits[i];
+            if (h.normal.y < 0.5f || !EsTerreno(h.collider)) continue;
+            subir = Mathf.Max(subir, h.point.y + SueloLibre - p.y);
+        }
+        return subir;
+    }
+
+    /// <summary>
+    /// Solo el terreno de los mapas abiertos (colinas, risco): en salas con techo, la cara de arriba del techo
+    /// (o de un librero alto) no es "suelo" y subía la cámara por encima de la sala.
+    /// </summary>
+    static bool EsTerreno(Collider c) => c is TerrainCollider || (c is MeshCollider && (c.name.StartsWith("Terreno") || c.name.StartsWith("Terrain")));
+
+    bool EsDeAbby(Collider c) => player != null && c.transform.IsChildOf(player);
 
     /// <summary>Busca la toma del lugar donde está Abby y acerca suavemente los valores de la toma; shotW sube o baja.</summary>
     void UpdateShot(float dt)

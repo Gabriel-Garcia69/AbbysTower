@@ -64,6 +64,15 @@ public static class CuadroNarracion
     static GUIStyle Estilo(float tam, FontStyle fs = FontStyle.Normal, TextAnchor a = TextAnchor.UpperLeft)
         => new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(Screen.height / 100f * tam), fontStyle = fs, alignment = a, wordWrap = true, richText = false };
 
+    /// <summary>Estilo con la letra más grande (hasta tam) con la que el texto completo no pasa de altoMax: los textos largos se achican en vez de salirse del cuadro.</summary>
+    static GUIStyle Cabe(float tam, FontStyle fs, TextAnchor a, string texto, float ancho, float altoMax)
+    {
+        var st = Estilo(tam, fs, a);
+        var gc = new GUIContent(texto);
+        for (float t = tam - 0.15f; t >= 1.7f && st.CalcHeight(gc, ancho) > altoMax; t -= 0.15f) st = Estilo(t, fs, a);
+        return st;
+    }
+
     static void Texto(Rect r, string s, GUIStyle st, Color c)
     {
         GUI.color = Color.white;
@@ -86,7 +95,7 @@ public static class CuadroNarracion
     {
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         float w = Mathf.Min(sw * 0.72f, u * 150f);
-        var st = Estilo(2.6f, FontStyle.Normal, TextAnchor.MiddleCenter);
+        var st = Cabe(2.6f, FontStyle.Normal, TextAnchor.MiddleCenter, texto, w - u * 10f, sh * 0.3f);
         float h = st.CalcHeight(new GUIContent(texto), w - u * 10f) + u * 7f;
         var caja = new Rect((sw - w) / 2f, sh - h - u * 8f, w, h);
         Marco(caja, alpha);
@@ -106,7 +115,7 @@ public static class CuadroNarracion
         ultimoDialogo = alpha; cuadroDialogo = Time.frameCount;
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         float w = Mathf.Min(sw * 0.8f, u * 160f);
-        var st = Estilo(2.5f);
+        var st = Cabe(2.5f, FontStyle.Normal, TextAnchor.UpperLeft, texto, w - u * 10f, sh * 0.3f);
         float h = Mathf.Max(u * 14f, st.CalcHeight(new GUIContent(texto), w - u * 10f) + u * 8f);
         var caja = new Rect((sw - w) / 2f, sh - h - u * 6f, w, h);
         Marco(caja, alpha);

@@ -231,20 +231,11 @@ public class IntroImagenes : MonoBehaviour
 
         if (alphaTexto > 0.01f && texto.Length > 0)
         {
-            int fs = Mathf.RoundToInt(H / 26f);
-            sNarr.fontSize = fs; sQuien.fontSize = Mathf.RoundToInt(fs * 0.9f);
-            float bw = W * 0.8f, bh = H * 0.2f, bx = (W - bw) * 0.5f, by = H - bh - H * 0.05f;
-            GUI.color = new Color(0, 0, 0, 0.72f * alphaTexto); GUI.DrawTexture(new Rect(bx, by, bw, bh), pix);
+            // el mismo cuadro de la historia que en el resto del juego: crece con el texto y achica la letra si no cabe
             int n = Mathf.Clamp(Mathf.FloorToInt(tTexto * 45f), 0, texto.Length);
-            float ty = by + H * 0.012f;
-            if (quien.Length > 0)
-            {
-                GUI.color = new Color(1, 1, 1, alphaTexto);
-                GUI.Label(new Rect(bx, ty, bw, fs * 1.4f), quien, sQuien);
-                ty += fs * 1.35f;
-            }
-            GUI.color = new Color(1, 1, 1, alphaTexto);
-            GUI.Label(new Rect(bx + bw * 0.03f, ty, bw * 0.94f, by + bh - ty), texto.Substring(0, n), sNarr);
+            GUI.color = Color.white;
+            if (quien.Length > 0) CuadroNarracion.Dialogo(quien, texto, n, alphaTexto);
+            else CuadroNarracion.Narracion(texto, n, alphaTexto);
         }
 
         if (tarjeta.Length > 0)

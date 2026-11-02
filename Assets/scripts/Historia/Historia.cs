@@ -27,16 +27,16 @@ public static class Historia
     };
     public static readonly string[] Abismo =
     {
-        "Cuando el ejército ingresó a la torre lo que descubrieron unas enormes escaleras que llevaban a un abismo oscuro.",
-        "Al adentrarse en él descubrieron que ahí habitaban criaturas que solo existían en nuestras pesadillas y cuantos más pisos bajaran más fuertes se volvían.",
+        "Cuando el ejército ingresó a la torre, descubrieron unas enormes escaleras que llevaban a un abismo oscuro.",
+        "Al adentrarse en él descubrieron que ahí habitaban criaturas que solo existían en nuestras pesadillas, y cuantos más pisos bajaban, más fuertes se volvían.",
     };
     public static readonly string[] Canalizadores =
     {
-        "Junto con la torre empezaron a aparecer personas con la capacidad de canalizar la extraña energía que emana la torre, potenciando sus armas, sus cuerpos y hasta permitiéndoles realizar hechizos",
+        "Junto con la torre empezaron a aparecer personas con la capacidad de canalizar la extraña energía que emana la torre, potenciando sus armas, sus cuerpos y hasta permitiéndoles realizar hechizos.",
     };
     public static readonly string[] Minerales =
     {
-        "Al morir las criaturas dejaban caer minerales raros nunca antes vistos en la tierra, la humanidad no tardó en descubrir su valor y comenzó a utilizarlos en joyería, energía, industrialización. Estos minerales se volvieron el nuevo centro de la economía global.",
+        "Al morir, las criaturas dejaban caer minerales raros nunca antes vistos en la Tierra. La humanidad no tardó en descubrir su valor y comenzó a utilizarlos en joyería, energía e industria. Estos minerales se volvieron el nuevo centro de la economía global.",
     };
 
     // ------------------------------------------------------------------ presentación y contexto de Abby
@@ -44,26 +44,26 @@ public static class Historia
 
     public static readonly Linea[] Funeral =
     {
-        new Linea("Invitada 1", "Pobrecitos. Huérfanos a tan corta edad."),
+        new Linea("Invitada 1", "Pobrecitos. Huérfanos a tan corta edad..."),
         new Linea("Invitada 2", "Su padre murió cumpliendo su deber cuando apareció esa misteriosa torre."),
-        new Linea("Invitada 1", Hermano + " solo tiene 17 como va a mantener a su hermana ahora que su padre no está y Abby solo tiene 12 años. ¡Qué futuro les aguarda?"),
+        new Linea("Invitada 1", Hermano + " solo tiene 17. ¿Cómo va a mantener a su hermana ahora que su padre no está? Y Abby solo tiene 12 años. ¿Qué futuro les aguarda?"),
     };
 
     public const string Anio2035 = "Año 2035";
 
     public static readonly Linea[] Discurso =
     {
-        new Linea(Capitan, "Escuchen todos. Han pasado 5 años desde que la torre del abismo apareció y con ella las aberraciones que residen dentro."),
-        new Linea(Capitan, "Cuando enfrentamos por primera vez a las criaturas del abismo nuestras armas de pólvora no les hacían ni cosquillas, perdimos muchas vidas para superar el primer piso."),
-        new Linea(Capitan, "Entonces la humanidad aprendió a usar la misma energía de la torre contra ella desde entonces hemos llegado hasta el piso 15."),
-        new Linea(Capitan, "Pero pese a todo el avance aun no sabemos que es esta torre, de donde proviene o por qué apareció."),
-        new Linea(Capitan, "Ahora es momento de que la humanidad y nosotros unamos fuerzas para ir más allá del piso 15 y desvelar todos los misterios que se encuentran dentro de la torre, dentro del abismo..."),
+        new Linea(Capitan, "Escuchen todos. Han pasado 5 años desde que la torre del abismo apareció y, con ella, las aberraciones que residen dentro."),
+        new Linea(Capitan, "Cuando enfrentamos por primera vez a las criaturas del abismo, nuestras armas de pólvora no les hacían ni cosquillas. Perdimos muchas vidas para superar el primer piso."),
+        new Linea(Capitan, "Entonces la humanidad aprendió a usar la misma energía de la torre contra ella. Desde entonces hemos llegado hasta el piso 15."),
+        new Linea(Capitan, "Pero, pese a todo el avance, aún no sabemos qué es esta torre, de dónde proviene o por qué apareció."),
+        new Linea(Capitan, "Ahora es momento de que la humanidad y nosotros unamos fuerzas para ir más allá del piso 15 y desvelar todos los misterios que se encuentran dentro de la torre... dentro del abismo."),
     };
 
     public static readonly Linea[] Despedida =
     {
-        new Linea(Protagonista, "Hermano, no te vayas, no tienes que ser un " + Profesion + ". Buscaremos otra forma, buscaré otro trabajo, dejaré de estudiar para ayudarte a pagar nuestras deudas, pero por favor, no vayas a la expedición, es muy peligroso..."),
-        new Linea(Hermano, "No Abby!, no puedes abandonar tus estudios, tienes que salir adelante. No te preocupes por nada más, la paga es buena y el capitán " + CapitanNombre + " liderará la expedición, con el al frente estaremos bien. Volveré..."),
+        new Linea(Protagonista, "Hermano, no te vayas, no tienes que ser un " + Profesion + ". Buscaremos otra forma: buscaré otro trabajo, dejaré de estudiar para ayudarte a pagar nuestras deudas, pero, por favor, no vayas a la expedición, es muy peligroso..."),
+        new Linea(Hermano, "¡No, Abby! No puedes abandonar tus estudios, tienes que salir adelante. No te preocupes por nada más: la paga es buena y el capitán " + CapitanNombre + " liderará la expedición. Con él al frente estaremos bien. Volveré..."),
     };
 
     /// <summary>Nombre del juego en pantalla (título del proyecto entregado).</summary>

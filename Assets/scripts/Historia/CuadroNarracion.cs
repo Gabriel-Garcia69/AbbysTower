@@ -28,7 +28,7 @@ public static class CuadroNarracion
     /// <summary>Cuántas letras se ven después de t segundos (efecto máquina de escribir).</summary>
     public static int Letras(string texto, float t, float porSegundo = 45f) => Mathf.Clamp(Mathf.FloorToInt(t * porSegundo), 0, texto.Length);
 
-    static void Rect(Rect r, Color c) { var prev = GUI.color; GUI.color = c; GUI.DrawTexture(r, blanco); GUI.color = prev; }
+    static void Rect(Rect r, Color c) { Preparar(); var prev = GUI.color; GUI.color = c; GUI.DrawTexture(r, blanco); GUI.color = prev; }
 
     /// <summary>El marco: fondo degradado, doble filete dorado y rombos en las esquinas.</summary>
     public static void Marco(Rect r, float alpha)

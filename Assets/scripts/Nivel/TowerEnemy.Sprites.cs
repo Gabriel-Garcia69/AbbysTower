@@ -20,6 +20,8 @@ public partial class TowerEnemy
         bool any = false;
         // el jefe de cada piso tiene su dibujo (por escena: el patrón de ataque se repite entre pisos)
         string carpeta = kind == Kind.Jefe ? "Jefe_" + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name : kind.ToString();
+        // un piso sin dibujo de jefe propio usa el del Guardián de las Ruinas (antes salía la figura de bloques 3D)
+        if (kind == Kind.Jefe && Resources.Load<Sprite>($"EnemigosSprites/{carpeta}/south") == null) carpeta = "Jefe_Diorama";
         for (int i = 0; i < 8; i++)
         {
             sprites[i] = Resources.Load<Sprite>($"EnemigosSprites/{carpeta}/{SpriteDirs[i]}");

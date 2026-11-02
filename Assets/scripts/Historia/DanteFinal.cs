@@ -99,6 +99,7 @@ public class DanteFinal : MonoBehaviour
         }
         creditos = false;
         yield return new WaitForSeconds(0.4f);
+        Progreso.Borrar();   // juego terminado: el menú vuelve a ofrecer empezar
         string sig = Application.CanStreamedLevelBeLoaded(escenaAlTerminar) ? escenaAlTerminar : SceneManager.GetSceneByBuildIndex(0).name;
         Cargador.Ir(Application.CanStreamedLevelBeLoaded(sig) ? sig : "Menu");   // la Intro ya no es el principio del juego
     }

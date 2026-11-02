@@ -54,7 +54,8 @@ public class MenuPrincipal : MonoBehaviour
     {
         bool primera = !yaIniciado;
         yaIniciado = true;
-        if (primera && saltarMenuAlIniciar && (!Application.isEditor || saltarEnEditor))
+        // con partida guardada sí se muestra el menú (para poder continuar)
+        if (primera && saltarMenuAlIniciar && !Progreso.Hay && (!Application.isEditor || saltarEnEditor))
         {
             // primera vez en esta ejecución: ni se dibuja el menú, solo la tarjeta "Despertar" sobre negro y de ahí el tutorial
             saltando = true;
@@ -118,7 +119,9 @@ public class MenuPrincipal : MonoBehaviour
                                "Pantalla completa: " + (Screen.fullScreen ? "Sí" : "No"), "Restablecer", "Volver" };
             case Pagina.Salir: return new[] { "No, quedarme", "Sí, salir del juego" };
             case Pagina.Creditos: return new[] { "Volver" };
-            default: return new[] { "Jugar", "Configuración", "Créditos", "Salir" };
+            default: return Progreso.Hay
+                ? new[] { "Continuar  ·  " + Progreso.Nombre, "Nueva partida", "Configuración", "Créditos", "Salir" }
+                : new[] { "Jugar", "Configuración", "Créditos", "Salir" };
         }
     }
 
@@ -136,7 +139,13 @@ public class MenuPrincipal : MonoBehaviour
         switch (pagina)
         {
             case Pagina.Principal:
-                if (i == 0) { RunState.ClearHealth(); Cargador.IrConTarjeta(escenaJugar, "DESPERTAR"); }
+                if (Progreso.Hay)
+                {
+                    // con partida guardada: Continuar (al último lugar) · Nueva partida · y el resto corrido un lugar
+                    if (i == 0) { RunState.ClearHealth(); Cargador.Ir(Progreso.Escena); break; }
+                    i--;
+                }
+                if (i == 0) { Progreso.Borrar(); RunState.ClearHealth(); Cargador.IrConTarjeta(escenaJugar, "DESPERTAR"); }
                 else if (i == 1) Ir(Pagina.Configuracion);
                 else if (i == 2) Ir(Pagina.Creditos);
                 else Ir(Pagina.Salir);

@@ -38,9 +38,29 @@ Todo está en la rama `animaciones` (subida a GitHub). Cada punto dice qué se a
 - **Sombras de enemigos y Dante** (`SombraAlSol.cs`): antes eran una rayita que giraba con la cámara; ahora la sombra se proyecta de frente al sol.
 - La salida del Acantilado (en la isla del faro, por el puente colgante) sí se alcanza.
 
+## Pruebas hechas en Play (con Unity en segundo plano, `runInBackground`)
+- **Combate en los 5 pisos y la biblioteca** (enemigos del piso + jefe alrededor de Abby, 30 s cada uno): **0 errores**. Los jefes (Guardián, Capitán, Torrente, Gárgola y Dante) atacan con su animación y sus avisos en el suelo.
+- **Menú, Intro y Expedición** (60 s cada una): **0 errores**. Los textos de la intro caben completos.
+- **Cala Sombría**: Abby entra a la torre y carga el Piso 1.
+- Un jefe en un piso sin dibujo propio ya no sale como bloque 3D (usa el del Guardián).
+- Los pisos solo usan los enemigos del GDD (Larva, Acechador, Bruto, Embestidor, Guardián, Espectro). Arquero y Torbellino, que no tienen sprite, no aparecen.
+
+## Ejecutable de Windows
+- **El juego compila como .exe** (`C:\Users\Gabriel\Unity\Build_AbbysTower\AbbysTower.exe`, unos 330 MB), con solo las 10 escenas de la ruta.
+- **Arreglado:** en el ejecutable se apagaba todo el posproceso (bloom, color, viñeta), porque URP quitaba un shader que no se usaba (Panini) y entonces desactivaba todo. Ya no recorta los recursos de posproceso (`UniversalRenderPipelineGlobalSettings.asset`).
+
 ## Unity
 - **Disco lleno**: Unity 6000.6.4 repite sin parar el aviso "Layout update failed to stabilize" de su barra de herramientas. El log llegó a 900 MB y llenó el disco. Si vuelve a pasar, borra `%LOCALAPPDATA%\Unity\Editor\Editor.log` con Unity cerrado. Es un bug de Unity, no del juego. Agrandar la ventana de Unity suele calmarlo.
 - Unity crasheó una vez por el plugin `AppUINativePlugin` (paquete `com.unity.ai.assistant` 2.20.0-pre.1, beta). Si sigue crasheando, quitar ese paquete en el Package Manager. **No mandes el reporte de bug** (adjunta todo el proyecto).
+
+## Qué falta para publicarlo
+1. **Jugarlo completo de principio a fin con control y teclado** (yo probé cada parte por separado, no la partida entera seguida): que cada salida lleve al siguiente piso y que el final con Dante regrese al menú.
+2. **Escenas del build**: la lista de *Build Settings* trae escenas viejas (Nivel1–9, SampleScene, Templo, Lago…). Para publicar, dejar solo la ruta: Menu, Expedicion, Intro, Exterior, Diorama, CuartosA, Puerto, Cascadas, Acantilado y Cima. Mi build de prueba ya usa solo esas.
+3. **Menú de opciones**: volumen, pantalla completa o ventana, y resolución (revisar qué trae `PauseMenu`).
+4. **Guardado**: confirmar que la partida se guarda al pasar de piso (si no, el jugador empieza de cero cada vez).
+5. **Créditos** al terminar (equipo, música, PixelLab).
+6. **Ícono y nombre del ejecutable** en *Player Settings* (Company Name, Product Name "Abby's Tower", ícono).
+7. Quitar el paquete beta `com.unity.ai.assistant` si sigue crasheando Unity.
 
 ## Pendiente o por revisar
 - La imagen 12 (despedida) muestra una torre en ruinas, no la torre morada: rehacerla si se quiere que combine.

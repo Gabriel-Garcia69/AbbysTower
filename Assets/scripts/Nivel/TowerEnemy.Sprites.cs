@@ -3,6 +3,8 @@ using UnityEngine;
 /// <summary>
 /// Apariencia de sprite (pixel art de PixelLab) para los enemigos del GDD: si existen las 8 rotaciones en
 /// Resources/EnemigosSprites/&lt;Tipo&gt;/&lt;dirección&gt;.png se usan en lugar de las piezas 3D.
+/// Si además hay animaciones en Resources/EnemigosAnim/&lt;Tipo&gt;/&lt;Caminar|Atacar&gt;/&lt;dirección&gt;/frame_XXX.png,
+/// se reproducen al caminar y al atacar (las direcciones del oeste que falten se sacan espejando las del este).
 /// El sprite mira siempre a la cámara y elige la dirección según hacia dónde camina el enemigo (como Abby).
 /// El tamaño y los pies vienen del .meta (pixels por unidad y pivote), así que aquí no se escala.
 /// </summary>
@@ -35,6 +37,8 @@ public partial class TowerEnemy
         sr.receiveShadows = true;
         var es = go.AddComponent<EnemySprite>();
         es.enemigo = this; es.sr = sr; es.sprites = sprites;
+        es.caminar = Animacion(carpeta, "Caminar");
+        es.atacar = Animacion(carpeta, "Atacar");
         sr.sprite = sprites[6] != null ? sprites[6] : System.Array.Find(sprites, s => s != null);
         body = null;
         eyes = new Renderer[0];
@@ -49,6 +53,21 @@ public partial class TowerEnemy
         }
         visual.localScale = Vector3.one * 0.05f;
         return true;
+    }
+
+    /// <summary>Cuadros de una animación por dirección (null si no hay). Las del oeste que falten quedan null y se espejan.</summary>
+    static Sprite[][] Animacion(string carpeta, string nombre)
+    {
+        var a = new Sprite[8][];
+        bool any = false;
+        for (int i = 0; i < 8; i++)
+        {
+            var s = Resources.LoadAll<Sprite>($"EnemigosAnim/{carpeta}/{nombre}/{SpriteDirs[i]}");
+            if (s == null || s.Length == 0) continue;
+            System.Array.Sort(s, (x, y) => string.CompareOrdinal(x.name, y.name));
+            a[i] = s; any = true;
+        }
+        return any ? a : null;
     }
 
     /// <summary>El mismo material que el sprite de Abby (iluminado por las luces 3D); si no hay Abby, el de sprites.</summary>
@@ -69,16 +88,21 @@ public partial class TowerEnemy
         public TowerEnemy enemigo;
         public SpriteRenderer sr;
         public Sprite[] sprites;
+        public Sprite[][] caminar, atacar;   // cuadros por dirección (pueden faltar)
         int dir = 6;
         Vector3 ultima, vel;
-        float paso, sacudida, fase = -1f;
+        float paso, sacudida, fase = -1f, cuadro, tAtaque;
         bool listo;
+        State antes;
+
+        // dirección espejo de cada una (oeste <-> este) para usar cuadros que no existan
+        static readonly int[] Espejo = { 4, 3, 2, 1, 0, 7, 6, 5 };
 
         /// <summary>
-        /// Movimiento del sprite (sin cuadros de animación): respira quieto, rebota y se inclina al caminar, se agacha al
-        /// avisar el ataque y se estira al lanzarse, tiembla al recibir un golpe. Escala y giro sobre el eje de la vista.
+        /// Movimiento del sprite: respira quieto, rebota y se inclina al caminar, se agacha al avisar el ataque y se
+        /// estira al lanzarse, tiembla al recibir un golpe. Con animación de cuadros el rebote y el estirón son más suaves.
         /// </summary>
-        void Mover(Vector3 f, Vector3 r, out Vector3 escala, out Vector3 offset, out float giro)
+        void Mover(Vector3 f, Vector3 r, bool animado, out Vector3 escala, out Vector3 offset, out float giro)
         {
             float dt = Mathf.Max(Time.deltaTime, 0.0001f);
             Vector3 p = enemigo.transform.position;
@@ -88,20 +112,21 @@ public partial class TowerEnemy
             float rapidez = vel.magnitude;
             escala = Vector3.one; offset = Vector3.zero; giro = 0f;
             float t = Time.time + fase;   // cada uno a su ritmo
+            float k2 = animado ? 0.35f : 1f;
 
             switch (enemigo.state)
             {
                 case State.Telegraph:
                 {
-                    float k = Mathf.Clamp01(enemigo.timer / Mathf.Max(0.1f, enemigo.telegraph));
+                    float k = Mathf.Clamp01(enemigo.timer / Mathf.Max(0.1f, enemigo.telegraph)) * k2;
                     escala = new Vector3(1f + 0.12f * k, 1f - 0.14f * k, 1f);   // se agacha, cargando
                     giro = -Vector3.Dot(enemigo.facing, r) * 10f * k;            // se echa para atrás
                     offset = new Vector3(Mathf.Sin(t * 60f) * 0.02f * k, 0f, 0f);
                     break;
                 }
                 case State.Lunge:
-                    escala = new Vector3(0.88f, 1.12f, 1f);                       // se estira al lanzarse
-                    giro = Vector3.Dot(enemigo.facing, r) * 14f;
+                    escala = Vector3.Lerp(Vector3.one, new Vector3(0.88f, 1.12f, 1f), k2);   // se estira al lanzarse
+                    giro = Vector3.Dot(enemigo.facing, r) * 14f * k2;
                     break;
                 case State.Recover:
                     escala = new Vector3(1.04f, 0.97f, 1f);
@@ -109,12 +134,16 @@ public partial class TowerEnemy
                 default:
                     if (rapidez > 0.3f)
                     {
-                        // camina: rebote a cada paso y se inclina hacia donde va
+                        // camina: los cuadros avanzan con la velocidad; sin animación, rebote a cada paso
                         paso += dt * Mathf.Lerp(6f, 11f, Mathf.Clamp01(rapidez / 6f));
+                        cuadro += dt * Mathf.Lerp(7f, 12f, Mathf.Clamp01(rapidez / 6f));
                         float b = Mathf.Abs(Mathf.Sin(paso));
-                        escala = new Vector3(1f + 0.04f * (1f - b), 1f - 0.04f * (1f - b) + 0.03f * b, 1f);
-                        offset = Vector3.up * b * 0.06f;
-                        giro = -Vector3.Dot(vel.normalized, r) * Mathf.Clamp01(rapidez / 4f) * 7f + Mathf.Sin(paso) * 2.5f;
+                        if (!animado)
+                        {
+                            escala = new Vector3(1f + 0.04f * (1f - b), 1f - 0.04f * (1f - b) + 0.03f * b, 1f);
+                            offset = Vector3.up * b * 0.06f;
+                        }
+                        giro = -Vector3.Dot(vel.normalized, r) * Mathf.Clamp01(rapidez / 4f) * 7f * k2 + (animado ? 0f : Mathf.Sin(paso) * 2.5f);
                     }
                     else
                     {
@@ -133,6 +162,40 @@ public partial class TowerEnemy
             }
         }
 
+        /// <summary>Cuadro que toca (o null): ataque mientras avisa y se lanza, caminar si se mueve.</summary>
+        Sprite Cuadro(int d, out bool espejo)
+        {
+            espejo = false;
+            bool ataca = enemigo.state == State.Telegraph || enemigo.state == State.Lunge || enemigo.state == State.Slam;
+            if (enemigo.state != antes) { if (enemigo.state == State.Telegraph) tAtaque = 0f; antes = enemigo.state; }
+            Sprite[][] a = null; int i = 0;
+            if (ataca && atacar != null)
+            {
+                // el aviso ocupa la primera mitad de los cuadros (la carga) y el lanzamiento la segunda (el golpe)
+                tAtaque += Time.deltaTime;
+                a = atacar;
+                int n = Largo(a, d);
+                if (n == 0) return null;
+                float u = enemigo.state == State.Telegraph
+                    ? 0.5f * Mathf.Clamp01(enemigo.timer / Mathf.Max(0.1f, enemigo.telegraph))
+                    : 0.5f + 0.5f * Mathf.Clamp01((tAtaque - enemigo.telegraph) / 0.35f);
+                i = Mathf.Min(n - 1, Mathf.FloorToInt(u * n));
+            }
+            else if (!ataca && caminar != null && vel.magnitude > 0.3f)
+            {
+                a = caminar;
+                int n = Largo(a, d);
+                if (n == 0) return null;
+                i = Mathf.FloorToInt(cuadro) % n;
+            }
+            if (a == null) return null;
+            if (a[d] != null) return a[d][i];
+            espejo = true;
+            return a[Espejo[d]][i];
+        }
+
+        static int Largo(Sprite[][] a, int d) => a[d] != null ? a[d].Length : a[Espejo[d]] != null ? a[Espejo[d]].Length : 0;
+
         void LateUpdate()
         {
             var cam = Camera.main;
@@ -141,17 +204,20 @@ public partial class TowerEnemy
             if (f.sqrMagnitude < 0.0001f) return;
             f.Normalize();
             Vector3 rr = cam.transform.right; rr.y = 0f; rr.Normalize();
-            Mover(f, rr, out var escala, out var offset, out float giro);
+
+            Vector3 mira = enemigo.facing.sqrMagnitude > 0.01f ? enemigo.facing : -f;
+            float ang = Mathf.Atan2(Vector3.Dot(mira, f), Vector3.Dot(mira, rr)) * Mathf.Rad2Deg;
+            int d = ((Mathf.RoundToInt(ang / 45f) % 8) + 8) % 8;
+            if (sprites[d] != null) dir = d;
+
+            Sprite anim = Cuadro(dir, out bool espejo);
+            Mover(f, rr, anim != null, out var escala, out var offset, out float giro);
             transform.rotation = Quaternion.LookRotation(f, Vector3.up) * Quaternion.Euler(0f, 0f, giro);   // de frente a la cámara
             transform.localScale = escala;
             transform.localPosition = Quaternion.Inverse(transform.parent.rotation) * (rr * offset.x + Vector3.up * offset.y);
 
-            Vector3 mira = enemigo.facing.sqrMagnitude > 0.01f ? enemigo.facing : -f;
-            Vector3 r = cam.transform.right; r.y = 0f; r.Normalize();
-            float ang = Mathf.Atan2(Vector3.Dot(mira, f), Vector3.Dot(mira, r)) * Mathf.Rad2Deg;
-            int d = ((Mathf.RoundToInt(ang / 45f) % 8) + 8) % 8;
-            if (sprites[d] != null) dir = d;
-            if (sprites[dir] != null) sr.sprite = sprites[dir];
+            if (anim != null) { sr.sprite = anim; sr.flipX = espejo; }
+            else { if (sprites[dir] != null) sr.sprite = sprites[dir]; sr.flipX = false; }
 
             Color c = Color.white;
             if (enemigo.state == State.Spawning)

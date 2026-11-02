@@ -68,7 +68,12 @@ public partial class TowerEnemy
         sr.sprite = hayPropio ? (propio[6] != null ? propio[6] : System.Array.Find(propio, x => x != null)) : srAbby.sprite;
         var ds = go.AddComponent<DanteSprite>();
         ds.fuente = anim; ds.enemigo = this; ds.sr = sr; ds.baseLocal = go.transform.localPosition;
-        if (hayPropio) { ds.propio = propio; ds.escalaBase = go.transform.localScale; }
+        if (hayPropio)
+        {
+            ds.propio = propio; ds.escalaBase = go.transform.localScale;
+            ds.caminar = Animacion("Dante", "Caminar");   // Resources/EnemigosAnim/Dante (mismo tamaño y pies que su dibujo)
+            ds.atacar = Animacion("Dante", "Atacar");
+        }
         body = null;
         eyes = new Renderer[0];
         var l = new GameObject("Brillo").AddComponent<Light>();
@@ -88,9 +93,22 @@ public partial class TowerEnemy
         public Vector3 baseLocal;
         public Sprite[] propio;          // su dibujo de 8 direcciones; sin cuadros: se mueve por código
         public Vector3 escalaBase = Vector3.one;
+        public Sprite[][] caminar, atacar;   // cuadros por dirección (las del oeste que falten se espejan)
         Vector3 ultima;
         float paso, golpe, aura;
         int dir = 6;
+        static readonly int[] Espejo = { 4, 3, 2, 1, 0, 7, 6, 5 };
+
+        /// <summary>Cuadro i (en proporción 0..1) de una animación en la dirección actual; espejo si solo existe la del este.</summary>
+        Sprite Cuadro(Sprite[][] a, float u, bool vuelta)
+        {
+            if (a == null) return null;
+            var fr = a[dir] ?? a[Espejo[dir]];
+            if (fr == null || fr.Length == 0) return null;
+            sr.flipX = a[dir] == null;
+            int i = vuelta ? Mathf.FloorToInt(u) % fr.Length : Mathf.Min(fr.Length - 1, Mathf.FloorToInt(u * fr.Length));
+            return fr[i];
+        }
 
         void LateUpdate()
         {
@@ -155,17 +173,23 @@ public partial class TowerEnemy
         /// <summary>Con su dibujo propio: pisa al caminar, se encoge al avisar y se estira hacia adelante al lanzarse.</summary>
         void Propio(Vector3 mov, Camera cam)
         {
-            if (propio[dir] != null) sr.sprite = propio[dir];
             bool avisa = enemigo.state == State.Telegraph;
             bool lanza = enemigo.state == State.Lunge || enemigo.state == State.Slam;
+            // con cuadros: el aviso es la primera mitad del tajo (sube la espada) y el lanzamiento la segunda (corta)
+            Sprite s = null;
+            if (avisa) s = Cuadro(atacar, 0.5f * Mathf.Clamp01(enemigo.timer / Mathf.Max(0.1f, enemigo.telegraph)), false);
+            else if (lanza) s = Cuadro(atacar, 0.5f + 0.5f * Mathf.Clamp01((golpe + Time.deltaTime) / 0.3f), false);
+            else if (mov.magnitude > 0.004f) s = Cuadro(caminar, paso * 1.3f, true);
+            bool animado = s != null;
+            if (!animado) { sr.flipX = false; if (propio[dir] != null) s = propio[dir]; }
+            if (s != null) sr.sprite = s;
             float alto = 1f, ancho = 1f, giro = 0f, bote = 0f;
             if (mov.magnitude > 0.004f && !lanza)
             {
                 paso += Time.deltaTime * 9f;
-                bote = Mathf.Abs(Mathf.Sin(paso)) * 0.06f;
-                giro = Mathf.Sin(paso) * 2.5f;
+                if (!animado) { bote = Mathf.Abs(Mathf.Sin(paso)) * 0.06f; giro = Mathf.Sin(paso) * 2.5f; }
             }
-            if (avisa) { golpe = 0f; alto = 0.93f; ancho = 1.05f; }
+            if (avisa) { golpe = 0f; if (!animado) { alto = 0.93f; ancho = 1.05f; } }
             else if (lanza)
             {
                 golpe += Time.deltaTime;

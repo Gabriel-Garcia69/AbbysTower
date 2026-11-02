@@ -39,6 +39,7 @@ public partial class TowerEnemy
         es.enemigo = this; es.sr = sr; es.sprites = sprites;
         es.caminar = Animacion(carpeta, "Caminar");
         es.atacar = Animacion(carpeta, "Atacar");
+        animAtaque = es.atacar != null;
         sr.sprite = sprites[6] != null ? sprites[6] : System.Array.Find(sprites, s => s != null);
         body = null;
         eyes = new Renderer[0];
@@ -91,9 +92,8 @@ public partial class TowerEnemy
         public Sprite[][] caminar, atacar;   // cuadros por dirección (pueden faltar)
         int dir = 6;
         Vector3 ultima, vel;
-        float paso, sacudida, fase = -1f, cuadro, tAtaque;
+        float paso, sacudida, fase = -1f, cuadro;
         bool listo;
-        State antes;
 
         // dirección espejo de cada una (oeste <-> este) para usar cuadros que no existan
         static readonly int[] Espejo = { 4, 3, 2, 1, 0, 7, 6, 5 };
@@ -162,23 +162,19 @@ public partial class TowerEnemy
             }
         }
 
-        /// <summary>Cuadro que toca (o null): ataque mientras avisa y se lanza, caminar si se mueve.</summary>
+        /// <summary>Cuadro que toca (o null): ataque en cualquier ataque (embestida, pisotón, disparo, salto, giro, lluvia), caminar si se mueve.</summary>
         Sprite Cuadro(int d, out bool espejo)
         {
             espejo = false;
-            bool ataca = enemigo.state == State.Telegraph || enemigo.state == State.Lunge || enemigo.state == State.Slam;
-            if (enemigo.state != antes) { if (enemigo.state == State.Telegraph) tAtaque = 0f; antes = enemigo.state; }
+            float u = enemigo.FaseAtaque();
+            bool ataca = u >= 0f;
             Sprite[][] a = null; int i = 0;
             if (ataca && atacar != null)
             {
-                // el aviso ocupa la primera mitad de los cuadros (la carga) y el lanzamiento la segunda (el golpe)
-                tAtaque += Time.deltaTime;
+                // la carga (aviso, agacharse, apuntar) es la primera mitad de los cuadros y el golpe la segunda
                 a = atacar;
                 int n = Largo(a, d);
                 if (n == 0) return null;
-                float u = enemigo.state == State.Telegraph
-                    ? 0.5f * Mathf.Clamp01(enemigo.timer / Mathf.Max(0.1f, enemigo.telegraph))
-                    : 0.5f + 0.5f * Mathf.Clamp01((tAtaque - enemigo.telegraph) / 0.35f);
                 i = Mathf.Min(n - 1, Mathf.FloorToInt(u * n));
             }
             else if (!ataca && caminar != null && vel.magnitude > 0.3f)
@@ -213,11 +209,13 @@ public partial class TowerEnemy
             Sprite anim = Cuadro(dir, out bool espejo);
             Mover(f, rr, anim != null, out var escala, out var offset, out float giro);
             transform.rotation = Quaternion.LookRotation(f, Vector3.up) * Quaternion.Euler(0f, 0f, giro);   // de frente a la cámara
+            // espejo con la escala: el material iluminado de los sprites (SpriteLit3D) no hace caso a flipX
+            if (espejo) escala.x = -escala.x;
             transform.localScale = escala;
             transform.localPosition = Quaternion.Inverse(transform.parent.rotation) * (rr * offset.x + Vector3.up * offset.y);
 
-            if (anim != null) { sr.sprite = anim; sr.flipX = espejo; }
-            else { if (sprites[dir] != null) sr.sprite = sprites[dir]; sr.flipX = false; }
+            if (anim != null) sr.sprite = anim;
+            else if (sprites[dir] != null) sr.sprite = sprites[dir];
 
             Color c = Color.white;
             if (enemigo.state == State.Spawning)

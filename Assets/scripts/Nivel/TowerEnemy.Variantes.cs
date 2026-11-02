@@ -214,7 +214,11 @@ public partial class TowerEnemy
                 cooldown = Random.Range(1.6f, 2.4f) * cd;
                 return true;
             case Kind.Hechicero:
-                if (attackCount % 2 == 1) Go(State.Blink); else StartRain(3, 2.2f, 1f);
+                // el Espectro apunta el bastón y suelta una esfera de magia; cada tercer ataque hace caer golpes
+                // alrededor de Abby, y si ella se le pega desaparece y reaparece lejos
+                if (dist < 3.5f) Go(State.Blink);
+                else if (attackCount % 3 == 0) StartRain(3, 2.2f, 1f);
+                else { volley = 0; Go(State.Shoot); }
                 cooldown = Random.Range(1.6f, 2.4f) * cd;
                 return true;
             case Kind.Torbellino:
@@ -264,6 +268,8 @@ public partial class TowerEnemy
         leapTo = target != null ? target.position : transform.position + facing * 4f;
         leapTo.y = LandY(leapTo);
         if (!GoodLanding(leapTo)) leapTo = leapFrom;   // no salta al río ni dentro de un muro
+        Vector3 hacia = (target != null ? target.position : leapTo) - transform.position; hacia.y = 0f;
+        if (hacia.sqrMagnitude > 0.01f) facing = hacia.normalized;   // mira a donde va a caer
         Go(State.Leap);
         telegraphFx = CombatFx.Ring(leapTo, landRadius, new Color(1f, 0.4f, 0.15f, 0.9f), telegraph + 0.6f);
     }
@@ -271,6 +277,8 @@ public partial class TowerEnemy
     void StartRain(int count, float spread, float delay)
     {
         if (target == null) return;
+        Vector3 hacia = target.position - transform.position; hacia.y = 0f;
+        if (hacia.sqrMagnitude > 0.01f) facing = hacia.normalized;
         Go(State.Rain);
         for (int i = 0; i < count; i++)
         {
@@ -297,13 +305,16 @@ public partial class TowerEnemy
                 foreach (var e in eyes) SetColor(e, eyeColor * Mathf.Lerp(4f, 10f, timer / telegraph));
                 if (timer >= telegraph)
                 {
-                    int n = IsBoss ? (Enraged ? 7 : 5) : 3;
+                    // el Espectro lanza una sola esfera (la de su dibujo) desde la punta del bastón
+                    bool espectro = kind == Kind.Hechicero;
+                    int n = IsBoss ? (Enraged ? 7 : 5) : espectro ? 1 : 3;
                     float spreadDeg = IsBoss ? 50f : 26f;
+                    Vector3 sale = transform.position + Vector3.up * (espectro ? 1.3f : 0.9f) * Scale + facing * (radius + (espectro ? 0.35f : 0f));
                     for (int i = 0; i < n; i++)
                     {
                         float ang = n == 1 ? 0f : Mathf.Lerp(-spreadDeg / 2f, spreadDeg / 2f, i / (float)(n - 1));
-                        Bolt.Fire(transform.position + Vector3.up * 0.9f * Scale + facing * radius, Quaternion.Euler(0f, ang, 0f) * facing,
-                                  IsBoss ? 8f : 9f, IsBoss ? 14f : damage, eyeColor, this);
+                        Bolt.Fire(sale, Quaternion.Euler(0f, ang, 0f) * facing,
+                                  IsBoss ? 8f : espectro ? 7.5f : 9f, IsBoss ? 14f : damage, eyeColor, this, espectro ? Bolt.Magia : null);
                     }
                     volley++;
                     if (IsBoss && volley < 3) timer = telegraph * 0.55f;
@@ -316,7 +327,7 @@ public partial class TowerEnemy
                 float crouch = telegraph, air = IsBoss ? 0.75f : 0.6f;
                 if (timer < crouch)
                 {
-                    visual.localScale = new Vector3(1.1f, 0.8f, 1.1f);   // se agacha
+                    visual.localScale = animAtaque ? Vector3.one : new Vector3(1.1f, 0.8f, 1.1f);   // se agacha (con cuadros, lo hace el dibujo)
                     break;
                 }
                 float k = Mathf.Clamp01((timer - crouch) / air);

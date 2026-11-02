@@ -364,6 +364,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
             {
                 // tiembla y brilla antes de atacar
                 float tel = telegraph * (Enraged ? 0.7f : 1f);
+                facing = lungeDir;   // mira hacia la franja roja mientras avisa
                 visual.localPosition = new Vector3(Mathf.Sin(timer * 70f) * 0.04f * Scale, 0f, 0f);
                 foreach (var e in eyes) SetColor(e, eyeColor * Mathf.Lerp(4f, 12f, timer / tel));
                 if (timer >= tel)
@@ -398,7 +399,9 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
             {
                 float tel = 1.05f * (Enraged ? 0.75f : 1f);
                 float k = Mathf.Clamp01(timer / tel);
-                visual.localPosition = Vector3.up * Mathf.Sin(k * Mathf.PI) * 1.6f;   // salta y cae
+                if (dist > 0.01f && timer < tel * 0.6f) facing = Vector3.Slerp(facing, toPlayer / dist, 10f * dt).normalized;
+                // salta y cae (con animación de golpe propia, apenas se despega: el pisotón lo hace el dibujo)
+                visual.localPosition = Vector3.up * Mathf.Sin(k * Mathf.PI) * (animAtaque ? 0.35f : 1.6f);
                 if (timer >= tel)
                 {
                     visual.localPosition = Vector3.zero;
@@ -461,9 +464,39 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
     {
         // alerta de sombra (GDD): cada ataque suena con un pulso grave cuando su sombra aparece en el suelo
         if (s == State.Telegraph && state != State.Lunge || s == State.Slam) Sonido.Tocar(Sonido.Efecto.Alerta, IsBoss ? 0.9f : 0.55f, IsBoss ? 0.8f : 1f);
+        float fase = FaseAtaque();
+        colaAtaque = s == State.Recover && state != State.Recover ? fase : -1f;   // al recuperarse termina la animación del golpe
         state = s; timer = 0f;
         if (s == State.Recover || s == State.Chase) cooldown = Mathf.Max(cooldown, s == State.Recover ? 0.2f : 0f);
         if (s != State.Telegraph && s != State.Lunge && s != State.Leap && s != State.Rain && telegraphFx != null) { Destroy(telegraphFx); telegraphFx = null; }
+    }
+
+    /// <summary>Hay cuadros de ataque dibujados (el sprite hace el golpe; el código mueve menos el cuerpo).</summary>
+    bool animAtaque;
+    float colaAtaque = -1f;
+
+    /// <summary>
+    /// Avance de la animación de ataque para el sprite: 0 empieza a cargar, 0.5 es el golpe, 1 termina; -1 si no ataca.
+    /// La carga ocupa la primera mitad (aviso, agacharse, apuntar) y el golpe la segunda; al recuperarse termina el gesto.
+    /// </summary>
+    float FaseAtaque()
+    {
+        switch (state)
+        {
+            case State.Telegraph: return 0.5f * Mathf.Clamp01(timer / Mathf.Max(0.05f, telegraph * (Enraged ? 0.7f : 1f)));
+            case State.Lunge: return 0.5f + 0.4f * Mathf.Clamp01(timer / Mathf.Max(0.05f, lungeTime));
+            case State.Slam: return 0.5f * Mathf.Clamp01(timer / (1.05f * (Enraged ? 0.75f : 1f)));
+            case State.Shoot: return 0.5f * Mathf.Clamp01(timer / Mathf.Max(0.05f, telegraph));
+            case State.Leap:
+            {
+                float air = IsBoss ? 0.75f : 0.6f;
+                return timer < telegraph ? 0.5f * timer / Mathf.Max(0.05f, telegraph) : 0.5f + 0.3f * Mathf.Clamp01((timer - telegraph) / air);
+            }
+            case State.Spin: return timer < telegraph ? 0.5f * timer / Mathf.Max(0.05f, telegraph) : 0.5f + 0.5f * Mathf.Repeat((timer - telegraph) * 2f, 1f);
+            case State.Rain: return Mathf.Clamp01(timer / 0.9f);
+            case State.Recover: return colaAtaque >= 0f && timer < 0.3f ? Mathf.Lerp(colaAtaque, 1f, timer / 0.3f) : -1f;
+        }
+        return -1f;
     }
 
     void ChooseAttack(float dist)
@@ -479,6 +512,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         }
         lungeDir = target != null ? (target.position - transform.position) : facing;
         lungeDir.y = 0f; lungeDir = lungeDir.sqrMagnitude > 0.01f ? lungeDir.normalized : facing;
+        facing = lungeDir;
         chain = IsBoss && Enraged ? 2 : 0;
         ShowLine();
         Go(State.Telegraph);
@@ -634,23 +668,58 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
     class Bolt : MonoBehaviour
     {
         Vector3 dir; float speed, life, damage; IHittable owner; Transform player; PlayerHealth ph;
+        Sprite[] cuadros; SpriteRenderer sr; float t;
 
-        static Material mat;
+        static Material mat, matSprite;
+        static Sprite[] magia;
 
-        public static void Fire(Vector3 pos, Vector3 dir, float speed, float damage, Color color, IHittable owner)
+        /// <summary>La esfera de magia del Espectro (Resources/EnemigosAnim/Hechicero/Proyectil), o null si no está.</summary>
+        public static Sprite[] Magia
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            go.name = "Orbe";
-            Destroy(go.GetComponent<Collider>());
-            go.transform.position = pos;
-            go.transform.localScale = Vector3.one * 0.45f;
-            if (mat == null) mat = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Orbe (runtime)" };
-            var r = go.GetComponent<Renderer>();
-            r.sharedMaterial = mat;
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            var mpb = new MaterialPropertyBlock(); mpb.SetColor(BaseColorId, color * 5f); r.SetPropertyBlock(mpb);
+            get
+            {
+                if (magia == null)
+                {
+                    magia = Resources.LoadAll<Sprite>("EnemigosAnim/Hechicero/Proyectil");
+                    System.Array.Sort(magia, (x, y) => string.CompareOrdinal(x.name, y.name));
+                }
+                return magia.Length > 0 ? magia : null;
+            }
+        }
+
+        public static void Fire(Vector3 pos, Vector3 dir, float speed, float damage, Color color, IHittable owner, Sprite[] cuadros = null)
+        {
+            GameObject go;
+            SpriteRenderer sr = null;
+            if (cuadros != null)
+            {
+                // dibujo animado que mira a la cámara, con brillo propio (sin luz de la escena)
+                go = new GameObject("Magia");
+                sr = go.AddComponent<SpriteRenderer>();
+                if (matSprite == null) matSprite = new Material(Shader.Find("Sprites/Default")) { name = "Magia (runtime)" };
+                sr.sharedMaterial = matSprite;
+                sr.sprite = cuadros[0];
+                sr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                go.transform.position = pos;
+                go.transform.localScale = Vector3.one * 1.3f;
+                var l = go.AddComponent<Light>();
+                l.type = LightType.Point; l.color = color; l.range = 3f; l.intensity = 1.5f; l.shadows = LightShadows.None;
+            }
+            else
+            {
+                go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                go.name = "Orbe";
+                Destroy(go.GetComponent<Collider>());
+                go.transform.position = pos;
+                go.transform.localScale = Vector3.one * 0.45f;
+                if (mat == null) mat = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Orbe (runtime)" };
+                var r = go.GetComponent<Renderer>();
+                r.sharedMaterial = mat;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                var mpb = new MaterialPropertyBlock(); mpb.SetColor(BaseColorId, color * 5f); r.SetPropertyBlock(mpb);
+            }
             var b = go.AddComponent<Bolt>();
-            b.dir = dir; b.speed = speed; b.damage = damage; b.owner = owner; b.life = 5f;
+            b.dir = dir; b.speed = speed; b.damage = damage; b.owner = owner; b.life = 5f; b.cuadros = cuadros; b.sr = sr;
             var p = GameObject.FindWithTag("Player");
             if (p != null) { b.player = p.transform; b.ph = p.GetComponent<PlayerHealth>(); }
         }
@@ -658,6 +727,13 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         void Update()
         {
             transform.position += dir * speed * Time.deltaTime;
+            if (sr != null)
+            {
+                t += Time.deltaTime;
+                sr.sprite = cuadros[Mathf.FloorToInt(t * 12f) % cuadros.Length];
+                var cam = Camera.main;
+                if (cam != null) transform.rotation = cam.transform.rotation;
+            }
             life -= Time.deltaTime;
             if (life <= 0f) { Destroy(gameObject); return; }
             if (player == null || ph == null) return;

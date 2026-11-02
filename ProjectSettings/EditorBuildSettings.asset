@@ -18,36 +18,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Exterior.unity
     guid: b13c2394c96a9d146b728dd53e27c73f
   - enabled: 1
-    path: Assets/Scenes/Nivel1.unity
-    guid: a3443188698f3044a9fdfd41c1d26702
-  - enabled: 1
-    path: Assets/Scenes/Nivel2.unity
-    guid: a36c7bdea4bcd0748a690369c2460686
-  - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
-    path: Assets/Scenes/Nivel3.unity
-    guid: 44f280650408d9c45a934bec6c97f8ae
-  - enabled: 1
-    path: Assets/Scenes/Nivel4.unity
-    guid: dc9c42d851773ae48adada2910e2da9a
-  - enabled: 1
-    path: Assets/Scenes/Nivel5.unity
-    guid: 75654f374d436304192a890ef1a8a9dd
-  - enabled: 1
-    path: Assets/Scenes/Nivel6.unity
-    guid: e7b13d663735e4440af2bf5e4ec0a7e8
-  - enabled: 1
-    path: Assets/Scenes/Nivel7.unity
-    guid: 8c6f6e57d80555a47bba976b33383f17
-  - enabled: 1
-    path: Assets/Scenes/Nivel8.unity
-    guid: f29b1749390ba1f4bb8ad92f3d2fd624
-  - enabled: 1
-    path: Assets/Scenes/Nivel9.unity
-    guid: 3f0dd1a131ec9e641aee8bd9cebde30c
-  - enabled: 1
     path: Assets/Scenes/Diorama.unity
     guid: 54a59cdf7c8147c42b61d9204cdbf1b2
   - enabled: 1
@@ -57,27 +27,57 @@ EditorBuildSettings:
     path: Assets/Scenes/Puerto.unity
     guid: cf4836c05ea726b47b3c51bbb6896b51
   - enabled: 1
-    path: Assets/Scenes/Acantilado.unity
-    guid: abd7dce31e056b7469e75ae3b9f4a7d5
-  - enabled: 1
-    path: Assets/Scenes/Cueva.unity
-    guid: 9ca1c709db600af4d808fbaeaf9cd563
-  - enabled: 1
-    path: Assets/Scenes/Templo.unity
-    guid: b0380643ed9832a4caa07d406bd31490
-  - enabled: 1
-    path: Assets/Scenes/Nevado.unity
-    guid: d6e7d4e0f69c2114b8e1b52cbe8ab4d5
-  - enabled: 1
-    path: Assets/Scenes/Cima.unity
-    guid: 123ee2b64b9346047a216ee60d091a93
-  - enabled: 1
     path: Assets/Scenes/Cascadas.unity
     guid: 571028a8741af984199419b366a0ac71
   - enabled: 1
+    path: Assets/Scenes/Acantilado.unity
+    guid: abd7dce31e056b7469e75ae3b9f4a7d5
+  - enabled: 1
+    path: Assets/Scenes/Cima.unity
+    guid: 123ee2b64b9346047a216ee60d091a93
+  - enabled: 0
+    path: Assets/Scenes/Nivel1.unity
+    guid: a3443188698f3044a9fdfd41c1d26702
+  - enabled: 0
+    path: Assets/Scenes/Nivel2.unity
+    guid: a36c7bdea4bcd0748a690369c2460686
+  - enabled: 0
+    path: Assets/Scenes/SampleScene.unity
+    guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 0
+    path: Assets/Scenes/Nivel3.unity
+    guid: 44f280650408d9c45a934bec6c97f8ae
+  - enabled: 0
+    path: Assets/Scenes/Nivel4.unity
+    guid: dc9c42d851773ae48adada2910e2da9a
+  - enabled: 0
+    path: Assets/Scenes/Nivel5.unity
+    guid: 75654f374d436304192a890ef1a8a9dd
+  - enabled: 0
+    path: Assets/Scenes/Nivel6.unity
+    guid: e7b13d663735e4440af2bf5e4ec0a7e8
+  - enabled: 0
+    path: Assets/Scenes/Nivel7.unity
+    guid: 8c6f6e57d80555a47bba976b33383f17
+  - enabled: 0
+    path: Assets/Scenes/Nivel8.unity
+    guid: f29b1749390ba1f4bb8ad92f3d2fd624
+  - enabled: 0
+    path: Assets/Scenes/Nivel9.unity
+    guid: 3f0dd1a131ec9e641aee8bd9cebde30c
+  - enabled: 0
+    path: Assets/Scenes/Cueva.unity
+    guid: 9ca1c709db600af4d808fbaeaf9cd563
+  - enabled: 0
+    path: Assets/Scenes/Templo.unity
+    guid: b0380643ed9832a4caa07d406bd31490
+  - enabled: 0
+    path: Assets/Scenes/Nevado.unity
+    guid: d6e7d4e0f69c2114b8e1b52cbe8ab4d5
+  - enabled: 0
     path: Assets/Scenes/Lago.unity
     guid: 491d43fa791ea8240a9cf56a1c89399c
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Montana.unity
     guid: 8cb3463b7833288478149c40ab3768a4
   m_configObjects:

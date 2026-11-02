@@ -49,18 +49,25 @@ Todo está en la rama `animaciones` (subida a GitHub). Cada punto dice qué se a
 - **El juego compila como .exe** (`C:\Users\Gabriel\Unity\Build_AbbysTower\AbbysTower.exe`, unos 330 MB), con solo las 10 escenas de la ruta.
 - **Arreglado:** en el ejecutable se apagaba todo el posproceso (bloom, color, viñeta), porque URP quitaba un shader que no se usaba (Panini) y entonces desactivaba todo. Ya no recorta los recursos de posproceso (`UniversalRenderPipelineGlobalSettings.asset`).
 
+## Menú y guardado
+- **Continuar partida** (`Progreso.cs`): al entrar a un piso se guarda dónde vas. El menú muestra "Continuar · Piso N" y "Nueva partida". Al vencer a Dante se borra.
+- Con partida guardada, al abrir el juego ya no te manda directo al tutorial: sale el menú.
+- El ejecutable y la ventana se llaman **"Abby's Tower"** (antes "GameProyectUT").
+- **Build Settings** ordenadas: las 10 escenas de la ruta van primero y activas (Menu = 0). Las viejas siguen en la lista, pero apagadas.
+
 ## Unity
 - **Disco lleno**: Unity 6000.6.4 repite sin parar el aviso "Layout update failed to stabilize" de su barra de herramientas. El log llegó a 900 MB y llenó el disco. Si vuelve a pasar, borra `%LOCALAPPDATA%\Unity\Editor\Editor.log` con Unity cerrado. Es un bug de Unity, no del juego. Agrandar la ventana de Unity suele calmarlo.
 - Unity crasheó una vez por el plugin `AppUINativePlugin` (paquete `com.unity.ai.assistant` 2.20.0-pre.1, beta). Si sigue crasheando, quitar ese paquete en el Package Manager. **No mandes el reporte de bug** (adjunta todo el proyecto).
 
 ## Qué falta para publicarlo
 1. **Jugarlo completo de principio a fin con control y teclado** (yo probé cada parte por separado, no la partida entera seguida): que cada salida lleve al siguiente piso y que el final con Dante regrese al menú.
-2. **Escenas del build**: la lista de *Build Settings* trae escenas viejas (Nivel1–9, SampleScene, Templo, Lago…). Para publicar, dejar solo la ruta: Menu, Expedicion, Intro, Exterior, Diorama, CuartosA, Puerto, Cascadas, Acantilado y Cima. Mi build de prueba ya usa solo esas.
-3. **Menú de opciones**: volumen, pantalla completa o ventana, y resolución (revisar qué trae `PauseMenu`).
-4. **Guardado**: confirmar que la partida se guarda al pasar de piso (si no, el jugador empieza de cero cada vez).
-5. **Créditos** al terminar (equipo, música, PixelLab).
-6. **Ícono y nombre del ejecutable** en *Player Settings* (Company Name, Product Name "Abby's Tower", ícono).
-7. Quitar el paquete beta `com.unity.ai.assistant` si sigue crasheando Unity.
+2. ~~Escenas del build~~ (hecho). ~~Guardado~~ (hecho: Continuar). ~~Nombre del ejecutable~~ (hecho). El menú ya tenía Configuración (volúmenes y pantalla completa) y Créditos.
+3. **Revisar el texto de los créditos** (que estén todos los del equipo, la música y PixelLab).
+4. **Ícono del juego** en *Player Settings* (por ahora usa el de Unity).
+5. Quitar el paquete beta `com.unity.ai.assistant` si sigue crasheando Unity.
+
+## IMPORTANTE al despertar
+- **Sube los últimos commits**: el push se quedó esperando que inicies sesión en GitHub (Git Credential Manager). Abre Git Bash en el proyecto y escribe `git push`.
 
 ## Pendiente o por revisar
 - La imagen 12 (despedida) muestra una torre en ruinas, no la torre morada: rehacerla si se quiere que combine.

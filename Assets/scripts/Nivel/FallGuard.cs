@@ -26,9 +26,15 @@ public class FallGuard : MonoBehaviour
 
     void Start() => safe.Enqueue(transform.position);
 
+    float bajoTierra;
+
     void Update()
     {
-        if (motor != null && motor.enabled && motor.IsGrounded)
+        // atorada debajo del terreno (al saltar de un risco se puede colar por la unión de dos pedazos del suelo): de vuelta
+        bool debajo = DebajoDelTerreno();
+        bajoTierra = debajo ? bajoTierra + Time.deltaTime : 0f;
+        if (bajoTierra > 0.35f) { bajoTierra = 0f; Respawn("¡De vuelta al camino!", 0f, new Color(0.8f, 0.85f, 1f)); return; }
+        if (motor != null && motor.enabled && motor.IsGrounded && !debajo)
         {
             timer -= Time.deltaTime;
             if (timer <= 0f)
@@ -39,6 +45,22 @@ public class FallGuard : MonoBehaviour
             }
         }
         if (transform.position.y < killY) Respawn();
+    }
+
+    readonly RaycastHit[] hits = new RaycastHit[8];
+
+    /// <summary>¿Hay terreno (no techos ni puentes: solo el suelo del mapa) más de 1.5 m por encima de sus pies?</summary>
+    bool DebajoDelTerreno()
+    {
+        Vector3 p = transform.position;
+        int n = Physics.RaycastNonAlloc(p + Vector3.up * 60f, Vector3.down, hits, 58.5f, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++)
+        {
+            var c = hits[i].collider;
+            bool terreno = c is TerrainCollider || (c is MeshCollider && (c.name.StartsWith("Terreno") || c.name.StartsWith("Terrain")));
+            if (terreno && hits[i].normal.y > 0.3f && hits[i].point.y > p.y + 1.5f) return true;
+        }
+        return false;
     }
 
     /// <summary>Lava, pinchos del vacío…: vuelve al último suelo firme con daño y un aviso propio.</summary>
@@ -53,12 +75,16 @@ public class FallGuard : MonoBehaviour
     void Respawn()
     {
         Vector3 to = safe.Count > 0 ? safe.Peek() : transform.position + Vector3.up * 10f;
+        // sin suelo firme guardado: encima de lo que haya arriba (no 10 m más arriba, que podía seguir bajo el terreno)
+        if (safe.Count == 0 && Physics.Raycast(transform.position + Vector3.up * 60f, Vector3.down, out var arriba, 120f, ~0, QueryTriggerInteraction.Ignore))
+            to = arriba.point;
         if (cc != null) cc.enabled = false;
         transform.position = to + Vector3.up * 0.1f;
         if (cc != null) cc.enabled = true;
         safe.Clear(); safe.Enqueue(to);
         if (health == null) health = GetComponent<PlayerHealth>();
-        if (health != null)
+        float dano = pendingDamage >= 0f ? pendingDamage : damage;
+        if (health != null && dano > 0f)
             health.ReceiveHit(new HitInfo { damage = pendingDamage >= 0f ? pendingDamage : damage, knockback = 0f, hitStop = 0f, sourcePosition = to });
         Color c = pendingDamage >= 0f ? pendingColor : new Color(0.8f, 0.6f, 1f);
         FloorDirector.Popup(to + Vector3.up * 2f, pendingMsg ?? "¡Caíste al vacío!", c, 1.5f);

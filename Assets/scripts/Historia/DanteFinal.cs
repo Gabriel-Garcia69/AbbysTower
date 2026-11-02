@@ -156,7 +156,7 @@ public class DanteFinal : MonoBehaviour
 
     public static readonly string[][] Creditos =
     {
-        new[] { "ABBY´S TOWER", "" },
+        new[] { "ABBY'S TOWER", "" },
         new[] { "Un proyecto de Estudio 02", "Integradora · IDYGS103 · UT Cancún" },
         new[] { "Rodrigo Herrera", "Líder · Programación" },
         new[] { "Gabriel García", "Programación · Sprites" },

@@ -1,10 +1,7 @@
 fileFormatVersion: 2
 guid: 74274b2af55b4548a6dcf4444905efae
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: 3373983171478037719
-    second: west_0
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,34 +110,12 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: west_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 128
-        height: 128
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 7d4281e71dbc2de20800000000000000
-      internalID: 3373983171478037719
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: ea99a3aac72a4454a01bbcaee5e322b6
+    spriteID: 346dcc9d85b446b4ab76c28d7e4e77d6
     internalID: 0
     vertices: []
     indices: 

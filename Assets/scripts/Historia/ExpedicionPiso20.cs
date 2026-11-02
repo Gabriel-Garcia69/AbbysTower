@@ -36,6 +36,7 @@ public class ExpedicionPiso20 : MonoBehaviour
         var p = GameObject.FindWithTag("Player");
         if (p == null) { enabled = false; return; }
         player = p.transform;
+        PersonaSprite.Aplicar();   // la expedición y el coloso con su pixel art, si ya lo tienen
         health = p.GetComponent<PlayerHealth>();
         input = p.GetComponent<PlayerInputReader>();
         // se juega con Dante: su conjunto de sprites (Resources/Personajes/Dante). Mientras no exista, el de Abby con un tinte azul

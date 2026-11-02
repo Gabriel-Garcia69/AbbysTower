@@ -68,6 +68,12 @@ public class FloorExit : MonoBehaviour
             }
             return;
         }
+        if (player == null || !player.gameObject.activeInHierarchy)
+        {
+            // Abby puede aparecer después que la salida (intro, cargador): si no, la salida nunca la veía y no dejaba pasar
+            var p = GameObject.FindWithTag("Player");
+            player = p != null ? p.transform : null;
+        }
         if (used || !unlocked || player == null) return;
 
         Vector3 d = player.position - transform.position; d.y = 0f;

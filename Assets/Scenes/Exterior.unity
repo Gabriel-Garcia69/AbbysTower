@@ -509,7 +509,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8872269133616906910}
+  - {fileID: 4565965043411689678}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1541906530 stripped
@@ -702,7 +702,7 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 301748325}
   m_SourcePrefab: {fileID: 100100000, guid: 36b829a6416ebcc4d9a36bd5c0c9415d, type: 3}
---- !u!1001 &8872269133616906909
+--- !u!1001 &4565965043411689677
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -759,10 +759,10 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a1e813052cee03c43b7e5480baa71f89, type: 3}
---- !u!4 &8872269133616906910 stripped
+--- !u!4 &4565965043411689678 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6685136236870385703, guid: a1e813052cee03c43b7e5480baa71f89, type: 3}
-  m_PrefabInstance: {fileID: 8872269133616906909}
+  m_PrefabInstance: {fileID: 4565965043411689677}
   m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

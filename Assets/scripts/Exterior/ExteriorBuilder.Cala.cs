@@ -43,7 +43,9 @@ public partial class ExteriorBuilder
         float oeste = S01((-62f - x) / 9f) * S01((100f - z) / 15f)
                       * (8f + 6f * Mathf.PerlinNoise(z * 0.03f + 11f, 1.7f) + 3f * (Mathf.PerlinNoise(x * 0.09f + 5f, z * 0.09f) - 0.5f));
         float sur = S01((CalaSur - z) / 12f) * (10f + 6f * Mathf.PerlinNoise(x * 0.025f + 2f, 4.4f));
-        h = Mathf.Max(h, Mathf.Max(este, Mathf.Max(oeste, sur)));
+        // las colinas valen 0 lejos de ellas: solo cuentan donde suben, si no el fondo de la bahía (-6) quedaba en 0, encima del agua, con pasto
+        float colinas = Mathf.Max(este, Mathf.Max(oeste, sur));
+        if (colinas > 0.05f) h = Mathf.Max(h, colinas);
         // bajo el podio de la torre el suelo es plano; se mezcla con el terreno entre PodioRadio y PodioRadio + 6
         float d = Mathf.Sqrt((x - CalaTorre.x) * (x - CalaTorre.x) + (z - CalaTorre.y) * (z - CalaTorre.y));
         return h * S01((d - PodioRadio) / 6f);
@@ -100,6 +102,13 @@ public partial class ExteriorBuilder
         mDirt = Lit("Tierra", dirt, Color.white, 0.03f);
         mSea = EsNoche ? Water("Mar", new Color(0.04f, 0.09f, 0.2f, 0.6f), new Color(0.01f, 0.02f, 0.07f, 0.97f), 4f, 0.85f)   // agua más oscura de noche
                        : Water("Mar", new Color(0.12f, 0.28f, 0.34f, 0.55f), new Color(0.02f, 0.05f, 0.1f, 0.97f), 4f, 0.85f);
+        // mar abierto, no estanque: olas más grandes y vivas, y espuma donde pega con el malecón, los muelles y los barcos
+        mSea.SetFloat("_WaveSpeed", 0.6f);
+        mSea.SetFloat("_WaveHeight", 0.07f);
+        mSea.SetFloat("_WaveScale", 0.5f);
+        mSea.SetFloat("_NormalStrength", 0.6f);
+        mSea.SetFloat("_FoamDistance", 0.7f);
+        EditorUtility.SetDirty(mSea);
         AssetDatabase.SaveAssets();
     }
 
@@ -156,8 +165,9 @@ public partial class ExteriorBuilder
             if (hasta - desde > 0.2f) Solido(g, "Collider_Orilla", new Vector3((desde + hasta) / 2f, 1f, CalaMalecon + 0.3f), new Vector3(hasta - desde, 2f, 0.4f));
             if (i + 1 < huecos.Length) desde = huecos[i + 1];
         }
-        var mar = MeshObject(root, "Mar", Quad(1800f, 1500f, 4f), mSea, false, false);
-        mar.transform.localPosition = new Vector3(0f, CalaMar, 640f);
+        // el mar empieza en el malecón (antes seguía 150 m por debajo del pueblo, donde nadie lo ve)
+        var mar = MeshObject(root, "Mar", Quad(1800f, 1400f, 4f), mSea, false, false);
+        mar.transform.localPosition = new Vector3(0f, CalaMar, CalaMalecon - 1f + 700f);
     }
 
     // ---------------- calles y plaza (un poco por encima del suelo para no parpadear con él)
@@ -387,7 +397,8 @@ public partial class ExteriorBuilder
         txt.transform.SetParent(t, false);
         txt.transform.localPosition = new Vector3(0f, 1.95f, -0.06f);
         var tm = txt.AddComponent<TextMesh>();
-        tm.text = Historia.Ciudad.ToUpperInvariant();
+        // la fuente pixel no trae mayúsculas con acento (salía "SOMBRíA"): sin acentos en el letrero
+        tm.text = Historia.Ciudad.ToUpperInvariant().Replace('Á', 'A').Replace('É', 'E').Replace('Í', 'I').Replace('Ó', 'O').Replace('Ú', 'U');
         tm.font = font;
         tm.fontSize = 60; tm.characterSize = 0.05f;   // ~0.3 m de alto
         tm.anchor = TextAnchor.MiddleCenter; tm.alignment = TextAlignment.Center;

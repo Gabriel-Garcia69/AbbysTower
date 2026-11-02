@@ -6,7 +6,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Quad_450b285d1bb8b04a
+  m_Name: Quad_6ab19428bda7090a
   serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2
@@ -18,7 +18,7 @@ Mesh:
     vertexCount: 4
     localAABB:
       m_Center: {x: 0, y: 0, z: 0}
-      m_Extent: {x: 900, y: 0, z: 750}
+      m_Extent: {x: 900, y: 0, z: 700}
   m_Shapes:
     vertices: []
     shapes: []
@@ -97,7 +97,7 @@ Mesh:
       format: 0
       dimension: 0
     m_DataSize: 128
-    _typelessdata: 000061c40000000000803bc4000000000000803f000000000000000000000000000061440000000000803bc4000000000000803f000000000000e14300000000000061c40000000000803b44000000000000803f00000000000000000080bb43000061440000000000803b44000000000000803f000000000000e1430080bb43
+    _typelessdata: 000061c40000000000002fc400000000ffff7f3f000000000000000000000000000061440000000000002fc400000000ffff7f3f000000000000e14300000000000061c40000000000002f4400000000ffff7f3f00000000000000000000af43000061440000000000002f4400000000ffff7f3f000000000000e1430000af43
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 0
@@ -152,7 +152,7 @@ Mesh:
     m_UVInfo: 0
   m_LocalAABB:
     m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 900, y: 0, z: 750}
+    m_Extent: {x: 900, y: 0, z: 700}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
   m_PreBakeTriangleCollisionMesh: 0

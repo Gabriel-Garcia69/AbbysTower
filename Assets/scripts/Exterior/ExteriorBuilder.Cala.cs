@@ -76,6 +76,7 @@ public partial class ExteriorBuilder
         CalaPuerto(root);
         CalaPlaza(root);
         CalaVegetacion(root);
+        CalaRelleno(root);
         CalaFondo(root);
         CalaLimites(root);
         if (EsNoche) { BuildNoche(root); NocheAjustes(root); }
@@ -229,6 +230,108 @@ public partial class ExteriorBuilder
         // pizarra: terraza alta, miran a la plaza
         foreach (var (z, p) in new[] { (10f, "A"), (-2f, "B"), (-14f, "A"), (-26f, "B") })
             Pieza(g, "CasaPizarra_" + p, 37f, z, -90f);
+    }
+
+    // ---------------- relleno: el pueblo apretado de la imagen de la intro (casas a lo largo de las calles, sin huecos vacíos)
+
+    /// <summary>
+    /// Llena el barrio sur (a los dos lados de la Calle Mayor) y la fila frente al mar con casas, y pone árboles y faroles entre ellas.
+    /// Cada casa se prueba en su lugar: se descarta si toca otra pieza, una calle, la plaza de la torre, el campamento o una pendiente.
+    /// </summary>
+    void CalaRelleno(Transform root)
+    {
+        var g = Group("Relleno", root);
+        var ocupado = new List<Bounds>();
+        foreach (var nombre in new[] { "Casas", "Plaza", "Puerto", "Vegetacion" })
+        {
+            var t = root.Find(nombre);
+            if (t == null) continue;
+            foreach (Transform hijo in t)
+            {
+                var b = Limites(hijo.gameObject);
+                if (b.size.sqrMagnitude > 0.01f) ocupado.Add(b);
+            }
+        }
+        // calles y lugares que quedan libres para caminar (x0, z0, x1, z1)
+        var libres = new[]
+        {
+            Rect.MinMaxRect(CalaTorre.x - 7f, CalaSur - 4f, CalaTorre.x + 7f, -58f),   // Calle Mayor
+            Rect.MinMaxRect(CalaTorre.x - 13f, -76f, CalaTorre.x + 13f, -60f),         // atrio frente a la plaza
+            Rect.MinMaxRect(-64f, 25.5f, 46f, 35f),                                    // paseo del muelle
+            Rect.MinMaxRect(-64f, -4f, -24f, 4f),                                      // calle oeste
+            Rect.MinMaxRect(-42f, 14f, -28f, 36f), Rect.MinMaxRect(9f, 14f, 23f, 36f), // bajadas al embarcadero y al muelle
+            Rect.MinMaxRect(CalaTorre.x - 8f, 12f, CalaTorre.x + 8f, 36f),             // de la plaza al paseo
+        };
+
+        string[] sur = { "CasaPiedra_A", "CasaPiedra_B", "CasaEntramado_A", "CasaEntramado_B" };
+        string[] mar = { "CasaPescador_A", "CasaPescador_B" };
+        var puntos = new List<(float x, float z, string[] tipos, float yaw)>();
+        for (float z = -106f; z <= -64f; z += 10.5f)
+            for (float x = -58f; x <= 40f; x += 9.5f)
+                puntos.Add((x + R(-1.2f, 1.2f), z + R(-1.2f, 1.2f), sur, x < CalaTorre.x ? 90f : -90f));   // miran a la Calle Mayor
+        for (float x = -60f; x <= 26f; x += 9f)
+            puntos.Add((x + R(-0.8f, 0.8f), 20.5f + R(-0.6f, 0.6f), mar, 0f));                        // frente al mar
+
+        int casas = 0, n = 0;
+        foreach (var (x, z, tipos, yaw) in puntos)
+        {
+            var p = new Vector2(x, z);
+            if (Vector2.Distance(p, CalaTorre) < CalaPlazaRadio + 3f || Vector2.Distance(p, CalaCampamento) < 13f) continue;
+            bool enCalle = false;
+            foreach (var r in libres) if (r.Contains(p) || DistRect(r, p) < 5f) { enCalle = true; break; }
+            if (enCalle) continue;
+            float h0 = CalaHeight(x, z), dh = 0f;
+            for (int k = 0; k < 4; k++) dh = Mathf.Max(dh, Mathf.Abs(CalaHeight(x + (k < 2 ? -4f : 4f), z + (k % 2 == 0 ? -4f : 4f)) - h0));
+            if (dh > 0.5f || h0 < -0.2f) continue;   // pendiente, risco o agua
+
+            var go = Pieza(g, tipos[(n++) % tipos.Length], x, z, yaw + R(-6f, 6f));
+            if (go == null) continue;
+            var b = Limites(go);
+            var bb = b; bb.Expand(new Vector3(1.6f, 0f, 1.6f));
+            bool choca = false;
+            foreach (var o in ocupado) if (bb.Intersects(o)) { choca = true; break; }
+            if (choca) { Object.DestroyImmediate(go); continue; }
+            Luces(go, l => false);   // las ventanas ya brillan con su material: sin luces de más
+            ocupado.Add(b);
+            casas++;
+        }
+
+        // árboles y faroles en los huecos que quedaron entre casas
+        int extra = 0;
+        for (int k = 0; k < 140 && extra < 24; k++)
+        {
+            var p = new Vector2(R(-58f, 40f), R(-106f, -64f));
+            if (Vector2.Distance(p, CalaTorre) < CalaPlazaRadio + 2f || Vector2.Distance(p, CalaCampamento) < 9f) continue;
+            bool enCalle = false;
+            foreach (var r in libres) if (r.Contains(p) || DistRect(r, p) < 1.5f) { enCalle = true; break; }
+            if (enCalle || Mathf.Abs(CalaHeight(p.x, p.y)) > 0.4f) continue;
+            bool farol = extra % 3 == 0;
+            var go = Pieza(g, farol ? "Farol" : "Arbol", p.x, p.y, R(0f, 360f));
+            if (go == null) continue;
+            var b = Limites(go); b.Expand(new Vector3(1f, 0f, 1f));
+            bool choca = false;
+            foreach (var o in ocupado) if (b.Intersects(o)) { choca = true; break; }
+            if (choca) { Object.DestroyImmediate(go); continue; }
+            Luces(go, l => false);
+            ocupado.Add(b);
+            extra++;
+        }
+        Debug.Log($"[Exterior] Relleno del pueblo: {casas} casas y {extra} árboles/faroles.");
+    }
+
+    static float DistRect(Rect r, Vector2 p)
+    {
+        float dx = Mathf.Max(r.xMin - p.x, 0f, p.x - r.xMax), dz = Mathf.Max(r.yMin - p.y, 0f, p.y - r.yMax);
+        return Mathf.Sqrt(dx * dx + dz * dz);
+    }
+
+    static Bounds Limites(GameObject go)
+    {
+        var rs = go.GetComponentsInChildren<Renderer>(true);
+        if (rs.Length == 0) return new Bounds(go.transform.position, Vector3.zero);
+        var b = rs[0].bounds;
+        foreach (var r in rs) if (!(r is ParticleSystemRenderer)) b.Encapsulate(r.bounds);
+        return b;
     }
 
     // ---------------- puerto: muelle de piedra, embarcadero, barcas y veleros

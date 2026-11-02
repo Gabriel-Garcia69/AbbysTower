@@ -28,6 +28,8 @@ public static class AmbienteHistoria
     static void Aplicar()
     {
         var b = Object.FindAnyObjectByType<DioramaBuilder>();
+        bool exterior = Object.FindAnyObjectByType<ExteriorBuilder>() != null;   // Cala Sombría: ya es de atardecer, solo los colores
+        if (exterior) { Apagar(); return; }
         if (b == null || b.CurrentMood != DioramaBuilder.Mood.Dia) return;
 
         // sol bajo de lado: caras iluminadas en naranja y sombras largas
@@ -65,21 +67,7 @@ public static class AmbienteHistoria
         RenderSettings.ambientEquatorColor = new Color(0.46f, 0.34f, 0.34f);
         RenderSettings.ambientGroundColor = new Color(0.16f, 0.12f, 0.15f);
 
-        // colores más apagados (tejas de barro oscuro, pasto de atardecer); con un bloque de propiedades, no en el material
-        var mpb = new MaterialPropertyBlock();
-        foreach (var r in Object.FindObjectsByType<Renderer>())
-        {
-            var m = r.sharedMaterial;
-            if (m == null || r is ParticleSystemRenderer) continue;
-            Color k;
-            if (m.name.StartsWith("Dio_Tejas")) k = new Color(0.62f, 0.5f, 0.52f);
-            else if (m.name.StartsWith("Dio_Pasto") || m.name.StartsWith("Dio_Hojas") || m.name.StartsWith("Dio_Pino")) k = new Color(0.78f, 0.76f, 0.66f);
-            else continue;
-            r.GetPropertyBlock(mpb);
-            if (m.HasProperty(BaseColorId)) mpb.SetColor(BaseColorId, m.GetColor(BaseColorId) * k);
-            if (m.HasProperty(ColorId)) mpb.SetColor(ColorId, m.GetColor(ColorId) * k);
-            r.SetPropertyBlock(mpb);
-        }
+        Apagar();
 
         // faroles: de día se generaron sin luz
         int n = 0;
@@ -94,6 +82,25 @@ public static class AmbienteHistoria
             l.type = LightType.Point; l.color = new Color(1f, 0.72f, 0.42f); l.range = 8f; l.intensity = 3f; l.shadows = LightShadows.None;
             go.AddComponent<LightFlicker>().amount = 0.06f;
             if (++n >= 40) break;   // tope: muchas luces puntuales cuestan
+        }
+    }
+
+    /// <summary>Colores más apagados (tejas de barro oscuro, pasto de atardecer); con un bloque de propiedades, no en el material.</summary>
+    static void Apagar()
+    {
+        var mpb = new MaterialPropertyBlock();
+        foreach (var r in Object.FindObjectsByType<Renderer>())
+        {
+            var m = r.sharedMaterial;
+            if (m == null || r is ParticleSystemRenderer) continue;
+            Color k;
+            if (m.name.StartsWith("Dio_Tejas")) k = new Color(0.62f, 0.5f, 0.52f);
+            else if (m.name.StartsWith("Dio_Pasto") || m.name.StartsWith("Dio_Hojas") || m.name.StartsWith("Dio_Pino")) k = new Color(0.78f, 0.76f, 0.66f);
+            else continue;
+            r.GetPropertyBlock(mpb);
+            if (m.HasProperty(BaseColorId)) mpb.SetColor(BaseColorId, m.GetColor(BaseColorId) * k);
+            if (m.HasProperty(ColorId)) mpb.SetColor(ColorId, m.GetColor(ColorId) * k);
+            r.SetPropertyBlock(mpb);
         }
     }
 }

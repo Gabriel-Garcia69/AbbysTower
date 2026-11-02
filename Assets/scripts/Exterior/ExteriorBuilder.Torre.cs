@@ -263,6 +263,10 @@ public partial class ExteriorBuilder
         float[,] anillos = { { 3.6f, 6f, -6.4f }, { 1.8f, 3.6f, -4.4f }, { 0f, 1.8f, -2.4f } };
         for (int r = 0; r < 3; r++) Add(roca, ArcoMarco(pa, phs, anillos[r, 0], anillos[r, 1], anillos[r, 2], 1f, 10), po, Quaternion.identity);
         MeshObject(puerta, "Portal", ArcoPanel(pa, phs, 10, -0.5f), mPortal, false, false);
+        // el abismo adentro: arcos cada vez más chicos y oscuros (borde morado brillante, centro casi negro), como un túnel
+        MeshObject(puerta, "PortalMedio", ArcoPanel(pa - 1.4f, phs - 1.8f, 10, -0.55f), Emissive("PortalMedio", new Color(0.3f, 0.1f, 0.62f), 1f), false, false);
+        MeshObject(puerta, "PortalHondo", ArcoPanel(pa - 2.9f, phs - 3.8f, 10, -0.6f), Emissive("PortalHondo", new Color(0.13f, 0.03f, 0.3f), 1f), false, false);
+        MeshObject(puerta, "PortalNucleo", ArcoPanel(pa - 4.2f, phs - 5.8f, 10, -0.65f), Emissive("PortalNucleo", new Color(0.03f, 0f, 0.08f), 1f), false, false);
         foreach (float sx in new[] { -1f, 1f })
         {
             Solido(puerta, "Jamba", new Vector3(sx * 9.05f, 11f, -2.7f), new Vector3(6.1f, 22f, 7.6f));
@@ -620,6 +624,8 @@ public partial class ExteriorBuilder
         var centro = new Vector3(0f, hs * 0.5f, z);
         for (int j = 0; j < c.Count - 1; j++)
             m.Tri(centro, new Vector3(c[j].x, c[j].y, z), new Vector3(c[j + 1].x, c[j + 1].y, z), new Vector3(0f, 0f, -1f));
+        // la base (el perfil empieza y acaba en el suelo): sin este triángulo quedaba un hueco negro abajo del portal
+        m.Tri(centro, new Vector3(c[c.Count - 1].x, 0f, z), new Vector3(c[0].x, 0f, z), new Vector3(0f, 0f, -1f));
         return m.Crear("ArcoPanel");
     }
 

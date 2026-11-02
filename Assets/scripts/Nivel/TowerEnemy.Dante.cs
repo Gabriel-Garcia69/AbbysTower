@@ -66,6 +66,8 @@ public partial class TowerEnemy
         sr.sharedMaterial = srAbby.sharedMaterial;
         sr.color = hayPropio ? Color.white : new Color(0.16f, 0.09f, 0.24f);
         sr.sprite = hayPropio ? (propio[6] != null ? propio[6] : System.Array.Find(propio, x => x != null)) : srAbby.sprite;
+        sr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        go.AddComponent<SombraAlSol>();   // la sombra de frente al sol, no de canto
         var ds = go.AddComponent<DanteSprite>();
         ds.fuente = anim; ds.enemigo = this; ds.sr = sr; ds.baseLocal = go.transform.localPosition;
         if (hayPropio)

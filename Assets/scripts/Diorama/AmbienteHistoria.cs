@@ -37,9 +37,9 @@ public static class AmbienteHistoria
         if (sol == null) foreach (var l in Object.FindObjectsByType<Light>()) if (l.type == LightType.Directional) { sol = l; break; }
         if (sol != null)
         {
-            sol.transform.rotation = Quaternion.Euler(24f, 118f, 0f);
+            sol.transform.rotation = Quaternion.Euler(28f, 118f, 0f);
             sol.color = new Color(1f, 0.6f, 0.36f);
-            sol.intensity = 1.55f;
+            sol.intensity = 2.1f;
             sol.shadowStrength = 0.85f;
         }
 
@@ -63,9 +63,9 @@ public static class AmbienteHistoria
         RenderSettings.fogStartDistance = 90f;
         RenderSettings.fogEndDistance = 640f;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = new Color(0.5f, 0.42f, 0.58f);
-        RenderSettings.ambientEquatorColor = new Color(0.46f, 0.34f, 0.34f);
-        RenderSettings.ambientGroundColor = new Color(0.16f, 0.12f, 0.15f);
+        RenderSettings.ambientSkyColor = new Color(0.66f, 0.56f, 0.72f);
+        RenderSettings.ambientEquatorColor = new Color(0.64f, 0.48f, 0.44f);
+        RenderSettings.ambientGroundColor = new Color(0.24f, 0.19f, 0.21f);
 
         Apagar();
 
@@ -94,8 +94,8 @@ public static class AmbienteHistoria
             var m = r.sharedMaterial;
             if (m == null || r is ParticleSystemRenderer) continue;
             Color k;
-            if (m.name.StartsWith("Dio_Tejas")) k = new Color(0.62f, 0.5f, 0.52f);
-            else if (m.name.StartsWith("Dio_Pasto") || m.name.StartsWith("Dio_Hojas") || m.name.StartsWith("Dio_Pino")) k = new Color(0.78f, 0.76f, 0.66f);
+            if (m.name.StartsWith("Dio_Tejas")) k = new Color(0.74f, 0.6f, 0.6f);
+            else if (m.name.StartsWith("Dio_Pasto") || m.name.StartsWith("Dio_Hojas") || m.name.StartsWith("Dio_Pino")) k = new Color(0.88f, 0.85f, 0.74f);
             else continue;
             r.GetPropertyBlock(mpb);
             if (m.HasProperty(BaseColorId)) mpb.SetColor(BaseColorId, m.GetColor(BaseColorId) * k);

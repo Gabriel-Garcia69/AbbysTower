@@ -35,6 +35,7 @@ public partial class TowerEnemy
         sr.sharedMaterial = SpriteMaterial();
         sr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
         sr.receiveShadows = true;
+        go.AddComponent<SombraAlSol>();   // la sombra de frente al sol, no de canto
         var es = go.AddComponent<EnemySprite>();
         es.enemigo = this; es.sr = sr; es.sprites = sprites;
         es.caminar = Animacion(carpeta, "Caminar");

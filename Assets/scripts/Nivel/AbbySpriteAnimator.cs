@@ -50,6 +50,8 @@ public class AbbySpriteAnimator : MonoBehaviour
     public Sprite[] rodilla = new Sprite[8];
     public Sprite[] tendida = new Sprite[8];
     public float tiempoRodilla = 0.8f;
+    [Tooltip("Usa las poses corregidas (quieta, golpe y guardia: espada en la mano derecha y 1.31 m) en lugar de las animaciones de respirar, espadazo y bloqueo.")]
+    public bool posesCorregidas = true;
     public AbbyBlock block;
     public PlayerHealth health;
 
@@ -120,6 +122,14 @@ public class AbbySpriteAnimator : MonoBehaviour
         // el animador viejo (Animator + blend tree de 4 caminatas) pelearía por el sprite
         var anim = GetComponent<Animator>(); if (anim != null) anim.enabled = false;
         var old = GetComponent<SpriteDirectionAnimator>(); if (old != null) old.enabled = false;
+        if (posesCorregidas && conjunto == null)
+        {
+            if (Alguno(idle)) idleAnim = new Frames[8];
+            if (Alguno(golpePose)) slash = new Frames[8];
+            if (Alguno(guardia)) blockFrames = new Frames[8];
+            // al norte y al sur la carrera pierde la espada en la mitad de los cuadros: ahí corre con los cuadros de caminar
+            if (run != null && run.Length == 8) { run[2] = new Frames(); run[6] = new Frames(); }
+        }
     }
 
     void LateUpdate()

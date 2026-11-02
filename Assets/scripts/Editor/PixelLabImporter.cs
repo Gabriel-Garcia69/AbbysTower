@@ -17,8 +17,10 @@ public class PixelLabImporter : AssetPostprocessor
     public const string Raiz = "Assets/sprites/Abby/PixelLab/";
     public const string RaizExpedicion = "Assets/sprites/Expedicion/";
     const float PixelsPorUnidad = 64f;
+    /// <summary>Alto de Abby en el juego sin la hoja de la espada (el de la pose quieta corregida, Idle/rotations).</summary>
+    public const float AltoAbby = 1.31f;
 
-    public override uint GetVersion() => 3;
+    public override uint GetVersion() => 4;
 
     void OnPreprocessTexture()
     {
@@ -27,7 +29,10 @@ public class PixelLabImporter : AssetPostprocessor
         var ti = (TextureImporter)assetImporter;
         ti.textureType = TextureImporterType.Sprite;
         ti.spriteImportMode = SpriteImportMode.Single;
-        ti.spritePixelsPerUnit = PixelsPorUnidad;
+        // Abby: cada animación y dirección se escala para medir lo mismo (si no, cambia de tamaño al pasar de quieta a correr)
+        bool abby = assetPath.StartsWith(Raiz, StringComparison.OrdinalIgnoreCase);
+        float cuerpo = abby ? AltoCuerpo(assetPath) : 0f;
+        ti.spritePixelsPerUnit = cuerpo > 0f ? (float)Math.Round(cuerpo / AltoAbby, 2) : PixelsPorUnidad;
         ti.filterMode = FilterMode.Point;
         ti.mipmapEnabled = false;
         ti.alphaIsTransparency = true;
@@ -53,6 +58,49 @@ public class PixelLabImporter : AssetPostprocessor
             if (p >= 0 && p < pies) pies = p;
         }
         return (pies, alto);
+    }
+
+    /// <summary>Alto promedio del cuerpo (sin la espada) en píxeles: de todos los cuadros si es una animación, si no del dibujo.</summary>
+    static float AltoCuerpo(string assetPath)
+    {
+        string abs = Path.Combine(Directory.GetCurrentDirectory(), assetPath);
+        string[] archivos = Path.GetFileName(assetPath).StartsWith("frame_")
+            ? Directory.GetFiles(Path.GetDirectoryName(abs), "frame_*.png") : new[] { abs };
+        float suma = 0f; int n = 0;
+        foreach (var f in archivos)
+        {
+            int a = LeerAlto(f);
+            if (a > 0) { suma += a; n++; }
+        }
+        return n > 0 ? suma / n : 0f;
+    }
+
+    static int LeerAlto(string ruta)
+    {
+        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+        try
+        {
+            if (!ImageConversion.LoadImage(tex, File.ReadAllBytes(ruta))) return 0;
+            var px = tex.GetPixels32();
+            int w = tex.width, h = tex.height, abajo = -1, arriba = -1;
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    var c = px[y * w + x];
+                    if (c.a < 128 || EsEspada(c)) continue;
+                    if (abajo < 0) abajo = y;
+                    arriba = y;
+                    break;
+                }
+            return abajo < 0 ? 0 : arriba - abajo + 1;
+        }
+        finally { UnityEngine.Object.DestroyImmediate(tex); }
+    }
+
+    static bool EsEspada(Color32 c)
+    {
+        int mn = Mathf.Min(c.r, Mathf.Min(c.g, c.b)), mx = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+        return mn > 150 && mx - mn < 50 || (c.r == 141 && c.g == 140 && c.b == 153) || (c.r == 99 && c.g == 100 && c.b == 119);
     }
 
     /// <summary>Pie más bajo = primera fila (desde abajo) con un píxel opaco que no sea de la espada (claro y poco saturado).</summary>

@@ -39,7 +39,7 @@ Todo está en la rama `animaciones` (subida a GitHub). Cada punto dice qué se a
 - La salida del Acantilado (en la isla del faro, por el puente colgante) sí se alcanza.
 
 ## Pruebas hechas en Play (con Unity en segundo plano, `runInBackground`)
-- **Combate en los 5 pisos y la biblioteca** (enemigos del piso + jefe alrededor de Abby, 30 s cada uno): **0 errores**. Los jefes (Guardián, Capitán, Torrente, Gárgola y Dante) atacan con su animación y sus avisos en el suelo.
+- **Combate en los 5 pisos y la biblioteca** (enemigos del piso + jefe alrededor de Abby, 30 s cada uno): **0 errores**. Ojo: los jefes de los pisos 1 a 4 los puso la prueba a la fuerza; en el juego real esos pisos no tienen jefe (GDD: solo Dante, en el piso 5).
 - **Menú, Intro y Expedición** (60 s cada una): **0 errores**. Los textos de la intro caben completos.
 - **Cala Sombría**: Abby entra a la torre y carga el Piso 1.
 - Un jefe en un piso sin dibujo propio ya no sale como bloque 3D (usa el del Guardián).

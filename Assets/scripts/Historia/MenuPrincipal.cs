@@ -195,7 +195,7 @@ public class MenuPrincipal : MonoBehaviour
         Sombra(new Rect(0, sh * 0.1f + u * 11f, sw, u * 4f), "La torre del abismo", sub, new Color(0.85f, 0.78f, 1f));
 
         var ops = Opciones();
-        float w = pagina == Pagina.Configuracion ? u * 56f : u * 36f, h = u * 6.2f;
+        float w = pagina == Pagina.Configuracion ? u * 56f : pagina == Pagina.Principal && Progreso.Hay ? u * 52f : u * 36f, h = u * 6.2f;   // "Continuar · Piso N" no cabía en una línea
         var caja = new Rect((sw - w) / 2f, sh * 0.48f, w, h * ops.Length + u * 4f);
         float a = Mathf.Clamp01(entrada / 0.25f);
         CuadroNarracion.Marco(caja, 0.92f * a);

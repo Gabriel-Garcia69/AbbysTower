@@ -177,46 +177,62 @@ public class ExteriorIntro : MonoBehaviour
     }
 
     /// <summary>
-    /// Tomas de Cala Sombría (trazado fijo de ExteriorBuilder.Cala): desde el mar hacia el pueblo y la torre (02_torre),
-    /// desde lo alto del cabo oeste sobre los techos y la bahía (01_pueblo), el campamento de la expedición (10_expedicion),
-    /// la torre desde el atrio (con el título) y la bajada por la Calle Mayor hasta la vista de juego.
+    /// Tomas de Cala Sombría (trazado fijo de ExteriorBuilder.Cala), de noche: desde el mar, el pueblo encendido con la torre detrás;
+    /// la Plaza del Mercado; sobre los techos hacia la torre; el campamento; la torre de frente (con el título) y la bajada hasta Abby.
+    /// La torre siempre se ve entera y con el pueblo al pie, nunca en contrapicado desde abajo (quedaba como una mancha negra).
     /// </summary>
     void CalaShots(Transform w)
     {
         Vector3 W(float x, float y, float z) => w.TransformPoint(new Vector3(x, y, z));
-        Vector2 camp = ExteriorBuilder.CalaCampamento, emb = ExteriorBuilder.CalaEmbarcadero;
+        Vector2 camp = ExteriorBuilder.CalaCampamento, mer = ExteriorBuilder.CalaMercado, spawn = ExteriorBuilder.CalaSpawn, tor = ExteriorBuilder.CalaTorre;
+        float altoT = ExteriorBuilder.TorreAltura;
+        subtitle = Historia.Subtitulo;
 
+        // el mar: acercándose al muelle, con la torre y el pueblo al fondo
         shots.Add(new Shot
         {
-            pos = new[] { W(-90f, 12f, 270f), W(-60f, 18f, 225f), W(-30f, 24f, 180f) },   // la torre mide ~165 m: desde lejos entra entera
-            look = new[] { W(-12f, 80f, -18f), W(-12f, 88f, -18f), W(-8f, 98f, -18f) },
-            duration = 7f, fovA = 40f, fovB = 34f, caption = Historia.Ciudad,
+            pos = new[] { W(8f, 8f, 215f), W(4f, 10f, 170f), W(0f, 12f, 125f) },
+            look = new[] { W(tor.x, altoT * 0.42f, tor.y), W(tor.x, altoT * 0.4f, tor.y), W(tor.x, altoT * 0.34f, tor.y) },
+            duration = 7.5f, fovA = 36f, fovB = 40f, caption = Historia.Ciudad,
         });
+        // la plaza: medio giro alrededor de la fuente
+        {
+            var ps = new Vector3[4]; var ls = new Vector3[4];
+            for (int i = 0; i < 4; i++)
+            {
+                float k = i / 3f, a = Mathf.Lerp(200f, 320f, k) * Mathf.Deg2Rad, r = Mathf.Lerp(19f, 15f, k);
+                ps[i] = W(mer.x + Mathf.Cos(a) * r, Mathf.Lerp(3.5f, 5.5f, k), mer.y + Mathf.Sin(a) * r);
+                ls[i] = W(mer.x, 1.8f, mer.y);
+            }
+            shots.Add(new Shot { pos = ps, look = ls, duration = 6f, fovA = 44f, fovB = 40f, caption = "Plaza del Mercado" });
+        }
+        // sobre los techos, avanzando hacia la torre
         shots.Add(new Shot
         {
-            pos = new[] { W(-82f, 24f, -20f), W(-80f, 22f, 10f) },
-            look = new[] { W(emb.x + 11f, 0f, emb.y - 6f), W(0f, 0f, 60f) },
-            duration = 6f, fovA = 42f, fovB = 38f, caption = "La bahía",
+            pos = new[] { W(-62f, 24f, -158f), W(-52f, 26f, -136f), W(-42f, 30f, -116f) },
+            look = new[] { W(tor.x, altoT * 0.42f, tor.y), W(tor.x, altoT * 0.46f, tor.y), W(tor.x, altoT * 0.5f, tor.y) },
+            duration = 6.5f, fovA = 50f, fovB = 58f, caption = null,
         });
+        // el campamento de la expedición, con la fogata en primer plano
         shots.Add(new Shot
         {
-            pos = new[] { W(camp.x + 4f, 1.8f, camp.y - 16f), W(camp.x + 1f, 2.2f, camp.y - 9f) },
-            look = new[] { W(camp.x, 1f, camp.y), W(-12f, 60f, -18f) },
-            duration = 6f, fovA = 40f, fovB = 46f, caption = "Campamento de la expedición",
+            pos = new[] { W(camp.x + 7f, 2.2f, camp.y - 11f), W(camp.x + 3f, 2.8f, camp.y - 8f) },
+            look = new[] { W(camp.x, 1f, camp.y), W(camp.x - 6f, 2.5f, camp.y + 8f) },
+            duration = 5.5f, fovA = 42f, fovB = 46f, caption = "Campamento de la expedición",
         });
-        // la torre desde el atrio, de los braseros hasta la punta (aquí aparece el título)
+        // la torre de frente, entera, al final de la Calle Mayor (aquí aparece el título)
         shots.Add(new Shot
         {
-            pos = new[] { W(-6f, 1.4f, -90f), W(-9f, 2f, -58f) },
-            look = new[] { W(-12f, 12f, -43f), W(-12f, 140f, -18f) },
-            duration = 7f, fovA = 44f, fovB = 58f, caption = null,
+            pos = new[] { W(tor.x, 26f, -196f), W(tor.x, 24f, -172f) },
+            look = new[] { W(tor.x, altoT * 0.5f, tor.y), W(tor.x, altoT * 0.5f, tor.y) },
+            duration = 7f, fovA = 44f, fovB = 46f, caption = null,
         });
-        // llegada: desde lo alto sobre la loma sur, bajando por la Calle Mayor hasta la vista de juego
+        // llegada: bajando detrás de Abby hasta la vista de juego
         shots.Add(new Shot
         {
-            pos = new[] { W(2f, 40f, -165f), W(-8f, 12f, -100f) },
-            look = new[] { W(-12f, 70f, -18f), W(-12f, 2f, -55f) },
-            duration = 5.5f, fovA = 50f, fovB = endFov, finalShot = true,
+            pos = new[] { W(spawn.x + 6f, 34f, spawn.y - 40f), W(spawn.x, 12f, spawn.y - 14f) },
+            look = new[] { W(tor.x, altoT * 0.4f, tor.y), W(spawn.x, 2f, spawn.y + 10f) },
+            duration = 5f, fovA = 46f, fovB = endFov, finalShot = true,
         });
     }
 
@@ -334,6 +350,7 @@ public class ExteriorIntro : MonoBehaviour
             GUI.DrawTexture(new Rect(0, 0, sw, bh), tex);
             GUI.DrawTexture(new Rect(0, sh - bh, sw, bh), tex);
         }
+        GUI.color = Color.white;   // si se queda en negro, tiñe todos los textos de abajo
 
         if (!done && index < shots.Count && captionAlpha > 0f && shots[index].caption != null)
         {

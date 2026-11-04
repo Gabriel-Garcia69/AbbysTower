@@ -32,6 +32,6 @@ Material:
     - _DstBlend: 1
     - _SrcBlend: 5
     m_Colors:
-    - _BaseColor: {r: 0.24000001, g: 0.35999998, b: 0.8, a: 1}
+    - _BaseColor: {r: 0.165, g: 0.1595, b: 0.209, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

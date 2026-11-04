@@ -4,10 +4,17 @@ Rama `animaciones`. El GDD congela funciones nuevas el **10 de noviembre**; la d
 GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya se hizo: `NOTAS_PULIDO.md` y `Docs/Cambios_respecto_al_GDD.md`.
 
 ## Por dónde seguir
-1. **Revisar el color y la luz.** `AmbienteHistoria.cs` tiene color por piso (Pueblo ámbar, Cascadas azul violeta, Acantilado carmesí) y una luz suave que sigue a Abby, porque con el atardecer quedaba como silueta. Compila, pero **no lo he visto en Play** y **no tiene commit**. La prueba quedó a medias: correr `PruebaPisos.Combates`, ver capturas y ajustar.
+1. **Color y luz: revisados el 4 de noviembre** en capturas de los 6 pisos con enemigos, sin errores. Falta verlos jugando; en Cima y Puerto, mirar si el fondo claro convence.
 2. **Medir el `.exe`.** `Assets/scripts/MedidorBuild.cs` (temporal, sin subir). Armar con `ConstruirJuego.Windows` y abrir `AbbysTower.exe -medir <archivo>`. Metas: 60 FPS, menos de 5 s de carga por piso, máximo 2 GB.
 3. **Borrar el medidor y volver a compilar** el `.exe` final: `MedidorBuild.cs` no debe ir en la entrega, y el build actual es anterior a los tajos.
 4. **Hacer `git push`** de los commits locales (GitHub puede pedir iniciar sesión).
+
+## Cala Sombría (4 de noviembre)
+- Mapa unas 3 veces más grande: 73 casas, calles anchas, plaza del mercado, campamento y torre al 60 %, a 217 m de la salida.
+- Noche oscura y desaturada: perfil `ExteriorProfile_Noche`, ambiente y niebla en `ExteriorNoche.cs`. Lo único con color es el fuego y el aura de la torre.
+- Tomas nuevas en la intro y textos legibles. Las casas que tapan a Abby dejan de dibujarse (`OccluderFade`).
+- Se corrigió que hubiera casas en medio de la Calle Mayor. Caminata de prueba: de la salida a la torre en 33 s a 7 m/s, y entra a Diorama. Abby camina a 5 m/s, así que son unos 45 s; si se siente largo, se mueve `CalaSpawn`.
+- Cualquier cambio en `ExteriorBuilder*` necesita regenerar con el menú `Abby/Exterior/Hora: Noche` y guardar la escena.
 
 ## Falta para cumplir el GDD
 | Falta | Quién | Estado |

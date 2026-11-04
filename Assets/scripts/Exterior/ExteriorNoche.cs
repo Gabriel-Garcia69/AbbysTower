@@ -14,16 +14,16 @@ public class ExteriorNoche : MonoBehaviour
     public Material skybox;
     [Tooltip("Hijo con la luna, el planeta, las nubes y la aurora; sigue la posición de la cámara.")]
     public Transform cielo;
-    public Color ambienteCielo = new Color(0.063f, 0.102f, 0.227f);
-    public Color ambienteEcuador = new Color(0.165f, 0.125f, 0.345f);
-    public Color ambienteSuelo = new Color(0.027f, 0.027f, 0.059f);
-    public Color niebla = new Color(0.055f, 0.071f, 0.188f);
-    public float densidadNiebla = 0.0022f;
+    public Color ambienteCielo = new Color(0.14f, 0.14f, 0.2f);
+    public Color ambienteEcuador = new Color(0.16f, 0.135f, 0.21f);
+    public Color ambienteSuelo = new Color(0.05f, 0.045f, 0.065f);
+    public Color niebla = new Color(0.05f, 0.04f, 0.07f);
+    public float densidadNiebla = 0.0034f;
 
     [Header("Luz que sigue a Abby (sus sprites son Lit: sin esto se pierden en la sombra)")]
     public bool luzDeAbby = true;
-    public Color colorLuzAbby = new Color(0.722f, 0.769f, 1f);
-    public float rangoLuzAbby = 6f, intensidadLuzAbby = 1.2f;
+    public Color colorLuzAbby = new Color(0.9f, 0.84f, 0.8f);
+    public float rangoLuzAbby = 13f, intensidadLuzAbby = 10f;
 
     Light luz;
     Camera cam;
@@ -40,7 +40,7 @@ public class ExteriorNoche : MonoBehaviour
             if (p == null) return;
             var go = new GameObject("LuzNocheAbby");
             go.transform.SetParent(p.transform, false);
-            go.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+            go.transform.localPosition = new Vector3(0f, 6f, 0f);   // alta: pegada a la cabeza la quemaba (el sprite tiene la normal hacia arriba)
             luz = go.AddComponent<Light>();
             luz.type = LightType.Point;
             luz.color = colorLuzAbby; luz.range = rangoLuzAbby; luz.intensity = intensidadLuzAbby;

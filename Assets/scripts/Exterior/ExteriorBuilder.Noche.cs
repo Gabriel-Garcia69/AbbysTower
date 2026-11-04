@@ -80,21 +80,22 @@ public partial class ExteriorBuilder
         var nube = AssetDatabase.LoadAssetAtPath<Texture2D>(TexDir + "/CloudPuff.png");
 
         mNSky = GetOrCreate("SkyNoche", "Abby/SkyNoche");
-        mNSky.SetColor("_Zenith", Hex("#05071A")); mNSky.SetColor("_Mid", Hex("#0B1034"));
-        mNSky.SetColor("_Horizon", Hex("#2A1F5E")); mNSky.SetColor("_Ground", Hex("#0A0A1C"));
-        mNSky.SetColor("_MoonGlow", new Color(0.25f, 0.36f, 0.8f)); mNSky.SetFloat("_StarDensity", 0.93f);
+        mNSky.SetColor("_Zenith", Hex("#03030C")); mNSky.SetColor("_Mid", Hex("#0A0812"));
+        mNSky.SetColor("_Horizon", Hex("#17101F")); mNSky.SetColor("_Ground", Hex("#07070C"));
+        mNSky.SetColor("_MoonGlow", new Color(0.2f, 0.2f, 0.27f)); mNSky.SetFloat("_StarDensity", 0.93f);
         EditorUtility.SetDirty(mNSky);
-        mNLuna = Cielo("NocheLuna", luna, new Color(1.5f, 1.6f, 2f), true);
-        mNHaloLuna = Cielo("NocheHaloLuna", halo, new Color(0.3f, 0.45f, 1f) * 0.8f, true);
+        mNLuna = Cielo("NocheLuna", luna, new Color(0.62f, 0.62f, 0.7f), true);
+        mNHaloLuna = Cielo("NocheHaloLuna", halo, new Color(0.3f, 0.29f, 0.38f) * 0.55f, true);
         mNPlaneta = Cielo("NochePlaneta", planeta, Color.white, false);
         mNNubes = Cielo("NocheNubes", nube, Color.white, false);
         mNAurora = GetOrCreate("NocheAurora", "Abby/Aurora");
-        mNAurora.SetColor("_ColorA", Hex("#3FE0D0")); mNAurora.SetColor("_ColorB", Hex("#9A5CFF")); mNAurora.SetFloat("_Intensity", 0.3f);
+        mNAurora.SetColor("_ColorA", Hex("#6A3FD0")); mNAurora.SetColor("_ColorB", Hex("#9A5CFF")); mNAurora.SetFloat("_Intensity", 0.14f);   // aura de la torre, no aurora boreal
         EditorUtility.SetDirty(mNAurora);
         mNDestellos = GetOrCreate("NocheDestellos", "Abby/Destellos");
-        mNDestellos.SetColor("_Color", new Color(0.6f, 0.72f, 1.2f));
+        mNDestellos.SetColor("_Color", new Color(0.42f, 0.42f, 0.5f));
         EditorUtility.SetDirty(mNDestellos);
-        mNVentana = Emissive("NocheVentana", new Color(1f, 0.62f, 0.28f), 3.2f);
+        mNVentana = Emissive("NocheVentana", new Color(1f, 0.56f, 0.22f), 1.25f);
+        mLampGlow = Emissive("LampGlow", new Color(1f, 0.62f, 0.3f), 1.6f);
         CrearPerfilNoche();
         AssetDatabase.SaveAssets();
     }
@@ -136,21 +137,20 @@ public partial class ExteriorBuilder
             return c;
         }
         var bloom = Add<Bloom>();
-        bloom.threshold.value = 0.85f; bloom.intensity.value = 1.4f; bloom.scatter.value = 0.72f; bloom.tint.value = Hex("#C9B5FF");
+        bloom.threshold.value = 1.15f; bloom.intensity.value = 0.45f; bloom.scatter.value = 0.6f; bloom.tint.value = Hex("#FFF0E0");
         var split = Add<SplitToning>();
-        split.shadows.value = Hex("#3A5BC8"); split.highlights.value = Hex("#B58CFF"); split.balance.value = 0f;
+        split.shadows.value = Hex("#56505F"); split.highlights.value = Hex("#807A78"); split.balance.value = 0f;
         var wb = Add<WhiteBalance>();
-        wb.temperature.value = -25f; wb.tint.value = 8f;
-        // sombras y medios levantados para que el suelo no quede negro
+        wb.temperature.value = -5f; wb.tint.value = 3f;
+        // sombras hundidas: la noche pesa, solo se lee lo que tiene una luz cerca
         var smh = Add<ShadowsMidtonesHighlights>();
-        smh.shadows.value = new Vector4(0.9f, 0.95f, 1.2f, 0.2f);
-        smh.midtones.value = new Vector4(1f, 1f, 1.05f, 0.1f);
-        smh.highlights.value = new Vector4(1.05f, 1f, 1.15f, 0f);
-        // exposición baja a propósito (+0,2, no +0,35): las partículas aditivas de la corona suman mucho y con más se queman a blanco
+        smh.shadows.value = new Vector4(1f, 1f, 1.02f, 0f);
+        smh.midtones.value = new Vector4(1f, 1f, 1f, 0f);
+        smh.highlights.value = new Vector4(1f, 1f, 1f, 0f);
         var ca = Add<ColorAdjustments>();
-        ca.postExposure.value = 0.2f; ca.saturation.value = 6f;
+        ca.postExposure.value = 0.55f; ca.saturation.value = -16f; ca.contrast.value = 8f;
         var vig = Add<Vignette>();
-        vig.intensity.value = 0.28f; vig.smoothness.value = 0.45f; vig.color.value = Hex("#05061A");
+        vig.intensity.value = 0.3f; vig.smoothness.value = 0.55f; vig.color.value = Color.black;
         var dof = Add<DepthOfField>();
         dof.mode.value = DepthOfFieldMode.Off;
         EditorUtility.SetDirty(perfilNoche);
@@ -198,6 +198,21 @@ public partial class ExteriorBuilder
         rm.RecalculateBounds();
         MeshObject(g, "ReflejoLuna", rm, mNDestellos, false, false);
 
+        // neblina baja y morada que se arrastra por las calles: el aura del Abismo
+        Particles(g, "Neblina", new Vector3((CalaOeste + CalaEste) / 2f, 1.2f, (CalaSur + CalaMalecon) / 2f), mTorreHumo, ps =>
+        {
+            var pm = ps.main;
+            pm.startLifetime = new ParticleSystem.MinMaxCurve(14f, 22f);
+            pm.startSpeed = new ParticleSystem.MinMaxCurve(0.1f, 0.5f);
+            pm.startSize = new ParticleSystem.MinMaxCurve(16f, 30f);
+            pm.startColor = new Color(0.42f, 0.3f, 0.62f, 0.09f);
+            pm.maxParticles = 90;
+            pm.prewarm = true;
+            pm.simulationSpace = ParticleSystemSimulationSpace.World;
+            var em = ps.emission; em.rateOverTime = 5f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(CalaEste - CalaOeste, 1.5f, CalaMalecon - CalaSur);
+        });
+
         // postproceso nocturno, por encima del perfil de siempre
         var vgo = new GameObject("VolumenNoche");
         vgo.transform.SetParent(g, false);
@@ -209,18 +224,29 @@ public partial class ExteriorBuilder
     {
         var v = new List<Vector3>(); var uv = new List<Vector2>(); var col = new List<Color>(); var tri = new List<int>();
         var horizLuna = new Vector3(LunaDir.x, 0f, LunaDir.z).normalized;
-        for (int i = 0; i < 12; i++)
+        void Nube(float az, float el, float w, float h, Color cc)
         {
-            float az = i * 30f + R(-10f, 10f), w = R(150f, 230f), h = R(28f, 46f);
-            Vector3 d = DirCielo(az, R(2f, 8f)), right = Vector3.Cross(Vector3.up, d).normalized, c = d * RadioCielo;
+            Vector3 d = DirCielo(az, el), right = Vector3.Cross(Vector3.up, d).normalized, up = Vector3.Cross(d, right).normalized, c = d * RadioCielo;
             int b = v.Count;
-            v.Add(c - right * w / 2f - Vector3.up * h / 2f); v.Add(c + right * w / 2f - Vector3.up * h / 2f);
-            v.Add(c - right * w / 2f + Vector3.up * h / 2f); v.Add(c + right * w / 2f + Vector3.up * h / 2f);
+            v.Add(c - right * w / 2f - up * h / 2f); v.Add(c + right * w / 2f - up * h / 2f);
+            v.Add(c - right * w / 2f + up * h / 2f); v.Add(c + right * w / 2f + up * h / 2f);
             uv.Add(new Vector2(0f, 0f)); uv.Add(new Vector2(1f, 0f)); uv.Add(new Vector2(0f, 1f)); uv.Add(new Vector2(1f, 1f));
-            float lit = Mathf.Clamp01(Vector3.Dot(new Vector3(d.x, 0f, d.z).normalized, horizLuna) * 0.5f + 0.5f);
-            var cc = Color.Lerp(new Color(0.1f, 0.13f, 0.26f, 0.45f), new Color(0.5f, 0.6f, 0.95f, 0.7f), lit * lit);   // más claras las que miran a la luna
             for (int k = 0; k < 4; k++) col.Add(cc);
             tri.AddRange(new[] { b, b + 2, b + 3, b, b + 3, b + 1 });
+        }
+        // banco bajo en el horizonte y dos capas altas; las que miran a la luna apenas se aclaran, las demás son casi negras
+        for (int capa = 0; capa < 3; capa++)
+        {
+            int cuantas = capa == 0 ? 16 : 22;
+            for (int i = 0; i < cuantas; i++)
+            {
+                float az = i * 360f / cuantas + R(-9f, 9f);
+                Vector3 h0 = DirCielo(az, 0f);
+                float lit = Mathf.Clamp01(Vector3.Dot(h0, horizLuna) * 0.5f + 0.5f);
+                var cc = Color.Lerp(new Color(0.05f, 0.04f, 0.1f, 0.8f), new Color(0.24f, 0.22f, 0.42f, 0.8f), lit * lit * lit);
+                float el = capa == 0 ? R(2f, 9f) : capa == 1 ? R(14f, 26f) : R(32f, 52f);
+                Nube(az, el, R(190f, 300f), capa == 0 ? R(34f, 56f) : R(70f, 120f), cc);
+            }
         }
         var m = new Mesh { name = "NubesNoche" };
         m.SetVertices(v); m.SetUVs(0, uv); m.SetColors(col); m.SetTriangles(tri, 0); m.RecalculateBounds();
@@ -304,8 +330,8 @@ public partial class ExteriorBuilder
         foreach (Transform c in casas)
         {
             Vector3 p = c.localPosition;
-            bool luz = (Mathf.Abs(p.x - (CalaTorre.x + 9f)) < 0.5f && Mathf.Abs(p.z + 76f) < 0.5f) || (Mathf.Abs(p.x + 48.5f) < 0.5f && Mathf.Abs(p.z - 20f) < 0.5f);
-            bool habitada = luz || n % 2 == 0;
+            bool luz = conLuz < 6 && n % 13 == 0;   // unas pocas ventanas con luz real, repartidas por el pueblo
+            bool habitada = luz || n % 3 != 2;
             n++;
             foreach (var r in c.GetComponentsInChildren<Renderer>(true))
                 if (r.name == "Vidrio") r.sharedMaterial = habitada ? mNVentana : mWindowDark;
@@ -338,7 +364,7 @@ public partial class ExteriorBuilder
             {
                 sun.name = "Luna";
                 sun.transform.rotation = Quaternion.LookRotation(-transform.TransformDirection(LunaDir));   // el builder puede ir girado
-                sun.color = Hex("#9DB8FF"); sun.intensity = 0.4f;
+                sun.color = Hex("#8C8DA6"); sun.intensity = 0.5f;
                 sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.8f;
             }
             else
@@ -354,9 +380,9 @@ public partial class ExteriorBuilder
             // el agua refleja estos colores (los publica ExteriorSky); ambiente y niebla los pone ExteriorNoche
             if (noche)
             {
-                sky.zenith = Hex("#05071A"); sky.horizon = Hex("#2A1F5E"); sky.ground = Hex("#0A0A1C");
-                sky.sunColor = new Color(0.7f, 0.85f, 1.6f); sky.sunSize = 0.004f;
-                sky.cloudColor = Hex("#3A4A86"); sky.cloudCover = 0.35f;
+                sky.zenith = Hex("#040408"); sky.horizon = Hex("#17101F"); sky.ground = Hex("#07070C");
+                sky.sunColor = new Color(0.5f, 0.5f, 0.62f); sky.sunSize = 0.004f;
+                sky.cloudColor = Hex("#1E1C2A"); sky.cloudCover = 0.6f;
                 sky.driveAmbient = false; sky.driveFog = false;
             }
             else

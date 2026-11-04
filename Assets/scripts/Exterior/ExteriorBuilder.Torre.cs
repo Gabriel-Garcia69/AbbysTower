@@ -15,8 +15,10 @@ public partial class ExteriorBuilder
 {
     /// <summary>Centro de la torre en la Cala (x, z). ExteriorIntro apunta las tomas aquí.</summary>
     public static readonly Vector2 CalaTorre = new Vector2(-12f, -18f);
-    public const float TorreAltura = 165f;
-    public const float PodioRadio = 44f;   // el terreno es plano dentro de este radio (CalaHeight)
+    /// <summary>La torre se arma con sus medidas de siempre y se reduce con esta escala (a tamaño completo aplastaba al pueblo).</summary>
+    public const float TorreEscala = 0.6f;
+    public const float TorreAltura = 165f * TorreEscala;
+    public const float PodioRadio = 44f * TorreEscala;   // el terreno es plano dentro de este radio (CalaHeight)
     const float PodioAlto = 1.25f;         // 5 escalones de 0,25 m: Abby los sube sin rampa
 
     [Header("Cala")]
@@ -143,7 +145,7 @@ public partial class ExteriorBuilder
         }
 
         // podio: 5 escalones de 0,25 m con collider propio
-        float[] pr = { PodioRadio, 40f, 36f, 32f, 28f };
+        float[] pr = { 44f, 40f, 36f, 32f, 28f };
         for (int i = 0; i < pr.Length; i++)
         {
             var m = Cylinder(pr[i], pr[i], 0.25f * (i + 1), 96, 2f, true);
@@ -407,6 +409,9 @@ public partial class ExteriorBuilder
         }
         Halo("Halo", 260f, 82f, 40f, mTorreHalo);
         Halo("HaloCorona", 100f, yTop + 10f, 20f, mTorreHaloCorona);
+
+        root.localScale = Vector3.one * TorreEscala;
+        foreach (var ps in root.GetComponentsInChildren<ParticleSystem>(true)) { var pm = ps.main; pm.scalingMode = ParticleSystemScalingMode.Hierarchy; }
     }
 
     // ---------------- verificación al terminar de generar
@@ -450,7 +455,7 @@ public partial class ExteriorBuilder
             foreach (Transform o in g)
             {
                 Vector3 p = root.InverseTransformPoint(o.position);
-                if (p.x >= -61.8f && p.x <= 42f && p.z >= CalaSur && p.z <= CalaMalecon) continue;
+                if (p.x >= CalaOeste && p.x <= CalaEste && p.z >= CalaSur && p.z <= CalaMalecon) continue;
                 fuera++;
                 porGrupo[gn] = porGrupo.TryGetValue(gn, out int n) ? n + 1 : 1;
                 if (fuera <= 15) sb.AppendLine($"    {gn}/{o.name}: {p:F1}");

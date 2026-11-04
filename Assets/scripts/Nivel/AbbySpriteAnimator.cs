@@ -52,6 +52,40 @@ public class AbbySpriteAnimator : MonoBehaviour
     public float tiempoRodilla = 0.8f;
     [Tooltip("Usa las poses corregidas (quieta, golpe y guardia: espada en la mano derecha y 1.31 m) en lugar de las animaciones de respirar, espadazo y bloqueo.")]
     public bool posesCorregidas = true;
+
+    // tajos del combo (Resources/AbbyAnim/Tajo1..3/<dirección>/frame_XXX): [tajo][dirección][cuadro]; las direcciones del oeste que falten se espejan
+    Sprite[][][] tajos;
+    bool espejo;   // el material de los sprites ignora flipX: se voltea con la escala
+    static readonly int[] EspejoDir = { 4, 3, 2, 1, 0, 7, 6, 5 };
+
+    void CargarTajos()
+    {
+        tajos = new Sprite[3][][];
+        for (int k = 0; k < 3; k++)
+        {
+            Sprite[][] t = null;
+            for (int d = 0; d < 8; d++)
+            {
+                var fr = Resources.LoadAll<Sprite>($"AbbyAnim/Tajo{k + 1}/{Names[d]}");
+                if (fr == null || fr.Length == 0) continue;
+                System.Array.Sort(fr, (a, b) => string.CompareOrdinal(a.name, b.name));
+                if (t == null) t = new Sprite[8][];
+                t[d] = fr;
+            }
+            tajos[k] = t;
+        }
+    }
+
+    /// <summary>Cuadros del tajo que toca en la dirección actual (el del combo, o el primero si ese aún no existe); null si no hay.</summary>
+    Sprite[] CuadrosTajo(int k, int d, out bool volteado)
+    {
+        volteado = false;
+        var t = tajos != null ? (tajos[Mathf.Clamp(k, 0, 2)] ?? tajos[0]) : null;
+        if (t == null) return null;
+        if (t[d] != null) return t[d];
+        volteado = t[EspejoDir[d]] != null;
+        return t[EspejoDir[d]];
+    }
     public AbbyBlock block;
     public PlayerHealth health;
 
@@ -122,6 +156,7 @@ public class AbbySpriteAnimator : MonoBehaviour
         // el animador viejo (Animator + blend tree de 4 caminatas) pelearía por el sprite
         var anim = GetComponent<Animator>(); if (anim != null) anim.enabled = false;
         var old = GetComponent<SpriteDirectionAnimator>(); if (old != null) old.enabled = false;
+        CargarTajos();
         if (posesCorregidas && conjunto == null)
         {
             if (Alguno(idle)) idleAnim = new Frames[8];
@@ -180,7 +215,18 @@ public class AbbySpriteAnimator : MonoBehaviour
             }
         }
         else muerteTime = 0f;
+        espejo = false;
+        var cuadrosTajo = s == null && attacking ? CuadrosTajo(attack.ComboIndex, dir, out espejo) : null;
         if (s != null) { }
+        else if (cuadrosTajo != null)
+        {
+            // el primer cuadro es la carga (dura el windup) y los demás se reparten en lo que dura el golpe
+            if (attack.Swings != lastSwing) { lastSwing = attack.Swings; attackTime = 0f; }
+            attackTime += dt;
+            int n = cuadrosTajo.Length - 1;
+            float u = (attackTime - attack.windup) / Mathf.Max(0.05f, attack.SwingLength - attack.windup);
+            s = cuadrosTajo[attackTime < attack.windup ? 0 : Mathf.Clamp(1 + Mathf.FloorToInt(u * n), 1, n)];
+        }
         else if (attacking && !Has(slash, dir) && golpePose != null && golpePose.Length > dir && golpePose[dir] != null)
         {
             // pose de golpe: un instante de carga (alza la espada con la pose de guardia) y luego el tajo, sin voltear la espada
@@ -296,12 +342,12 @@ public class AbbySpriteAnimator : MonoBehaviour
         if (billboard != null && billboard.enabled)
         {
             var sc = transform.localScale;
-            transform.localScale = new Vector3(sc.x, sc.y * stretch, sc.z);
+            transform.localScale = new Vector3(espejo ? -sc.x : sc.x, sc.y * stretch, sc.z);
             transform.rotation = transform.rotation * Quaternion.Euler(0f, 0f, giro);
         }
         else
         {
-            transform.localScale = new Vector3(baseScale.x, baseScale.y * stretch, baseScale.z);
+            transform.localScale = new Vector3(espejo ? -baseScale.x : baseScale.x, baseScale.y * stretch, baseScale.z);
             transform.localRotation = baseRot * Quaternion.Euler(0f, 0f, giro);
         }
         transform.localPosition = basePos + transform.parent.InverseTransformDirection(transform.rotation * empuje) * 1f;

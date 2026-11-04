@@ -19,7 +19,7 @@ public class MenuPrincipal : MonoBehaviour
 
     [Header("Arranque")]
     [Tooltip("Al abrir el juego se va directo a la tarjeta \"Despertar\" y al tutorial, sin mostrar el menú. El menú solo se ve al volver desde la pausa o tras el final.")]
-    public bool saltarMenuAlIniciar = true;
+    public bool saltarMenuAlIniciar = false;   // GDD: Inicio → Menú → Jugar
     [Tooltip("En el editor el menú se sigue viendo (para probarlo); marca esto para que el editor también arranque saltándolo.")]
     public bool saltarEnEditor = false;
 

@@ -1,4 +1,4 @@
-# Qué falta según el GDD — 4 de noviembre de 2026
+# Qué falta según el GDD — 5 de noviembre de 2026
 
 Rama `animaciones`. El GDD congela funciones nuevas el **10 de noviembre**; la demo es el **20**.
 GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya se hizo: `NOTAS_PULIDO.md` y `Docs/Cambios_respecto_al_GDD.md`.
@@ -21,8 +21,8 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 - Solo se usa en el tutorial. `Personajes/Dante` y `EnemigosAnim/Dante` siguen siendo su sombra de jefe final, en Cima.
 
 ## Gruta del tutorial y HUD (5 de noviembre)
-- **Gruta (Expedición):** paredes de bloques en terrazas (`ExpHeight`), salas anchas (`ExpMitad`), luz sombría sin azul (`LuzDeSala`, `VolumenExpedicion`), suelo gris. Para ver cambios del builder: regenerar la escena y guardarla.
-- **Jefe:** animaciones `Resources/ColosoAnim` (rugido y golpe, PixelLab) y cinemática nueva en `ExpedicionPiso20.Derrota`, en contrapicado con lente abierto. Sonidos sintetizados: `Rugido`, `Temblor`, `Impacto`.
+- **Gruta (Expedición):** cueva de roca natural: paredes (`ExpRoca`, `ParedesGruta`), techo y fondo del abismo (`DioramaBuilder.ExpedicionCueva.cs`) en mallas con ruido, columnas y peñascos irregulares. El suelo se queda plano para que las runas se vean. Luz baja en `LuzDeSala`, ambiente en `BuildAtmosphere`. Para ver cambios del builder: regenerar la escena y guardarla.
+- **Jefe:** `Resources/ColosoAnim`: rugido, zarpazo y golpe (PixelLab, personaje `44035936`), con los ojos visibles. Cinemática en `ExpedicionPiso20.Derrota`: en contrapicado con lente abierto; desde que sale la criatura no se ve a Dante ni a la expedición y el golpe corta a negro, para que no se sepa qué les pasó. Sonidos sintetizados: `Rugido`, `Temblor`, `Impacto`.
 - **HUD:** fuente Inter (el logo sigue pixelado), diálogos más grandes con interlineado, retrato centrado en la cabeza, barra de stamina más gruesa.
 - **Impulso:** gasta 20 de stamina y tiene sonido propio. Los sonidos no los pude escuchar: hay que revisarlos jugando.
 - **Cámara:** se corrigió un bug: lo que subía para no meterse al suelo nunca se deshacía.
@@ -33,9 +33,9 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 | Audio final (teclado, órgano y violín; 7 efectos) en `Assets/Resources/Audio/` | Francisco | Suena lo sintetizado provisional |
 | Jugar la partida entera seguida, 15 minutos, de principio a fin | Equipo | Probé cada parte por separado, no todo seguido |
 | Prueba por otra persona ("terminado" lo exige) | Karla o Ricardo | Sin hacer |
-| Pasar `animaciones` a `dev` con un PR | Gabriel / Rodrigo | Sin hacer, unos 90 commits de ventaja |
-| Rendimiento del `.exe` en combate y en otra PC | Equipo | Medido sin combate en la laptop de Gabriel: cumple |
-| Revisar que los colores cumplan la paleta DB32 | Equipo | Sin revisar |
+| Pasar `animaciones` a `dev` con un PR | Gabriel / Rodrigo | Sin hacer: 97+ commits de ventaja y `dev` tiene 2 que `animaciones` no. Falta integrarlos |
+| Rendimiento del `.exe` en combate y en otra PC | Equipo | `.exe` sin combate: cumple. Con 6 enemigos, en el editor: unos 57 FPS en los 6 pisos. Falta el `.exe` en combate y otra PC |
+| Decidir la paleta DB32 | Equipo | Revisado el 5 de noviembre: 0 % de píxeles exactos en Abby, Dante, Coloso e imágenes de la intro. Forzarla cambia todo el arte: mejor anotarlo como cambio al GDD |
 | Actualizar el GDD con los cambios | Equipo | Lista en `Docs/Cambios_respecto_al_GDD.md` |
 
 ## Decisiones del equipo
@@ -47,10 +47,10 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 ## Detalles menores
 - La imagen 12 de la intro muestra una torre en ruinas, no la morada.
 - El bloqueo de Abby es una pose de guardia, sin animación (no gasté generaciones en eso).
-- Antes de entregar, borrar las herramientas de `Assets/Editor`: `PruebaAnim`, `TourExterior`, `CamaraRemota`, `PruebaPisos`, `PruebaMover`, `PruebaReglas` y `ConstruirJuego`.
+- Antes de entregar, borrar las herramientas de `Assets/Editor`: `PruebaAnim`, `TourExterior`, `TourCala`, `TourExp`, `CamaraRemota`, `PruebaPisos`, `PruebaMover`, `PruebaReglas` y `ConstruirJuego`. No van en el `.exe` ni están en Git, pero siguen en la carpeta del proyecto.
 
 ## Ya probado en Play (3 de noviembre)
-- Combo de 3 tajos animados de Abby (4-5 cuadros), en las direcciones este, oeste, sur y norte; las diagonales no se revisaron en el juego.
+- Combo de 3 tajos animados de Abby (4-5 cuadros), en las direcciones este, oeste, sur y norte. Las diagonales tienen sus cuadros (las del oeste se voltean), pero no se vieron jugando.
 - Bloqueo: 8 % del daño, −20 de stamina por golpe, sin stamina no bloquea, recupera unos 25 por segundo.
 - Fuente: cura al 100 %, un solo uso.
 - Morir y reintentar: reinicia el piso con la vida llena.

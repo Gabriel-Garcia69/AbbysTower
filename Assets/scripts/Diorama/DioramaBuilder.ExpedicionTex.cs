@@ -50,10 +50,10 @@ public partial class DioramaBuilder
         TexturasExpedicion.Asegurar();
 #endif
         // el tono frío viene de la luz, no del albedo: las texturas van sin tinte azul
-        mExpSuelo = MatTex("Dio_ExpSueloGris", "suelo_gris", Color.white, 0.1f);
-        mExpGrava = MatTex("Dio_ExpGravaGris", "grava_gris", Color.white, 0.08f);
-        mExpPared = MatTex("Dio_ExpParedClara", "pared_roca", new Color(1.7f, 1.65f, 1.75f), 0.15f);
-        mExpParedAlt = MatTex("Dio_ExpParedAltClara", "pared_alternativa", new Color(1.6f, 1.55f, 1.65f), 0.15f);
+        mExpSuelo = MatTex("Dio_ExpSueloRocaMedia", "pared_alternativa", new Color(1.15f, 1.1f, 1.18f), 0.12f);   // roca natural, sin empedrado
+        mExpGrava = null;   // las manchas por celdas dejaban orillas en escalera
+        mExpPared = MatTex("Dio_ExpRocaPared", "pared_roca", new Color(1.1f, 1.07f, 1.14f), 0.15f);
+        mExpParedAlt = MatTex("Dio_ExpRocaAlt", "pared_alternativa", new Color(1.05f, 1.02f, 1.08f), 0.15f);
         mCaveRock = mExpPared;
         mSenderoExp = MatTex("Dio_ExpSenderoApagado", "sendero_losas", new Color(0.72f, 0.66f, 0.62f), 0.1f);
         mCloth = MatTex("Dio_ExpLonaRojaClara", "lona_tienda", new Color(2f, 0.85f, 0.72f), 0.05f);     // la roja sigue roja, pero apagada
@@ -253,5 +253,12 @@ public partial class DioramaBuilder
             MeshObject(grp, nombre, m, mat, false);
         }
         Malla("Grietas", gv, guv, gt, mExpGrieta);
+        // manchas grandes y suaves: el suelo deja de verse como una textura repetida
+        for (int i = 0; i < 70; i++)
+        {
+            float z = R(-78f, 124f), x = R(-30f, 30f);
+            PlanoDecal(cv, cuv, ct, new Vector3(x, (z > ExpLedgeZ0 && z < ExpLedgeZ1 ? 0.93f : 0.02f), z), R(6f, 16f), R(0f, 360f));
+        }
+        Malla("Manchas", cv, cuv, ct, MatDecal("Dio_ExpMancha", "mancha", false, Color.white));
     }
 }

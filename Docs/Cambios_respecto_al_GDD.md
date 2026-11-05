@@ -67,3 +67,9 @@ Este documento resume cómo quedó el juego frente al GDD (`GDD_Abbys_Tower_deta
 2. Sección de enemigos: nombres y tipos de la tabla de arriba.
 3. Sección de arte: el combo de Abby son 3 tajos animados de 4-5 cuadros (`Resources/AbbyAnim`); el bloqueo es una pose (guardia).
 4. Ruta: Cima es el piso 5 con Dante.
+
+## Cambios del 5 de noviembre
+- Tutorial: se juega con Dante humano y sprites propios. La gruta es una cueva de roca natural, más oscura.
+- Criatura del tutorial: nueva cinemática con rugido, zarpazo y golpe. La expedición y Dante dejan de verse y el golpe corta a negro: no se muestra qué les pasó.
+- Impulso: gasta 20 de stamina y tiene sonido propio.
+- Fuente del juego: Inter (licencia OFL); el logo se queda en Press Start 2P. Diálogos más grandes y con más interlineado.

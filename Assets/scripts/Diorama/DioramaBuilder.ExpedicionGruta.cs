@@ -20,39 +20,21 @@ public partial class DioramaBuilder
 
         // ---- la bóveda: techo de roca, paredes que suben hasta él y estalactitas
         var boveda = Group("Boveda", g);
-        var techo = Flat(boveda, "Techo", new Vector3(0f, ExpTecho, 40f), 90f, 260f, mCaveRock, 0.25f);   // UV en metros (antes: una sola repetición en todo el techo)
-        techo.transform.localRotation = Quaternion.Euler(180f, 0f, 0f);   // la cara mira hacia abajo: desde arriba no tapa
-        // al fondo, la pared del abismo y los costados del vacío (sin ellos se veía un hueco negro)
-        Wall(boveda, "ParedAbismo", new Vector3(0f, (ExpTecho - 46f) / 2f, ExpEdgeZ + 50f), Vector3.back, 90f, ExpTecho + 46f, mCaveRock, 0.25f);
-        foreach (float sx in new[] { -1f, 1f })
-            Wall(boveda, "CostadoAbismo", new Vector3(sx * 26f, -16f, ExpEdgeZ + 25f), new Vector3(-sx, 0f, 0f), 52f, 62f, mCaveRock, 0.25f);
-        // encima, bloques de roca a distintas profundidades: la pared deja de verse como un plano
-        for (float x = -44f; x <= 44f; x += 4.2f)
-            for (float y = -40f; y < ExpTecho; y += 3f)
-            {
-                float fondo = R(1f, 5f);
-                Box(boveda, "BloqueFondo", new Vector3(x, y, ExpEdgeZ + 49.9f - fondo / 2f), new Vector3(4.2f, 3f, fondo), mExpFondo, false, 0.25f);
-            }
-        foreach (float sx in new[] { -1f, 1f })
-            for (float z = ExpEdgeZ; z < ExpEdgeZ + 50f; z += 4.2f)
-                for (float y = -40f; y < ExpTecho; y += 3f)
-                {
-                    float fondo = R(1f, 4f);
-                    Box(boveda, "BloqueCostado", new Vector3(sx * (26f - fondo / 2f), y, z), new Vector3(fondo, 3f, 4.2f), mExpFondo, false, 0.25f);
-                }
         var colgantes = Group("Estalactitas", boveda);
         for (int i = 0; i < 70; i++)
         {
-            float x = R(-26f, 26f), z = R(-70f, 175f), h = R(2.5f, Mathf.Abs(x) > 16f ? 11f : 7f);
-            var m = MeshObject(colgantes, "Estalactita", ConoMetrico(h * 0.26f, h, 11, 0.25f), mCaveRock, false);
-            m.transform.localPosition = new Vector3(x, ExpTecho + 0.3f, z);
+            float x = R(-30f, 30f), z = R(-76f, 175f), techoY = ExpTechoEn(x, z);
+            float h = Mathf.Min(R(2.5f, Mathf.Abs(x) > 16f ? 11f : 7f), techoY - 15f);   // la punta nunca baja a donde pasa la cámara
+            if (h < 1.5f) continue;
+            var m = MeshObject(colgantes, "Estalactita", RocaIrregular(h * 0.28f + 0.3f, h, PerfilPico, 9, 5), mCaveRock, false);
+            m.transform.localPosition = new Vector3(x, techoY + 0.6f, z);
             m.transform.localRotation = Quaternion.Euler(180f + R(-6f, 6f), R(0f, 360f), R(-6f, 6f));   // cuelga
             if (i % 12 == 0)   // solo unos pocos cristales brillan, y van pegados a la estalactita (a 55 % de su largo), no flotando
             {
                 bool vio = i % 24 == 0;
                 var c = MeshObject(colgantes, "Cristal", CristalFacetadoMesh(1f, 0.18f, vio ? new Color(0.58f, 0.46f, 0.86f) : new Color(0.38f, 0.72f, 0.82f)), mExpCristal, false);
                 float a = R(0f, Mathf.PI * 2f), rad = h * 0.26f * 0.45f * 0.8f;   // radio de la estalactita a esa altura (poco menos, para que se hunda)
-                c.transform.localPosition = new Vector3(x + Mathf.Cos(a) * rad, ExpTecho + 0.3f - h * 0.55f, z + Mathf.Sin(a) * rad);
+                c.transform.localPosition = new Vector3(x + Mathf.Cos(a) * rad, techoY + 0.6f - h * 0.55f, z + Mathf.Sin(a) * rad);
                 float hc = Mathf.Min(R(0.6f, 1.2f), h * 0.4f);   // pequeños
                 c.transform.localScale = new Vector3(hc, hc, hc);
                 c.transform.localRotation = Quaternion.FromToRotation(Vector3.up, new Vector3(Mathf.Cos(a) * 0.35f, -1f, Mathf.Sin(a) * 0.35f).normalized);   // la punta mira abajo y un poco afuera
@@ -127,20 +109,12 @@ public partial class DioramaBuilder
         foreach (float z in new[] { 14f, 54f, 96f })
             foreach (float sx in new[] { -1f, 1f })
             {
-                var p = new Vector3(sx * 18.5f, 0f, z);
-                var unPilar = Group("PilarRoca", g);   // fuera de "Pilares": cada pilar es su propia malla para poder atenuarlo
-                // de bloques de roca, como las paredes: cada tramo un poco corrido y de otro ancho
-                for (float y = 0f; y < ExpTecho; y += 3f)
-                {
-                    float lado = R(2.6f, 3.3f) + (y < 3f ? 1f : 0f);
-                    Box(unPilar, "Tramo", p + new Vector3(R(-0.2f, 0.2f), y + 1.5f, R(-0.2f, 0.2f)), new Vector3(lado, 3f, lado), mExpParedAlt, false, 0.25f)
-                        .transform.localRotation = Quaternion.Euler(0f, R(-5f, 5f), 0f);
-                }
-                Fundir(unPilar);
-                foreach (var mr in unPilar.GetComponentsInChildren<MeshRenderer>()) MarcarOcluible(mr);
-                foreach (float y in new[] { 3.5f, 9f, 15f })
-                    Prim(pil, PrimitiveType.Cube, "Banda", p + Vector3.up * y, new Vector3(3.2f, 0.1f, 3.2f), Glow("Dio_RunaPilar", new Color(0.3f, 0.62f, 0.85f), 0.7f));
-                Cadena(pil, p + new Vector3(-sx * 1.4f, 20f, 0f), new Vector3(-sx * 9f, ExpTecho - 2f, z + 18f), hierro);
+                var p = new Vector3(sx * (ExpMitad(z) - 3f), 0f, z);
+                float altoCol = ExpTechoEn(p.x, p.z) + 1f;
+                var col = MeshObject(g, "ColumnaRoca", RocaIrregular(R(1.7f, 2.5f), altoCol, PerfilColumna, 13, 12), mExpParedAlt, true);
+                col.transform.localPosition = p;
+                col.transform.localRotation = Quaternion.Euler(0f, R(0f, 360f), 0f);
+                MarcarOcluible(col.GetComponent<MeshRenderer>());
             }
         foreach (float x in new[] { -14f, 14f })   // las cadenas de la criatura de abajo
             Cadena(pil, new Vector3(x, ExpTecho, ExpEdgeZ + 12f), new Vector3(x * 0.8f, -34f, ExpEdgeZ + 16f), hierro);
@@ -163,7 +137,7 @@ public partial class DioramaBuilder
                 }
         }
 
-        Fundir(boveda);
+        Fundir(colgantes);
         foreach (Transform parte in esq)   // arcos, columna y cráneo, cada uno una malla que la oclusión suave puede atenuar
         {
             Fundir(parte);

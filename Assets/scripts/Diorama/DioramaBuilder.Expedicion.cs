@@ -14,7 +14,6 @@ public partial class DioramaBuilder
     static readonly Vector3 ExpSpawn = new Vector3(0f, 0.1f, -58f);
     const float ExpLedgeZ0 = -30f, ExpLedgeZ1 = -14f, ExpVeilZ = 4f, ExpEdgeZ = 128f;
 
-    const float ExpBloque = 2.1f, ExpEscalon = 1.5f;   // lado y alto de los bloques de roca, como las terrazas del Piso 1
     const float ExpFondo = 80f;   // la pared de atrás, lejos de la salida: la cámara queda dentro de la sala
 
     /// <summary>Medio ancho de la gruta a la altura z: se abre en salas grandes (campamento, entrenamiento y oleada) y se cierra entre ellas.</summary>
@@ -24,38 +23,94 @@ public partial class DioramaBuilder
         return 21f + 5f * Sala(-48f, 13f) + 6f * Sala(30f, 20f) + 9f * Sala(78f, 25f) + Mathf.Sin(z * 0.11f) * 1.2f;
     }
 
-    /// <summary>Número fijo de 0 a 1 por bloque, para que cada uno tenga su propia altura.</summary>
-    static float AzarBloque(float bx, float bz)
-    {
-        float s = Mathf.Sin(bx * 12.9898f + bz * 78.233f) * 43758.5453f;
-        return s - Mathf.Floor(s);
-    }
-
     float ExpHeight(float x, float z)
     {
         float e = EdgeNoise(x, z);
         if (z > ExpEdgeZ + e * 0.8f) return -40f;   // el abismo
-        // todo va por bloques: se toma el centro del bloque, así las orillas quedan rectas y la pared sube en terrazas de roca
-        float bx = (Mathf.Floor(x / ExpBloque) + 0.5f) * ExpBloque, bz = (Mathf.Floor(z / ExpBloque) + 0.5f) * ExpBloque;
-        float azar = AzarBloque(bx, bz);
-        float roca = ExpRoca(bx, bz);
-        if (roca > 0f) return Mathf.Min(ExpTecho + 1.5f, (Mathf.Ceil(roca / ExpEscalon) + (azar > 0.72f ? 1f : 0f)) * ExpEscalon);
-        // al pie de la pared, dos escalones de roca; decoración: el camino y las salas quedan libres
-        float aPared = Mathf.Min(ExpMitad(bz) - Mathf.Abs(bx), bz + ExpFondo) + (azar - 0.5f) * 2.2f;
-        float base0 = aPared < 1.8f ? 0.9f : aPared < 3.6f ? 0.45f : 0f;
-        bool escalon = z > ExpLedgeZ0 + e * 0.6f && z < ExpLedgeZ1 + e * 0.6f;
-        // losas sueltas: el suelo deja de ser plano, sin estorbar (más bajas que lo que Dante sube sin saltar)
-        float losa = Mathf.Abs(bx - SenderoX(bz)) > 5f && Noise(bx * 0.09f + 9f, bz * 0.09f + 4f) > 0.6f ? 0.2f : 0f;
-        return Mathf.Max(base0, (escalon ? 0.9f : 0f) + losa);
+        // el suelo es plano (las runas y el sendero van pegados a él); las paredes son la malla de ExpRoca
+        if (z > ExpLedgeZ0 + e * 0.6f && z < ExpLedgeZ1 + e * 0.6f) return 0.9f;   // el escalón (hay que saltar)
+        return 0f;
     }
 
     /// <summary>Altura de la roca de las paredes de la gruta: sube en curva con bultos (0 = suelo).</summary>
     static float ExpRoca(float x, float z)
     {
         float e = EdgeNoise(x, z);
-        float d = Mathf.Max(Mathf.Abs(x) - ExpMitad(z) + e * 2.5f, -(z + ExpFondo) + e * 2.5f);
+        float lado = x > 0f ? 7f : 13f;   // cada pared con su propio contorno
+        float muro = ExpMitad(z) + (Noise(z * 0.05f + lado, lado) - 0.5f) * 9f;
+        float d = Mathf.Max(Mathf.Abs(x) - muro + e * 2f, -(z + ExpFondo) + e * 3f);
         if (d <= 0f) return 0f;
-        return Mathf.Min(ExpTecho + 2f, d * d * 0.22f + d * 0.9f + Noise(x * 0.22f + 3f, z * 0.22f) * 4f * Mathf.Clamp01(d / 4f));
+        float aspera = (Noise(x * 0.07f + 3f, z * 0.07f) - 0.5f) * 10f * Mathf.Clamp01(d / 6f)
+                     + (Noise(x * 0.21f, z * 0.21f + 8f) - 0.5f) * 4.5f * Mathf.Clamp01(d / 3f)
+                     + (Noise(x * 0.55f + 1f, z * 0.55f) - 0.5f) * 1.4f * Mathf.Clamp01(d / 2f);
+        return Mathf.Min(ExpTecho + 8f, Mathf.Max(0f, d * d * 0.16f + d * 0.7f + aspera));
+    }
+
+    /// <summary>
+    /// Las paredes de la gruta en una malla lisa (normales suaves), con colisión para la cámara. UV en metros por proyección según el eje
+    /// dominante de cada triángulo (x, y o z): 4 m por repetición = 32 px/m con las texturas de 128 px, sin estirarse en las pendientes
+    /// (el UV de antes (z + |x|, y + |x|/2) estiraba más de 2 veces casi la mitad de la pared). Dos materiales (pared_roca y
+    /// pared_alternativa) por manchas de ruido de baja frecuencia, para que la repetición no se note.
+    /// </summary>
+    void ParedesGruta(Transform parent)
+    {
+        const float cell = 1.25f, tile = 0.25f;
+        float x0 = -62f, z0 = -114f, x1 = 62f, z1 = ExpEdgeZ + 54f;
+        int nx = Mathf.CeilToInt((x1 - x0) / cell), nz = Mathf.CeilToInt((z1 - z0) / cell);
+        var v = new List<Vector3>(); var t = new List<int>();
+        var idx = new int[nx + 1, nz + 1];
+        for (int i = 0; i <= nx; i++)
+            for (int j = 0; j <= nz; j++)
+            {
+                float x = x0 + i * cell, z = z0 + j * cell, y = ExpRoca(x, z) - 0.05f;
+                idx[i, j] = v.Count;
+                v.Add(new Vector3(x, y, z));
+            }
+        for (int i = 0; i < nx; i++)
+            for (int j = 0; j < nz; j++)
+            {
+                int a = idx[i, j], b = idx[i + 1, j], c = idx[i, j + 1], d = idx[i + 1, j + 1];
+                if (v[a].y < 0f && v[b].y < 0f && v[c].y < 0f && v[d].y < 0f) continue;   // suelo: lo pone el terreno
+                t.Add(a); t.Add(c); t.Add(d); t.Add(a); t.Add(d); t.Add(b);
+            }
+        // normales suaves de la malla indexada; después se duplican los vértices por (región, eje) para darles su UV
+        var base0 = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        base0.SetVertices(v); base0.SetTriangles(t, 0); base0.RecalculateNormals();
+        var normales = base0.normals;
+        DestroyImmediate(base0);
+
+        var v2 = new List<Vector3>(); var n2 = new List<Vector3>(); var uv2 = new List<Vector2>();
+        var tri = new List<int>[] { new List<int>(), new List<int>() };
+        var mapa = new Dictionary<long, int>();
+        for (int k = 0; k < t.Count; k += 3)
+        {
+            Vector3 p0 = v[t[k]], p1 = v[t[k + 1]], p2 = v[t[k + 2]];
+            Vector3 fn = Vector3.Cross(p1 - p0, p2 - p0), cen = (p0 + p1 + p2) / 3f;
+            float ax = Mathf.Abs(fn.x), ay = Mathf.Abs(fn.y), az = Mathf.Abs(fn.z);
+            int eje = ax >= ay && ax >= az ? 0 : ay >= az ? 1 : 2;
+            int region = Noise(cen.x * 0.045f + 5f, cen.z * 0.045f + 2f) > 0.5f ? 1 : 0;
+            for (int q = 0; q < 3; q++)
+            {
+                int o = t[k + q];
+                long clave = (long)o * 8 + region * 4 + eje;
+                if (!mapa.TryGetValue(clave, out int n))
+                {
+                    var p = v[o];
+                    n = v2.Count; mapa[clave] = n;
+                    v2.Add(p); n2.Add(normales[o]);
+                    uv2.Add((eje == 0 ? new Vector2(p.z, p.y) : eje == 1 ? new Vector2(p.x, p.z) : new Vector2(p.x, p.y)) * tile);
+                }
+                tri[region].Add(n);
+            }
+        }
+        var m = new Mesh { name = "ParedesGruta", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        m.SetVertices(v2); m.SetNormals(n2); m.SetUVs(0, uv2);
+        m.subMeshCount = 2;
+        m.SetTriangles(tri[0], 0); m.SetTriangles(tri[1], 1);
+        m.RecalculateTangents(); m.RecalculateBounds();
+        var go = MeshObject(parent, "ParedesGruta", m, mExpPared, true);
+        go.GetComponent<MeshRenderer>().sharedMaterials = new[] { mExpPared, mExpParedAlt };
+        go.AddComponent<MeshCollider>().sharedMesh = m;
     }
 
     /// <summary>El sendero serpentea suave (una curva con muchos puntos, sin esquinas).</summary>
@@ -77,6 +132,8 @@ public partial class DioramaBuilder
         // la cámara sube sobre lo que se llame "Terreno"; aquí las paredes son del terreno y la mandarían encima del techo
         foreach (Transform t in root.Find("Terreno")) t.name = "RocaGruta";
         var g = Group("Gruta", root);
+        ParedesGruta(g);
+        BovedaOrganica(g);
         var lvl = Group("Nivel", root);
 
         // cristales y estalagmitas por las paredes: cada uno se apoya en lo que haya de verdad debajo (suelo o roca de la pared);
@@ -142,7 +199,7 @@ public partial class DioramaBuilder
         }
         // el sprite se alumbra por lo que tiene encima: una luz fuerte arriba y un poco al frente, y otra roja que le da el tono
         // (apagadas hasta la cinemática: si no, tiñen el fondo de la sala antes de que aparezca)
-        AddLight(coloso, new Vector3(0f, 58f, -24f), new Color(0.92f, 0.84f, 0.88f), 85f, 2600f).enabled = false;
+        AddLight(coloso, new Vector3(0f, 58f, -24f), new Color(0.95f, 0.88f, 0.92f), 90f, 4200f).enabled = false;
         AddLight(coloso, new Vector3(0f, 40f, -24f), new Color(1f, 0.22f, 0.16f), 55f, 700f).enabled = false;
 
         // la expedición: el capitán y los cazadores (ExpedicionPiso20 los va moviendo)
@@ -203,6 +260,7 @@ public partial class DioramaBuilder
         var oclusion = new GameObject("Oclusion");   // atenúa los huesos, pilares y estalagmitas que tapan a Dante
         oclusion.transform.SetParent(root, false);
         oclusion.AddComponent<OclusionSuave>();
+        RocasDelSuelo(g);
         DecalesSuelo(g);   // grietas y charcos con el reflejo del fuego (después del sendero: se apartan de él)
         GrutaUnica(g);
         WalkBoundary(ExpWalk);
@@ -293,32 +351,15 @@ public partial class DioramaBuilder
     /// la exposición para que el jugador y el sendero se lean, sin perder el tono frío. Perfil: Assets/Settings/ExpedicionProfile.asset.
     /// </summary>
     /// <summary>La gruta como sala grande: luz alta y pareja que recorta las paredes de roca, con haces que bajan de las grietas del techo.</summary>
-    /// <summary>Peñasco de bloques apilados, cada uno más chico y un poco corrido (combina con las terrazas de la pared).</summary>
-    void PilaDeRoca(Transform parent, Vector3 pos, float alto)
-    {
-        var pila = Group("PilaDeRoca", parent);
-        pila.localPosition = pos;
-        float y = 0f, lado = alto * 0.75f + 0.8f;
-        while (y < alto && lado > 0.6f)
-        {
-            float h = Mathf.Min(R(1f, 1.8f), alto - y + 0.3f);
-            var b = Box(pila, "Bloque", new Vector3(R(-0.25f, 0.25f), y + h / 2f, R(-0.25f, 0.25f)), new Vector3(lado, h, lado * R(0.8f, 1.1f)), rng.NextDouble() < 0.5 ? mExpPared : mExpParedAlt, false, 0.25f);
-            b.transform.localRotation = Quaternion.Euler(0f, R(0f, 90f), 0f);
-            y += h * 0.9f; lado *= R(0.62f, 0.78f);
-        }
-        Fundir(pila);
-        foreach (var mr in pila.GetComponentsInChildren<MeshRenderer>()) MarcarOcluible(mr);
-    }
-
     void LuzDeSala(Transform g)
     {
         var luces = Group("LuzDeSala", g);
-        var haz = MatDecal("Dio_ExpHaz", "haz", true, new Color(0.52f, 0.5f, 0.72f) * 0.22f);
+        var haz = MatDecal("Dio_ExpHaz", "haz", true, new Color(0.5f, 0.48f, 0.66f) * 0.1f);
         foreach (float z in new[] { -46f, -6f, 30f, 78f, 116f })
         {
-            AddLight(luces, new Vector3(0f, ExpTecho - 6f, z), new Color(0.74f, 0.71f, 0.84f), 52f, 420f);   // de arriba: el suelo y los sprites
+            AddLight(luces, new Vector3(0f, ExpTecho - 6f, z), new Color(0.7f, 0.68f, 0.8f), 48f, 270f);   // de arriba: el suelo y los sprites
             foreach (float lado in new[] { -1f, 1f })   // a media altura: recorta las terrazas de la pared
-                AddLight(luces, new Vector3(lado * (ExpMitad(z) - 9f), 8f, z), new Color(0.66f, 0.64f, 0.78f), 26f, 90f);
+                AddLight(luces, new Vector3(lado * (ExpMitad(z) - 9f), 8f, z), new Color(0.62f, 0.6f, 0.74f), 24f, 60f);
             foreach (float sx in new[] { -1f, 1f })
             {
                 float x = sx * (ExpMitad(z) - R(7f, 11f)), zz = z + R(-7f, 7f), ancho = R(5f, 8f);
@@ -364,9 +405,9 @@ public partial class DioramaBuilder
         var split = Add<UnityEngine.Rendering.Universal.SplitToning>();
         split.shadows.value = new Color(0.34f, 0.31f, 0.37f); split.highlights.value = new Color(0.5f, 0.48f, 0.47f); split.balance.value = 0f;
         var ca = Add<UnityEngine.Rendering.Universal.ColorAdjustments>();
-        ca.postExposure.value = 0.85f; ca.contrast.value = 8f; ca.saturation.value = -12f;
+        ca.postExposure.value = 0.7f; ca.contrast.value = 9f; ca.saturation.value = -12f;
         var vig = Add<UnityEngine.Rendering.Universal.Vignette>();
-        vig.intensity.value = 0.3f; vig.smoothness.value = 0.55f; vig.color.value = Color.black;
+        vig.intensity.value = 0.36f; vig.smoothness.value = 0.55f; vig.color.value = Color.black;
         UnityEditor.EditorUtility.SetDirty(perfil);
         var go = new GameObject("VolumenExpedicion");
         go.transform.SetParent(root, false);

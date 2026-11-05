@@ -51,8 +51,8 @@ public class ExpedicionPiso20 : MonoBehaviour
         }
         // SpriteLit3D usa la normal hacia ARRIBA: los sprites se alumbran por lo que tienen encima, así que las luces van arriba y hacia la
         // cámara (no pegadas al cuerpo: ahí hacen un punto blanco en la cabeza). Una para Dante y una compartida para la expedición.
-        luzDante = NuevaLuz("LuzDante", 0.6f, 9f);
-        luzGrupo = NuevaLuz("LuzExpedicion", 0.8f, 12f);
+        luzDante = NuevaLuz("LuzDante", 1.3f, 10f);   // la cueva es oscura: Dante lleva su propia luz
+        luzGrupo = NuevaLuz("LuzExpedicion", 1.2f, 13f);
         var exp = GameObject.Find("Expedicion");
         if (exp != null)
             foreach (Transform t in exp.transform) { if (t.name == "Capitan") capitan = t; else miembros.Add(t); }
@@ -156,25 +156,29 @@ public class ExpedicionPiso20 : MonoBehaviour
 
         var cuerpo = coloso != null ? coloso.GetComponent<PersonaSprite>() : null;
         if (coloso != null) foreach (var l in coloso.GetComponentsInChildren<Light>(true)) l.enabled = true;   // sus luces, solo ahora
-        var rugido = CuadrosColoso("Rugido"); var golpe = CuadrosColoso("Golpe");
-        if (cuerpo != null && rugido.Length > 0) cuerpo.Forzado = rugido[0];   // sube encorvada, con la cabeza gacha
-
+        var rugido = CuadrosColoso("Rugido"); var zarpazo = CuadrosColoso("Zarpazo"); var golpe = CuadrosColoso("Golpe");
         // lente abierto y cámara casi a ras del suelo: la criatura se ve entera y enorme (la cámara de juego usa 24°, que la corta en los hombros)
         Vector3 centro = new Vector3(a.x, 13f, a.z);
         if (cam != null) cam.fieldOfView = 52f;
 
-        // 1) tiembla la gruta: plano detrás de la expedición, mirando al borde; cae polvo del techo
+        // 1) tiembla la gruta: la expedición, lejana y de espaldas, mirando al borde; cae polvo del techo
         Sonido.Tocar(Sonido.Efecto.Temblor, 1f);
         CameraShake.Shake(1.2f, 0.6f);
         CombatFx.Burst(edge + Vector3.up, new Color(0.6f, 0.5f, 0.45f), 60, 8f, 0.3f, 1.2f);
         for (int k = 0; k < 8; k++) CombatFx.Burst(yo + new Vector3((k - 3.5f) * 5f, 18f, 8f + k * 4f), new Color(0.5f, 0.46f, 0.44f), 14, 1.5f, 0.28f, 1.8f, 1.1f);
-        yield return Toma(cam, yo + new Vector3(0f, 2.4f, -9f), yo + new Vector3(0f, 2f, -7.5f), () => edge + Vector3.up * 5f, 1.8f,
+        yield return Toma(cam, yo + new Vector3(0f, 3.5f, -24f), yo + new Vector3(0f, 3.2f, -21f), () => edge + Vector3.up * 5f, 1.8f,
             t => Subir(a, arriba, t * 0.3f));
-        // 2) contrapicado desde el suelo, lejos del borde: la cámara se queda quieta y la criatura se alza del abismo hasta llenar el cuadro
+
+        // a partir de aquí solo se ve a la criatura: el jugador no debe saber qué le pasó a Dante ni a la expedición
+        foreach (var r in player.GetComponentsInChildren<Renderer>(true)) r.forceRenderingOff = true;
+        foreach (var m in miembros) if (m != null) m.gameObject.SetActive(false);
+        if (capitan != null) capitan.gameObject.SetActive(false);
+
+        // 2) contrapicado desde el suelo: la cámara se queda quieta y la criatura se alza del abismo hasta llenar el cuadro
         Sonido.Tocar(Sonido.Efecto.Temblor, 1f, 0.8f);
         yield return Toma(cam, edge + new Vector3(-7f, 0.9f, -8f), edge + new Vector3(-5f, 0.8f, -6f), () => centro, 3.6f,
             t => { Subir(a, arriba, 0.3f + t * 0.7f); if (Mathf.Repeat(t * 3.2f, 1.1f) < Time.deltaTime) { CameraShake.Shake(0.6f, 0.5f); Sonido.Tocar(Sonido.Efecto.Alerta, 0.9f, 0.8f); } });
-        // 3) el rugido: de frente y desde abajo, se alza y abre los brazos; la cámara retrocede por el golpe de aire
+        // 3) el rugido: de frente y desde abajo, abre los brazos; la cámara retrocede por el golpe de aire
         StartCoroutine(Cuadros(cuerpo, rugido, 0, rugido.Length, 2.8f));
         Sonido.Tocar(Sonido.Efecto.Rugido, 1f);
         CameraShake.Shake(1.1f, 1.8f);
@@ -185,36 +189,33 @@ public class ExpedicionPiso20 : MonoBehaviour
             if (Mathf.Repeat(t * 2.8f, 0.35f) < Time.deltaTime) CameraShake.Shake(0.45f, 0.3f);
         });
         if (cam != null) cam.fieldOfView = 50f;
-        // 4) plano abierto: la expedición, pequeña, frente a la criatura
-        StartCoroutine(Toma(cam, yo + new Vector3(7f, 1.5f, -9f), yo + new Vector3(6f, 1.6f, -12f), () => centro, 9f, null));   // abajo, detrás de la expedición: ellos pequeños, la criatura enorme
+        // 4) plano abierto de la criatura: el capitán se oye, pero no se le ve
+        StartCoroutine(Toma(cam, edge + new Vector3(-1f, 1f, -11f), edge + new Vector3(-0.5f, 1.1f, -14f), () => centro, 14f, null));
         yield return Hablar(Historia.Capitan, "¿Qué es eso...?");
-        // 5) el golpe: alza los puños despacio y los estrella contra el suelo
+        // 5) primer ataque: el zarpazo
+        if (zarpazo.Length > 0)
+        {
+            yield return Cuadros(cuerpo, zarpazo, 0, 3, 0.8f);
+            Sonido.Tocar(Sonido.Efecto.Impulso, 1f, 0.55f);
+            CameraShake.Shake(0.7f, 0.5f);
+            CombatFx.Burst(new Vector3(-8f, 0.5f, edge.z - 2f), new Color(0.5f, 0.46f, 0.44f), 70, 14f, 0.5f, 1.2f, 0.7f);
+            yield return Cuadros(cuerpo, zarpazo, 3, 3, 0.7f);
+        }
+        // 6) segundo ataque: alza los puños despacio y los estrella contra el suelo
         Sonido.Tocar(Sonido.Efecto.Alerta, 1f, 0.7f);
         if (golpe.Length > 0)
         {
             yield return Cuadros(cuerpo, golpe, 0, 4, 1.3f);
-            yield return Cuadros(cuerpo, golpe, 4, 2, 0.1f);
+            yield return Cuadros(cuerpo, golpe, 4, 1, 0.1f);
         }
-        tomaId++;   // corta el plano abierto: la cámara se queda ahí para el impacto
+        // el impacto corta a negro: lo que pasó después no se ve
         Sonido.Tocar(Sonido.Efecto.Impacto, 1f);
         Sonido.Tocar(Sonido.Efecto.Temblor, 1f, 0.7f);
-        Vector3 piso = new Vector3(0f, 0.3f, edge.z - 3f);
-        CombatFx.Burst(piso, new Color(1f, 0.25f, 0.15f), 200, 18f, 0.5f, 1.4f);
-        CombatFx.Burst(piso, new Color(0.5f, 0.46f, 0.44f), 160, 24f, 0.7f, 1.8f, 0.8f);
-        for (int k = 0; k < 3; k++) CombatFx.Ring(piso, 14f + k * 14f, new Color(1f, 0.35f, 0.2f, 0.9f - k * 0.25f), 0.45f + k * 0.2f);
         CameraShake.Shake(1.8f, 1.2f);
-        negro = 0.7f;
-        foreach (var m in miembros) StartCoroutine(Caer(m));
-        if (capitan != null) StartCoroutine(Caer(capitan));
-        if (golpe.Length > 6) StartCoroutine(Cuadros(cuerpo, golpe, 6, 2, 1.6f));
-        if (health != null)
-        {
-            Vector3 src = player.position + Vector3.forward * 3f;
-            health.ReceiveHit(new HitInfo { damage = Mathf.Max(0f, health.Health - 1f), knockback = 16f, hitStop = 0.1f, sourcePosition = src });
-        }
-        yield return Fundir(0.2f, 0.6f);
+        negro = 1f;
+        tomaId++;
+        yield return new WaitForSeconds(1.6f);
         yield return Hablar(Historia.Capitan, "¡Retirada! ¡Todos atrás!");
-        yield return Fundir(1f, 2.5f);
         yield return Tarjeta("La expedición nunca regresó.", 3.5f);
         Cargador.Ir(siguienteEscena);
     }
@@ -336,22 +337,6 @@ public class ExpedicionPiso20 : MonoBehaviour
         }
     }
 
-    IEnumerator Caer(Transform t)
-    {
-        yield return new WaitForSeconds(Random.Range(0f, 0.25f));
-        var fb = t.GetComponentInChildren<FiguraBillboard>();   // los sprites caen girando su propio billboard
-        Quaternion a = t.rotation, b = a * Quaternion.Euler(-85f, 0f, Random.Range(-20f, 20f));
-        Quaternion cb = Quaternion.Euler(-85f, 0f, Random.Range(-20f, 20f));
-        Vector3 p0 = t.position, p1 = p0 + new Vector3(Random.Range(-2f, 2f), 0f, -Random.Range(3f, 6f));
-        for (float k = 0f; k < 0.6f; k += Time.deltaTime)
-        {
-            if (fb != null) fb.caida = Quaternion.Slerp(Quaternion.identity, cb, k / 0.6f); else
-            t.rotation = Quaternion.Slerp(a, b, k / 0.6f);
-            t.position = Vector3.Lerp(p0, p1, k / 0.6f) + Vector3.up * Mathf.Sin(k / 0.6f * Mathf.PI) * 1.2f;
-            yield return null;
-        }
-    }
-
     static Vector3 Plano(Vector3 v) => new Vector3(v.x, 0f, v.z);
 
     // ------------------------------------------------------------------ textos
@@ -414,8 +399,8 @@ public class ExpedicionPiso20 : MonoBehaviour
             st.normal.textColor = new Color(1f, 0.93f, 0.75f, pistaAlpha);
             GUI.Label(r, pista, st);
         }
-        if (!string.IsNullOrEmpty(texto)) CuadroNarracion.Dialogo(quien, texto, CuadroNarracion.Letras(texto, tTexto), dialogoAlpha);
         CuadroNarracion.Negro(negro);
+        if (!string.IsNullOrEmpty(texto)) CuadroNarracion.Dialogo(quien, texto, CuadroNarracion.Letras(texto, tTexto), dialogoAlpha);
         if (!string.IsNullOrEmpty(tarjeta)) CuadroNarracion.Tarjeta(tarjeta, "", tarjetaAlpha);
     }
 

@@ -12,7 +12,10 @@ public partial class DioramaBuilder
     Material TopMat => (layout == Layout.Expedicion || layout == Layout.Final) && mExpSuelo != null ? mExpSuelo : layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? mSnowPix : layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : mGrass;
     /// <summary>Arriba de esta altura el suelo usa el material del lecho (en la Montaña: nieve).</summary>
     float SnowAbove => layout == Layout.Montana ? MountSnowLine : 99999f;
-    Material WallMat => layout == Layout.Cueva || layout == Layout.Expedicion || layout == Layout.Final ? mCaveRock : layout == Layout.Templo ? mSandPix : mRock;
+    Material WallMat => layout == Layout.Cueva || layout == Layout.Expedicion || layout == Layout.Final ? mCaveRock : layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? RocaNevada : mRock;
+    Material mRocaNevada;
+    /// <summary>Los muros de la nieve, escarchados: con la roca café bajo la luna quedaban franjas negras.</summary>
+    Material RocaNevada => mRocaNevada != null ? mRocaNevada : mRocaNevada = Plain("Dio_RocaNevada", new Color(0.46f, 0.52f, 0.68f), 0.1f);
     Material BedMat => (layout == Layout.Expedicion || layout == Layout.Final) && mExpSuelo != null ? mExpSuelo : layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
 
     void LoadWorldMaterials()

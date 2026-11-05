@@ -73,3 +73,9 @@ Este documento resume cómo quedó el juego frente al GDD (`GDD_Abbys_Tower_deta
 - Criatura del tutorial: nueva cinemática con rugido, zarpazo y golpe. La expedición y Dante dejan de verse y el golpe corta a negro: no se muestra qué les pasó.
 - Impulso: gasta 20 de stamina y tiene sonido propio.
 - Fuente del juego: Inter (licencia OFL); el logo se queda en Press Start 2P. Diálogos más grandes y con más interlineado.
+
+## Ocho pisos en lugar de 5 (5 de noviembre de 2026)
+- El GDD pide 5 pisos. El juego tiene 8: se agregaron Gruta de Cristal, Lago de los Espejos y Aldea de la Nieve, por decisión de Gabriel.
+- El final ya no pasa en el piso del jefe: tiene escena propia y sin enemigos, con créditos sobre una casa en la nieve. El "Abby…" y el "Continuará…" del GDD se conservan.
+- Se agregó el colgante del padre como hilo de la historia.
+- La cámara sigue fija durante el juego, pero se abre para mostrar el paisaje al inicio de cada mapa y cuando Abby se queda quieta.

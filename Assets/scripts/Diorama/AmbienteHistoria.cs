@@ -47,8 +47,8 @@ public static class AmbienteHistoria
         }
         else if (acantilado)
         {
-            luz = new Color(1f, 0.46f, 0.36f); arriba = new Color(0.2f, 0.09f, 0.28f); horizonte = new Color(0.96f, 0.3f, 0.26f);
-            disco = new Color(1f, 0.42f, 0.28f); nubes = new Color(0.9f, 0.42f, 0.44f); bruma = new Color(0.58f, 0.3f, 0.36f);
+            luz = new Color(1f, 0.46f, 0.36f); arriba = new Color(0.27f, 0.17f, 0.4f); horizonte = new Color(1f, 0.46f, 0.3f);
+            disco = new Color(1f, 0.52f, 0.3f); nubes = new Color(0.98f, 0.56f, 0.5f); bruma = new Color(0.58f, 0.3f, 0.36f);
             ambCielo = new Color(0.66f, 0.46f, 0.6f); ambMedio = new Color(0.62f, 0.4f, 0.4f); ambSuelo = new Color(0.24f, 0.16f, 0.2f);
         }
 

@@ -43,7 +43,7 @@ public partial class DioramaBuilder
         var aguaGruta = AguaDe("Dio_AguaGruta", mWater, new Color(0.22f, 0.2f, 0.56f, 0.62f), new Color(0.015f, 0.01f, 0.07f, 0.97f), 2.2f, 0.95f, 0.015f, 0.55f, 0.4f, 0.22f, 0.18f, new Color(0.62f, 0.55f, 1f));
         ParedDeGruta(g, new Vector2(0f, 8f), new Vector2(52f, 42f));
         foreach (var l in new[] { new Vector3(0f, 24f, -6f), new Vector3(-24f, 22f, 16f), new Vector3(24f, 22f, 16f), new Vector3(0f, 24f, 34f) })
-            AddLight(g, l, new Color(0.62f, 0.6f, 0.92f), 48f, 380f);   // la luz de los cristales del techo
+            AddLight(g, l, new Color(0.62f, 0.6f, 0.92f), 56f, 760f);   // la luz de los cristales del techo
         var lvl = Group("Nivel", root);
         var water = Flat(g, "Lago", new Vector3(0f, CaveLakeY, 8f), 140f, 120f, aguaGruta, 0.08f);
         water.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

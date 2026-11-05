@@ -987,8 +987,8 @@ public partial class DioramaBuilder : MonoBehaviour
         {
             case Mood.Atardecer:
                 // sol bajo enfrente de la cámara: el mar y el agua brillan en naranja
-                sun.transform.localRotation = Quaternion.Euler(22f, 118f, 0f);   // de lado: se ven las caras iluminadas y el cielo naranja a la izquierda
-                sun.color = new Color(1f, 0.58f, 0.32f); sun.intensity = 1.7f;
+                sun.transform.localRotation = Quaternion.Euler(32f, 118f, 0f);   // de lado: se ven las caras iluminadas y el cielo naranja a la izquierda
+                sun.color = new Color(1f, 0.66f, 0.42f); sun.intensity = 2f;
                 sky.zenith = new Color(0.22f, 0.27f, 0.56f); sky.horizon = new Color(1f, 0.52f, 0.26f); sky.ground = new Color(0.45f, 0.32f, 0.38f);
                 sky.sunColor = new Color(1f, 0.6f, 0.3f) * 2.4f; sky.sunSize = 0.012f;
                 sky.cloudColor = new Color(1f, 0.62f, 0.48f); sky.cloudCover = 0.5f;
@@ -1017,7 +1017,7 @@ public partial class DioramaBuilder : MonoBehaviour
                 break;
             case Mood.Crepusculo:
                 sun.transform.localRotation = Quaternion.Euler(20f, 118f, 0f);
-                sun.color = new Color(0.72f, 0.5f, 0.82f); sun.intensity = 0.95f;
+                sun.color = new Color(0.76f, 0.55f, 0.84f); sun.intensity = 1.35f;
                 sky.zenith = new Color(0.03f, 0.02f, 0.1f); sky.horizon = new Color(0.42f, 0.14f, 0.3f); sky.ground = new Color(0.08f, 0.05f, 0.14f);
                 sky.sunColor = new Color(0.95f, 0.4f, 0.5f) * 1.5f; sky.sunSize = 0.01f;
                 sky.cloudColor = new Color(0.4f, 0.25f, 0.42f); sky.cloudCover = 0.5f;
@@ -1061,17 +1061,17 @@ public partial class DioramaBuilder : MonoBehaviour
             sky.driveAmbient = false;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
             bool dawn = mood == Mood.Amanecer;
-            RenderSettings.ambientSkyColor = dawn ? new Color(0.72f, 0.7f, 0.86f) : mood == Mood.Crepusculo ? new Color(0.3f, 0.24f, 0.38f) : new Color(0.58f, 0.45f, 0.55f);
-            RenderSettings.ambientEquatorColor = dawn ? new Color(0.72f, 0.6f, 0.58f) : mood == Mood.Crepusculo ? new Color(0.27f, 0.2f, 0.3f) : new Color(0.5f, 0.36f, 0.34f);
-            RenderSettings.ambientGroundColor = dawn ? new Color(0.26f, 0.24f, 0.26f) : new Color(0.18f, 0.14f, 0.16f);
+            RenderSettings.ambientSkyColor = dawn ? new Color(0.72f, 0.7f, 0.86f) : mood == Mood.Crepusculo ? new Color(0.46f, 0.38f, 0.54f) : new Color(0.72f, 0.62f, 0.66f);
+            RenderSettings.ambientEquatorColor = dawn ? new Color(0.72f, 0.6f, 0.58f) : mood == Mood.Crepusculo ? new Color(0.4f, 0.31f, 0.42f) : new Color(0.62f, 0.5f, 0.44f);
+            RenderSettings.ambientGroundColor = dawn ? new Color(0.26f, 0.24f, 0.26f) : new Color(0.26f, 0.2f, 0.22f);
         }
         // de noche y en la gruta, luz de ambiente azul (si no, todo lo que no alumbra un farol queda negro)
         if (mood == Mood.Noche || mood == Mood.Gruta)
         {
             sky.driveAmbient = false;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = mood == Mood.Gruta ? new Color(0.26f, 0.24f, 0.36f) : new Color(0.22f, 0.28f, 0.5f);
-            RenderSettings.ambientEquatorColor = mood == Mood.Gruta ? new Color(0.2f, 0.17f, 0.28f) : new Color(0.15f, 0.18f, 0.32f);
+            RenderSettings.ambientSkyColor = mood == Mood.Gruta ? (layout == Layout.Cueva ? new Color(0.66f, 0.6f, 0.82f) : new Color(0.26f, 0.24f, 0.36f)) : layout == Layout.Nevado ? new Color(0.36f, 0.42f, 0.62f) : new Color(0.22f, 0.28f, 0.5f);
+            RenderSettings.ambientEquatorColor = mood == Mood.Gruta ? (layout == Layout.Cueva ? new Color(0.5f, 0.45f, 0.62f) : new Color(0.2f, 0.17f, 0.28f)) : layout == Layout.Nevado ? new Color(0.26f, 0.3f, 0.46f) : new Color(0.15f, 0.18f, 0.32f);
             RenderSettings.ambientGroundColor = new Color(0.05f, 0.06f, 0.1f);
             if (layout == Layout.Expedicion || layout == Layout.Final)   // la gruta del tutorial: más ambiente frío para que el jugador y el sendero se lean
             {

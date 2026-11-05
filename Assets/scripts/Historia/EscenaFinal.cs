@@ -25,13 +25,15 @@ public class EscenaFinal : MonoBehaviour
         cam = Camera.main;
         CameraShake.Shake(0f, 0f);
         foreach (var t in FindObjectsByType<TiltShiftFocus>()) t.enabled = false;
-        foreach (var vol in FindObjectsByType<UnityEngine.Rendering.Volume>())
-            if (vol.profile != null)
-            {
-                if (vol.profile.TryGet<UnityEngine.Rendering.Universal.DepthOfField>(out var dof)) dof.active = false;
-                if (vol.profile.TryGet<UnityEngine.Rendering.Universal.Vignette>(out var vig)) vig.intensity.Override(0.22f);
-                if (vol.profile.TryGet<UnityEngine.Rendering.Universal.ColorAdjustments>(out var ca)) ca.postExposure.Override(0.45f);
-            }
+        // un volumen propio manda sobre los del mapa: sin desenfoque y con la imagen abierta
+        var vgo = new GameObject("VolumenFinal");
+        var vol = vgo.AddComponent<UnityEngine.Rendering.Volume>();
+        vol.isGlobal = true; vol.priority = 1000f;
+        var perfil = ScriptableObject.CreateInstance<UnityEngine.Rendering.VolumeProfile>();
+        perfil.Add<UnityEngine.Rendering.Universal.DepthOfField>(true).mode.Override(UnityEngine.Rendering.Universal.DepthOfFieldMode.Off);
+        perfil.Add<UnityEngine.Rendering.Universal.Vignette>(true).intensity.Override(0.22f);
+        perfil.Add<UnityEngine.Rendering.Universal.ColorAdjustments>(true).postExposure.Override(0.45f);
+        vol.sharedProfile = perfil;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
         RenderSettings.ambientSkyColor = new Color(0.5f, 0.32f, 0.5f);
         RenderSettings.ambientEquatorColor = new Color(0.34f, 0.22f, 0.36f);
@@ -42,7 +44,7 @@ public class EscenaFinal : MonoBehaviour
         var abby = p != null ? p.GetComponentInChildren<AbbySpriteAnimator>(true) : null;
         if (p != null)
             foreach (var b in p.GetComponents<MonoBehaviour>())
-                if (b is PlayerInputReader || b is AbbyAttack || b is AbbyBlock || b is AbbyDash) b.enabled = false;
+                if (b is PlayerInputReader || b is AbbyAttack || b is AbbyBlock || b is AbbyDash || b is PlayerMotor || b is PlayerController) b.enabled = false;
         var cc = p != null ? p.GetComponent<CharacterController>() : null;
         if (cc != null) cc.enabled = false;
         if (cam != null) { cam.transform.SetParent(null, true); cam.nearClipPlane = 0.1f; cam.fieldOfView = 46f; cam.farClipPlane = Mathf.Max(cam.farClipPlane, 900f); }
@@ -109,7 +111,7 @@ public class EscenaFinal : MonoBehaviour
         yield return Recuerdo(null, Historia.Hermano, "Voy de regreso, Abby. Te dije que volvería.", 4f);
 
         // 8) lejos y de lado: los dos, tan chiquitos, y la puerta tan cerca
-        StartCoroutine(Plano(new Vector3(-10f, 15f, 40f), new Vector3(-6f, 13f, 37f), () => Vector3.Lerp(cuerpo, ante, 0.5f) + Vector3.up * 0.4f, 40f, 9.5f));
+        StartCoroutine(Plano(new Vector3(4f, 15f, 35f), new Vector3(1.5f, 13.5f, 33f), () => Vector3.Lerp(cuerpo, ante, 0.5f) + Vector3.up * 0.4f, 38f, 9.5f));
         yield return Decir(Historia.Protagonista, "Las huellas. Las hojas.", 2.6f);
         yield return Decir(Historia.Protagonista, "Venías de regreso... todo este tiempo.", 3.2f);
         yield return Decir(Historia.Protagonista, "Estabas a unos escalones.", 3f);

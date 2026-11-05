@@ -105,7 +105,7 @@ public class MouseOrbitCamera : MonoBehaviour
     {
         // un poco más cerca y más inclinada que antes (36 m, 20°): Abby se lee mejor y se ve más suelo por delante
         fov = 24f, distance = 29f, pivotHeight = 0.9f, startPitch = 24f, minPitch = 24f, maxPitch = 24f,
-        lookUp = 4.5f, lookAhead = 2.2f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = true, allowShots = true
+        lookUp = 4.5f, lookAhead = 2.2f, freeOrbit = false, yawStep = 45f, rotationSmoothTime = 0.3f, peekHold = true, keepOccluders = false, allowShots = true
     };
     [Tooltip("Esta escena arranca con su propio estilo (p. ej. el diorama), sin cambiar el que se guardó para los pisos.")]
     [SerializeField] bool useSceneStyle = false;
@@ -530,6 +530,9 @@ public class MouseOrbitCamera : MonoBehaviour
         // candidata: la toma del lugar; ninguna mientras hay pelea (que no estorbe al combatir)
         var cand = active.allowShots && !peeking && player != null && RoomEncounter.ActiveCombats == 0 ? CameraShot.At(player.position) : null;
         stillTime = playerVel.sqrMagnitude < 0.09f ? stillTime + dt : 0f;
+        // Abby quieta un rato: la cámara se abre y recorre el paisaje despacio, hasta que vuelva a moverse
+        if (cand == null && active.allowShots && !peeking && player != null && RoomEncounter.ActiveCombats == 0
+            && stillTime >= PanoramaDelay && PanoramaPermitido()) cand = Panorama();
         CameraShot next;
         if (cand == null || cand == shot) { pending = null; next = cand; }
         else
@@ -567,7 +570,8 @@ public class MouseOrbitCamera : MonoBehaviour
         float t = blend * 0.45f;
         // la toma de apertura barre el paisaje mientras dura; las demás se mecen apenas
         float barrido = shot.introSeconds > 0f
-            ? Mathf.Lerp(26f, -8f, Mathf.Clamp01(Time.timeSinceLevelLoad / shot.introSeconds))
+            ? Mathf.Lerp(26f, -8f, Mathf.Clamp01(Time.timeSinceLevelLoad / shot.IntroDuracion))
+            : shot == panorama ? Mathf.Sin((Time.unscaledTime - panoramaDesde) * 0.14f) * 28f
             : Mathf.Sin(Time.unscaledTime * 0.25f) * 3.5f;
         sYaw = Mathf.SmoothDampAngle(sYaw, shot.yaw + barrido, ref sYawVel, t, Mathf.Infinity, dt);
         sPitch = Mathf.SmoothDamp(sPitch, shot.pitch, ref sPitchVel, t, Mathf.Infinity, dt);
@@ -575,6 +579,36 @@ public class MouseOrbitCamera : MonoBehaviour
         sFov = Mathf.SmoothDamp(sFov, shot.fov, ref sFovVel, t, Mathf.Infinity, dt);
         sLookUp = Mathf.SmoothDamp(sLookUp, shot.lookUp, ref sLookVel, t, Mathf.Infinity, dt);
         sOffset = Vector3.SmoothDamp(sOffset, shot.offset, ref sOffsetVel, t, Mathf.Infinity, dt);
+    }
+
+    CameraShot panorama;
+    float panoramaDesde;
+    const float PanoramaDelay = 6f;
+
+    /// <summary>Bajo techo la cámara abierta se saldría de la cueva.</summary>
+    static bool PanoramaPermitido()
+    {
+        string n = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        return n != "Expedicion" && n != "Cueva" && n != "Final";
+    }
+
+    /// <summary>La toma del paisaje: sale del yaw actual; va desactivada para que no entre en la lista de tomas del mapa.</summary>
+    CameraShot Panorama()
+    {
+        if (panorama == null)
+        {
+            var go = new GameObject("TomaPanorama");
+            panorama = go.AddComponent<CameraShot>();
+            panorama.enabled = false;
+            panorama.size = new Vector2(100000f, 100000f); panorama.yMin = -10000f; panorama.yMax = 10000f;
+            panorama.pitch = 15f; panorama.distance = 36f; panorama.fov = 34f; panorama.lookUp = 7f; panorama.blendTime = 3f;
+        }
+        if (shot != panorama)
+        {
+            panorama.yaw = yaw; panoramaDesde = Time.unscaledTime;
+            panorama.offset = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward * 5f + Vector3.up;
+        }
+        return panorama;
     }
 
     bool leaving;

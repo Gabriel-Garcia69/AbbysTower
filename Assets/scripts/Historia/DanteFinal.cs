@@ -71,13 +71,13 @@ public class DanteFinal : MonoBehaviour
     {
         var g = new GameObject("ColganteDeDante");
         g.transform.position = pos + Vector3.up * 0.06f;
-        g.transform.localScale = Vector3.one * 1.8f;
+        g.transform.localScale = Vector3.one * 1.1f;
         var lit = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        lit.SetColor("_BaseColor", new Color(0.75f, 0.68f, 0.5f)); lit.SetFloat("_Metallic", 0.8f); lit.SetFloat("_Smoothness", 0.7f);
+        lit.SetColor("_BaseColor", new Color(0.95f, 0.74f, 0.36f)); lit.SetFloat("_Metallic", 0.8f); lit.SetFloat("_Smoothness", 0.7f);
         var gema = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        gema.SetColor("_BaseColor", new Color(0.2f, 0.1f, 0.3f)); gema.EnableKeyword("_EMISSION");
+        gema.SetColor("_BaseColor", new Color(0.5f, 0.2f, 0.08f)); gema.EnableKeyword("_EMISSION");
         gema.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-        gema.SetColor("_EmissionColor", new Color(0.7f, 0.35f, 1f) * 0.7f);   // brillo suave (con más, el Bloom lo volvía una mancha)
+        gema.SetColor("_EmissionColor", new Color(1f, 0.55f, 0.22f) * 0.45f);   // brillo suave (con más, el Bloom lo volvía una mancha)
         var disco = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         Object.Destroy(disco.GetComponent<Collider>());
         disco.transform.SetParent(g.transform, false);

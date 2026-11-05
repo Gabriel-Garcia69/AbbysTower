@@ -45,7 +45,7 @@ public partial class DioramaBuilder
         // mar de nubes
         // el mar de nubes sin luz ni sombras (con Lit, las sombras de las islas lo hacían ver como un piso rosa)
         var nubeLisa = Saved("Dio_NubeLisa", () => new Material(Shader.Find("Universal Render Pipeline/Unlit")));
-        nubeLisa.SetColor("_BaseColor", new Color(0.98f, 0.8f, 0.83f));
+        nubeLisa.SetColor("_BaseColor", new Color(0.24f, 0.11f, 0.26f));
         var nubes = Flat(g, "Nubes", new Vector3(0f, CloudY, 0f), 2400f, 2400f, nubeLisa, 0.01f);
         nubes.GetComponent<MeshRenderer>().receiveShadows = false;   // con las sombras de las islas se veía un piso rosa, no nubes
         var ps = new GameObject("Bruma").AddComponent<ParticleSystem>();
@@ -54,7 +54,7 @@ public partial class DioramaBuilder
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         var main = ps.main;
         main.startLifetime = 30f; main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
-        main.startSize = new ParticleSystem.MinMaxCurve(12f, 26f); main.startColor = new Color(1f, 0.85f, 0.88f, 0.35f);
+        main.startSize = new ParticleSystem.MinMaxCurve(12f, 26f); main.startColor = new Color(0.5f, 0.3f, 0.52f, 0.2f);
         main.maxParticles = 600; main.prewarm = true; main.simulationSpace = ParticleSystemSimulationSpace.World;
         var em = ps.emission; em.rateOverTime = 18f;
         var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(300f, 4f, 300f);

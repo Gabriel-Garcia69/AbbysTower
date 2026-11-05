@@ -27,6 +27,16 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 - **Impulso:** gasta 20 de stamina y tiene sonido propio. Los sonidos no los pude escuchar: hay que revisarlos jugando.
 - **Cámara:** se corrigió un bug: lo que subía para no meterse al suelo nunca se deshacía.
 
+## Ocho pisos, final y mapas abiertos (5 de noviembre)
+- **Ruta:** Diorama, Puerto, Cascadas, Acantilado, Cueva, Lago, Nevado, Cima y la escena `Final`. El GDD pide 5 pisos: los 3 extra son decisión de Gabriel y están en `Docs/Cambios_respecto_al_GDD.md`.
+- **Historia:** Abby comenta en cada piso (`RelatoPiso`), hay notas nuevas en `Historia.Notas` y el colgante une principio y final. Se mantiene el "Abby…" y "Continuará…" del GDD.
+- **Final:** escena propia sin enemigos (`DioramaBuilder.Final`, `EscenaFinal`): pedazo de torre sobre el abismo, 11 planos de cámara, recuerdos, casa en la nieve con créditos.
+- **Mapas:** Acantilado bajado de 9.5 m a 5 m, con islotes más anchos y casas fuera del paso. Puerto con bancales bajos. Caminata de prueba completa en Acantilado sin atorarse.
+- **Cámara:** la apertura barre el paisaje, si Abby se queda quieta 6 s la cámara se abre y recorre la vista (no en Expedición, Cueva ni Final). Casas y árboles que tapan a Abby dejan de dibujarse.
+- **Superficies encimadas:** corregidas con el menú `Abby/Separar superficies encimadas`. **Hay que volver a correrlo si se regenera un mapa.** Quedan pocas en cada mapa (42 en Puerto, casi todas tablones).
+- **Nivel 1:** la estela que estorbaba en el camino de tierra se movió a un lado, en la escena y en el código.
+- **Sin revisar en movimiento:** nada de esto lo jugó una persona; se revisó con capturas y pruebas automáticas.
+
 ## Falta para cumplir el GDD
 | Falta | Quién | Estado |
 |---|---|---|

@@ -32,10 +32,12 @@ public partial class DioramaBuilder
             return dz < 7f ? -4f : dz < 30f ? -6f : -8f;
         }
         float h = 0f;
-        float ex = Mathf.Abs(x) - (x > 0f ? 38f : 34f) + e * 2f;   // al este, calle ancha hacia la escalera del cabo
-        if (ex > 0f && z < -2f) h = Mathf.Max(h, ex < 5f ? 1.5f : ex < 10f ? 3f : ex < 16f ? 4.8f : 7f);
-        float es = -z - 60f + e * 2f;   // el bancal del sur, lejos del inicio (antes la cámara se pegaba al muro)
-        if (es > 0f) h = Mathf.Max(h, es < 6f ? 1.5f : es < 12f ? 3f : es < 18f ? 4.8f : 7f);
+        // bancales bajos y de borde suave (con el ruido fino quedaban pilares de ladrillo sueltos); solo muy lejos empatan con los cerros
+        float suave = (Noise(x * 0.06f + 3f, z * 0.06f) * 2f - 1f) * 3f;
+        float ex = Mathf.Abs(x) - (x > 0f ? 40f : 36f) + suave;   // al este, calle ancha hacia la escalera del cabo
+        if (ex > 0f && z < -2f) h = Mathf.Max(h, Bancal(ex));
+        float es = -z - 60f + suave;   // el bancal del sur, lejos del inicio
+        if (es > 0f) h = Mathf.Max(h, Bancal(es));
         // los cabos que cierran la bahía
         if (z > 0f && x > 30f) h = Mathf.Max(h, Vector2.Distance(new Vector2(x, z), new Vector2(LighthouseX, LighthouseZ)) < 9f ? 4.5f : 2.5f);
         // pasillo de la escalera del malecón al cabo
@@ -45,6 +47,8 @@ public partial class DioramaBuilder
         if (h >= 4.8f && Mathf.Abs(x) < 85f && z > -62f && Noise(x * 0.09f + 5f, z * 0.09f) > 0.62f) h += 2.5f;
         return h;
     }
+
+    static float Bancal(float d) => d < 7f ? 0.8f : d < 14f ? 1.6f : d < 30f ? 2.4f : 7f;
 
     // ------------------------------------------------------------------ generación
 
@@ -423,7 +427,7 @@ public partial class DioramaBuilder
         AnotarPlaza(mCobble, new Vector2(0f, -48f), new Vector2(34f, 3.4f));
         // la fuente
         Prim(j, PrimitiveType.Cylinder, "Pila", new Vector3(0f, 0.3f, -48f), new Vector3(6.4f, 0.3f, 6.4f), mStone, true);
-        Prim(j, PrimitiveType.Cylinder, "AguaFuente", new Vector3(0f, 0.62f, -48f), new Vector3(5.8f, 0.005f, 5.8f), mRiver);
+        Prim(j, PrimitiveType.Cylinder, "AguaFuente", new Vector3(0f, 0.62f, -48f), new Vector3(5.8f, 0.005f, 5.8f), Plain("Dio_AguaFuente", new Color(0.12f, 0.42f, 0.52f), 0.9f));
         Prim(j, PrimitiveType.Cylinder, "Columna", new Vector3(0f, 1.1f, -48f), new Vector3(0.6f, 0.8f, 0.6f), mStone, true);
         Prim(j, PrimitiveType.Sphere, "Remate", new Vector3(0f, 2f, -48f), Vector3.one * 0.7f, mStone);
         var chorro = Group("Chorro", j); chorro.localPosition = new Vector3(0f, 2.2f, -48f);

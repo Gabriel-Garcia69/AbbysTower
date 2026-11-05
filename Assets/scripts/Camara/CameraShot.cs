@@ -40,12 +40,15 @@ public class CameraShot : MonoBehaviour
     public string subtitle = "";
     [System.NonSerialized] public bool shown;
 
+    /// <summary>La apertura dura más que antes: da tiempo a que el barrido luzca el paisaje.</summary>
+    public float IntroDuracion => introSeconds * 1.6f;
+
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
 
     public bool Contains(Vector3 world)
     {
-        if (introSeconds > 0f) return Time.timeSinceLevelLoad < introSeconds;
+        if (introSeconds > 0f) return Time.timeSinceLevelLoad < IntroDuracion;
         Vector3 p = transform.InverseTransformPoint(world);
         return Mathf.Abs(p.x) <= size.x / 2f && Mathf.Abs(p.z) <= size.y / 2f && p.y >= yMin && p.y <= yMax;
     }

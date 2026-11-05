@@ -39,22 +39,10 @@ public class ExpedicionPiso20 : MonoBehaviour
         PersonaSprite.Aplicar();   // la expedición y el coloso con su pixel art, si ya lo tienen
         health = p.GetComponent<PlayerHealth>();
         input = p.GetComponent<PlayerInputReader>();
-        // se juega con Dante: su conjunto de sprites (Resources/Personajes/Dante). Mientras no exista, el de Abby con un tinte azul
+        // se juega con Dante, con sus propios sprites
         var anim = p.GetComponentInChildren<AbbySpriteAnimator>(true);
-        var conjunto = Resources.Load<ConjuntoSprites>("Personajes/Dante");
-        if (conjunto == null)
-        {
-            conjunto = ScriptableObject.CreateInstance<ConjuntoSprites>();
-            conjunto.nombre = Historia.Hermano;
-            conjunto.provisional = true;
-            conjunto.tinte = new Color(0.8f, 0.88f, 1f);
-        }
+        var conjunto = ConjuntoDante();
         if (anim != null) anim.Aplicar(conjunto);
-        if (conjunto.provisional)
-        {
-            Debug.LogWarning("[TODO] Dante sin sprites propios: el tutorial usa los de Abby con un tinte azul. Crea Resources/Personajes/Dante (Abby > Conjunto de sprites) con sus animaciones y su retrato.");
-            Debug.LogWarning("[TODO] El capitán y los miembros de la expedición usan el sprite del cazador (References/Pixel_art_human_NPC...): faltan sus propios sprites.");
-        }
         var fd = FindAnyObjectByType<FloorDirector>();
         if (fd != null)
         {
@@ -374,5 +362,30 @@ public class ExpedicionPiso20 : MonoBehaviour
         if (!string.IsNullOrEmpty(texto)) CuadroNarracion.Dialogo(quien, texto, CuadroNarracion.Letras(texto, tTexto), dialogoAlpha);
         CuadroNarracion.Negro(negro);
         if (!string.IsNullOrEmpty(tarjeta)) CuadroNarracion.Tarjeta(tarjeta, "", tarjetaAlpha);
+    }
+
+    static readonly string[] DirsDante = { "east", "north-east", "north", "north-west", "west", "south-west", "south", "south-east" };
+
+    /// <summary>Dante humano (Resources/DanteHumano): de pie en 8 direcciones; caminar y atacar en 5, el resto se voltea.</summary>
+    static ConjuntoSprites ConjuntoDante()
+    {
+        var c = ScriptableObject.CreateInstance<ConjuntoSprites>();
+        c.nombre = Historia.Hermano;
+        c.soloPropios = true;
+        for (int i = 0; i < 8; i++)
+        {
+            c.idle[i] = Resources.Load<Sprite>("DanteHumano/Quieto/" + DirsDante[i]);
+            c.walk[i] = CuadrosDante("Caminar", DirsDante[i]);
+            c.slash[i] = CuadrosDante("Atacar", DirsDante[i]);
+        }
+        c.retrato = c.idle[6];
+        return c;
+    }
+
+    static AbbySpriteAnimator.Frames CuadrosDante(string anim, string dir)
+    {
+        var fr = Resources.LoadAll<Sprite>($"DanteHumano/{anim}/{dir}");
+        System.Array.Sort(fr, (a, b) => string.CompareOrdinal(a.name, b.name));
+        return new AbbySpriteAnimator.Frames { frames = fr };
     }
 }

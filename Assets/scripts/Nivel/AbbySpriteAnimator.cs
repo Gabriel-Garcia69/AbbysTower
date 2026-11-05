@@ -116,6 +116,14 @@ public class AbbySpriteAnimator : MonoBehaviour
         conjunto = c;
         tinteBase = c != null ? c.tinte : Color.white;
         if (c == null) return;
+        if (c.soloPropios)
+        {
+            // nada de Abby: ni tajos, ni guardia, ni impulso, ni derrota
+            tajos = null;
+            golpePose = guardia = new Sprite[8];
+            rodilla = tendida = c.idle;
+            dashFrames = new Frames[8]; run = new Frames[8]; blockFrames = new Frames[8]; hurt = new Frames[8]; idleAnim = new Frames[8];
+        }
         if (Alguno(c.idle)) idle = c.idle;
         if (Alguno(c.golpePose)) golpePose = c.golpePose;
         if (Alguno(c.guardia)) guardia = c.guardia;
@@ -216,6 +224,31 @@ public class AbbySpriteAnimator : MonoBehaviour
         }
         else muerteTime = 0f;
         espejo = false;
+        if (s == null && conjunto != null && conjunto.soloPropios)
+        {
+            // de pie tiene las 8 direcciones; caminar y atacar, las del oeste se voltean
+            var pose = attacking ? slash : (dashing || motor.IsMoving || !motor.IsGrounded) ? walk : null;
+            if (pose != null)
+            {
+                int d = Has(pose, dir) ? dir : EspejoDir[dir];
+                if (Has(pose, d))
+                {
+                    espejo = d != dir;
+                    var fr = pose[d].frames;
+                    if (attacking)
+                    {
+                        if (attack.Swings != lastSwing) { lastSwing = attack.Swings; attackTime = 0f; }
+                        attackTime += dt;
+                        s = fr[Mathf.Clamp(Mathf.FloorToInt(attackTime / Mathf.Max(0.05f, attack.SwingLength) * fr.Length), 0, fr.Length - 1)];
+                    }
+                    else
+                    {
+                        walkTime += dt * walkFps * Mathf.Clamp(motor.HorizontalSpeed / Mathf.Max(0.1f, walkRefSpeed), 0.4f, 1.8f);
+                        s = fr[Mathf.FloorToInt(walkTime) % fr.Length];
+                    }
+                }
+            }
+        }
         var cuadrosTajo = s == null && attacking ? CuadrosTajo(attack.ComboIndex, dir, out espejo) : null;
         if (s != null) { }
         else if (cuadrosTajo != null)

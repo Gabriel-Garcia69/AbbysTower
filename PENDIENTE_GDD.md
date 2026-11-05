@@ -7,7 +7,6 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 1. **Color y luz: revisados el 4 de noviembre** en capturas de los 6 pisos con enemigos, sin errores. Falta verlos jugando; en Cima y Puerto, mirar si el fondo claro convence.
 2. **`.exe` medido el 4 de noviembre** en esta laptop (RTX 5050, 1920x1080), en cada escena sin combate: 93 a 346 FPS, carga de 0.2 a 0.6 s, 1089 MB de memoria reservada. Cumple las metas del GDD. Falta probar en combate y en una PC más modesta.
 3. **Build final:** `C:\Users\Gabriel\Unity\Build_AbbysTower\AbbysTower.exe`, ya sin medidor y con ícono.
-4. **Decidir el Dante del tutorial** (ver Decisiones del equipo).
 
 ## Cala Sombría (4 de noviembre)
 - Mapa unas 3 veces más grande: 73 casas, calles anchas, plaza del mercado, campamento y torre al 60 %, a 217 m de la salida.
@@ -15,6 +14,11 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 - Tomas nuevas en la intro y textos legibles. Las casas que tapan a Abby dejan de dibujarse (`OccluderFade`).
 - Se corrigió que hubiera casas en medio de la Calle Mayor. Caminata de prueba: de la salida a la torre en 33 s a 7 m/s, y entra a Diorama. Abby camina a 5 m/s, así que son unos 45 s; si se siente largo, se mueve `CalaSpawn`.
 - Cualquier cambio en `ExteriorBuilder*` necesita regenerar con el menú `Abby/Exterior/Hora: Noche` y guardar la escena.
+
+## Dante humano (5 de noviembre)
+- PixelLab, personaje `22ccdc52-092c-4438-a3ea-850e00c8db7d`: 17 años, abrigo azul marino, espada, estilo de Abby. Mide 1.45 m en el juego.
+- En `Assets/Resources/DanteHumano`: de pie en 8 direcciones; caminar y atacar en 5 (las del oeste se voltean por código). No tiene impulso, bloqueo ni golpe recibido propios: usa caminar, de pie y el tinte rojo.
+- Solo se usa en el tutorial. `Personajes/Dante` y `EnemigosAnim/Dante` siguen siendo su sombra de jefe final, en Cima.
 
 ## Falta para cumplir el GDD
 | Falta | Quién | Estado |
@@ -31,7 +35,6 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 - **Orden:** el GDD dice Cinemática → Tutorial; el juego hace Tutorial → Cinemática.
 - **Biblioteca (CuartosA):** no está en el GDD y tiene 1 horda, no 4. Ya no tiene mercader ni cofre.
 - **Continuar partida:** el GDD dice "sin guardado"; lo dejamos porque ayuda si algo falla en la presentación.
-- **Dante del tutorial:** sigue siendo Abby con tinte azul. Los sprites de `Personajes/Dante` y `EnemigosAnim/Dante` son la sombra del jefe final: usarlos en el tutorial arruina el final. Para el Dante humano de 17 años hay que generarlo en PixelLab (gasta créditos).
 - **Jefes sin usar:** Guardián, Capitán, Torrente y Gárgola tienen sprites y animaciones, pero **no salen en el juego**. El único jefe es Dante, como pide el GDD. ¿Se quedan fuera o se agregan?
 
 ## Detalles menores

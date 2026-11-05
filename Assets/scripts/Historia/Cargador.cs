@@ -191,7 +191,10 @@ public class Cargador : MonoBehaviour
             case "Puerto": titulo = "PISO 2"; sub = "El Puerto de las Mareas"; break;
             case "Cascadas": titulo = "PISO 3"; sub = "El Valle de las Cascadas"; break;
             case "Acantilado": titulo = "PISO 4"; sub = "El Sendero del Acantilado"; break;
-            case "Cima": titulo = "PISO 5"; sub = "La cima de la torre"; break;
+            case "Cueva": titulo = "PISO 5"; sub = "La Gruta de Cristal"; break;
+            case "Lago": titulo = "PISO 6"; sub = "El Lago de los Espejos"; break;
+            case "Nevado": titulo = "PISO 7"; sub = "La Aldea de la Nieve Eterna"; break;
+            case "Cima": titulo = "PISO 8"; sub = "El borde del abismo"; break;
             case "CuartosA": titulo = "CUARTOS"; sub = "Pereza · La Biblioteca Dormida"; break;
             case "CuartosB": titulo = "CUARTOS"; sub = "Gula · Los Salones del Banquete"; break;
             case "CuartosC": titulo = "CUARTOS"; sub = "Avaricia · La Bóveda del Acaparador"; break;

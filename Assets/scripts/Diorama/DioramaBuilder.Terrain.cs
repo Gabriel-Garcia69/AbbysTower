@@ -26,6 +26,7 @@ public partial class DioramaBuilder
                 case Layout.Cascadas: return FallsArea;
                 case Layout.Montana: return MountArea;
                 case Layout.Expedicion: return ExpArea;
+                case Layout.Final: return FinalArea;
                 default: return TownArea;
             }
         }
@@ -74,6 +75,7 @@ public partial class DioramaBuilder
             case Layout.Cascadas: return FallsHeight(x, z);
             case Layout.Montana: return MountHeight(x, z);
             case Layout.Expedicion: return ExpHeight(x, z);
+            case Layout.Final: return FinalHeight(x, z);
         }
         float e = (Noise(x * 0.18f, z * 0.18f) * 2f - 1f) + (Noise(x * 0.5f + 40f, z * 0.5f) * 2f - 1f) * 0.35f
                 + (Noise(x * 1.3f - 17f, z * 1.3f + 9f) * 2f - 1f) * 0.25f;   // orillas irregulares, nada de líneas rectas

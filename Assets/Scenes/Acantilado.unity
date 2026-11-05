@@ -627987,7 +627987,7 @@ MonoBehaviour:
   - {fileID: 616402904}
   - {fileID: 917663958}
   - {fileID: 930635142}
-  nextScene: Cima
+  nextScene: Cueva
   radius: 1.4
   player: {fileID: 0}
   lockedColor: {r: 0.25, g: 0.25, b: 0.3, a: 1}
@@ -638351,7 +638351,7 @@ MonoBehaviour:
   returnScene: Menu
   fxMaterial: {fileID: 2100000, guid: 35e7b0066430d064d8a46dbeedeacc87, type: 2}
   playerMaxHealth: 100
-  nextScene: Cima
+  nextScene: Cueva
   killY: -3
   theme: 0
 --- !u!4 &1741173125

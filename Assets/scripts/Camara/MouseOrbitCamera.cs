@@ -565,7 +565,11 @@ public class MouseOrbitCamera : MonoBehaviour
         if (shotW < 0.002f && leaving) { shot = null; leaving = false; shotW = 0f; }
         if (shot == null) return;
         float t = blend * 0.45f;
-        sYaw = Mathf.SmoothDampAngle(sYaw, shot.yaw, ref sYawVel, t, Mathf.Infinity, dt);
+        // la toma de apertura barre el paisaje mientras dura; las demás se mecen apenas
+        float barrido = shot.introSeconds > 0f
+            ? Mathf.Lerp(26f, -8f, Mathf.Clamp01(Time.timeSinceLevelLoad / shot.introSeconds))
+            : Mathf.Sin(Time.unscaledTime * 0.25f) * 3.5f;
+        sYaw = Mathf.SmoothDampAngle(sYaw, shot.yaw + barrido, ref sYawVel, t, Mathf.Infinity, dt);
         sPitch = Mathf.SmoothDamp(sPitch, shot.pitch, ref sPitchVel, t, Mathf.Infinity, dt);
         sDist = Mathf.SmoothDamp(sDist, shot.distance, ref sDistVel, t, Mathf.Infinity, dt);
         sFov = Mathf.SmoothDamp(sFov, shot.fov, ref sFovVel, t, Mathf.Infinity, dt);

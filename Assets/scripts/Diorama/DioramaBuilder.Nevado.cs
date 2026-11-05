@@ -108,6 +108,10 @@ public partial class DioramaBuilder
         mWindow = mWindowLit;   // de noche todas las ventanas encendidas
         BuildTerrain();
         var g = Group("Aldea", root);
+        // hielo oscuro y pulido: refleja la noche en vez de ser una mancha azul
+        mIce = Saved("Dio_HieloOscuro", () => new Material(mIce));
+        mIce.SetColor("_BaseColor", new Color(0.42f, 0.54f, 0.68f));
+        mIce.SetFloat("_Smoothness", 0.95f);
         var lvl = Group("Nivel", root);
 
         // lago congelado (se puede caminar)

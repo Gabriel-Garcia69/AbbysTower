@@ -69,7 +69,7 @@ public static class CuadroNarracion
     const float Interlineado = 1.5f;
 
     /// <summary>Parte el texto en líneas que caben en ancho.</summary>
-    static List<string> Partir(string texto, GUIStyle st, float ancho)
+    public static List<string> Partir(string texto, GUIStyle st, float ancho)
     {
         var lineas = new List<string>();
         foreach (var parrafo in texto.Split('\n'))

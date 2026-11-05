@@ -189,14 +189,27 @@ public class MenuPrincipal : MonoBehaviour
             return;
         }
         // título
-        var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 9f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        Sombra(new Rect(0, sh * 0.1f, sw, u * 12f), "ABBY'S TOWER", FuentePixel.Logo(titulo, u * 9f), new Color(1f, 0.92f, 0.75f));
-        var sub = new GUIStyle(titulo) { font = null, fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Italic };
-        Sombra(new Rect(0, sh * 0.1f + u * 11f, sw, u * 4f), "La torre del abismo", sub, new Color(0.85f, 0.78f, 1f));
+        // abajo el fondo se oscurece, para que el panel y el título respiren
+        for (int k = 0; k < 24; k++)
+        {
+            GUI.color = new Color(0.01f, 0.005f, 0.03f, Mathf.Lerp(0f, 0.72f, k / 23f));
+            GUI.DrawTexture(new Rect(0, sh * 0.4f + k * sh * 0.6f / 24f, sw, sh * 0.6f / 24f + 1f), Texture2D.whiteTexture);
+        }
+        GUI.color = Color.white;
+        var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 11f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+        Sombra(new Rect(0, sh * 0.09f, sw, u * 15f), "ABBY'S TOWER", FuentePixel.Logo(titulo, u * 12.5f), new Color(1f, 0.92f, 0.75f));
+        var sub = new GUIStyle(titulo) { font = null, fontSize = FuentePixel.Tam(u * 3.1f), fontStyle = FontStyle.Italic };
+        float ySub = sh * 0.09f + u * 15f;
+        Sombra(new Rect(0, ySub, sw, u * 5f), "La torre del abismo", sub, new Color(0.88f, 0.82f, 1f));
+        float tiraW = u * 26f, tiraH = Mathf.Max(1f, u * 0.2f);
+        GUI.color = new Color(0.92f, 0.78f, 0.45f, 0.8f);
+        GUI.DrawTexture(new Rect(sw / 2f - u * 20f - tiraW, ySub + u * 2.4f, tiraW, tiraH), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(sw / 2f + u * 20f, ySub + u * 2.4f, tiraW, tiraH), Texture2D.whiteTexture);
+        GUI.color = Color.white;
 
         var ops = Opciones();
-        float w = pagina == Pagina.Configuracion ? u * 56f : pagina == Pagina.Principal && Progreso.Hay ? u * 52f : u * 36f, h = u * 6.2f;   // "Continuar · Piso N" no cabía en una línea
-        var caja = new Rect((sw - w) / 2f, sh * 0.48f, w, h * ops.Length + u * 4f);
+        float w = Mathf.Min(sw * 0.8f, u * 92f), h = u * 7f;   // panel ancho: nada se aprieta
+        var caja = new Rect((sw - w) / 2f, sh * 0.45f, w, h * ops.Length + u * 4f);
         float a = Mathf.Clamp01(entrada / 0.25f);
         CuadroNarracion.Marco(caja, 0.92f * a);
         if (pagina == Pagina.Salir)
@@ -204,7 +217,7 @@ public class MenuPrincipal : MonoBehaviour
             var q = new GUIStyle(sub) { fontStyle = FontStyle.Bold, fontSize = FuentePixel.Tam(u * 2.8f) };
             Sombra(new Rect(caja.x, caja.y - u * 6f, caja.width, u * 5f), "¿Salir del juego?", q, Color.white);
         }
-        var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.9f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+        var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.6f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         var ev = Event.current;
         for (int i = 0; i < ops.Length; i++)
         {
@@ -220,10 +233,20 @@ public class MenuPrincipal : MonoBehaviour
             bool on = i == sel;
             if (on)
             {
-                GUI.color = new Color(0.75f, 0.55f, 1f, 0.28f * a);
-                GUI.DrawTexture(new Rect(r.x, r.y + u * 0.6f, r.width, r.height - u * 1.2f), Texture2D.whiteTexture);
+                // la opción elegida: una franja que se desvanece a los lados, con filete dorado
+                int tiras = 40;
+                float fy = r.y + u * 0.7f, fh = r.height - u * 1.4f;
+                for (int k = 0; k < tiras; k++)
+                {
+                    float c = 1f - Mathf.Abs(k / (tiras - 1f) * 2f - 1f);
+                    GUI.color = new Color(0.62f, 0.42f, 0.95f, 0.5f * c * a);
+                    GUI.DrawTexture(new Rect(r.x + k * r.width / tiras, fy, r.width / tiras + 1f, fh), Texture2D.whiteTexture);
+                    GUI.color = new Color(0.95f, 0.78f, 0.45f, 0.9f * c * a);
+                    GUI.DrawTexture(new Rect(r.x + k * r.width / tiras, fy, r.width / tiras + 1f, Mathf.Max(1f, u * 0.14f)), Texture2D.whiteTexture);
+                    GUI.DrawTexture(new Rect(r.x + k * r.width / tiras, fy + fh, r.width / tiras + 1f, Mathf.Max(1f, u * 0.14f)), Texture2D.whiteTexture);
+                }
             }
-            Sombra(r, (on ? "›  " : "") + ops[i] + (on ? "  ‹" : ""), st, on ? new Color(1f, 0.85f, 0.5f, a) : new Color(1f, 1f, 1f, 0.85f * a));
+            Sombra(r, (on ? "◆   " : "") + ops[i] + (on ? "   ◆" : ""), st, on ? new Color(1f, 0.87f, 0.55f, a) : new Color(1f, 1f, 1f, 0.82f * a));
         }
         var ayuda = new GUIStyle(sub) { fontSize = FuentePixel.Tam(u * 1.8f), fontStyle = FontStyle.Normal };
         Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), "↑ ↓  elegir     Enter  aceptar     ← →  ajustar volumen     Esc  regresar", ayuda, new Color(1f, 1f, 1f, 0.7f));

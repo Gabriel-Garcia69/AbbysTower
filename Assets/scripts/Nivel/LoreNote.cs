@@ -24,12 +24,15 @@ public class LoreNote : MonoBehaviour
     bool near;
     float openTime;
     Vector2 scroll;
+    string lineasDe;
+    System.Collections.Generic.List<string> lineas;
 
     void Start()
     {
         var p = GameObject.FindWithTag("Player");
         if (p != null) player = p.transform;
         if (sparkle != null && SecretTracker.Has("nota:" + id)) sparkle.SetActive(false);
+        if (Historia.Notas.TryGetValue(id, out var nueva)) { title = nueva[0]; text = nueva[1]; signature = nueva[2]; }
     }
 
     void Update()
@@ -95,11 +98,13 @@ public class LoreNote : MonoBehaviour
         GUI.color = new Color(0f, 0f, 0f, 0.65f);
         GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
 
-        // hoja: pergamino (o piedra si es inscripción)
-        float pw = Mathf.Min(sw - 6f * u, 80f * u);
-        var measure = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.25f), wordWrap = true, richText = true };
-        float needed = measure.CalcHeight(new GUIContent(text), pw - 14f * u) + 26f * u;   // la hoja crece con el texto
-        float ph = Mathf.Clamp(needed, 40f * u, sh - 10f * u);
+        // hoja: pergamino (o piedra si es inscripción); letra grande y con aire, y la hoja crece con el texto
+        float pw = Mathf.Min(sw - 6f * u, 118f * u);
+        var body = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.6f), wordWrap = false, alignment = TextAnchor.UpperLeft, richText = false };
+        float anchoTexto = pw - 16f * u, paso = body.fontSize * 1.5f;
+        if (lineasDe != text) { lineasDe = text; lineas = CuadroNarracion.Partir(text, body, anchoTexto); }
+        float textH = lineas.Count * paso;
+        float ph = Mathf.Clamp(textH + 32f * u, 44f * u, sh - 6f * u);
         var page = new Rect((sw - pw) / 2f, (sh - ph) / 2f, pw, ph);
         bool stone = kind == Kind.Inscripcion;
         Color paper = stone ? new Color(0.32f, 0.31f, 0.34f) : new Color(0.86f, 0.78f, 0.6f);
@@ -114,28 +119,26 @@ public class LoreNote : MonoBehaviour
         GUI.DrawTexture(new Rect(page.x, page.yMax - 2f * u, page.width, 2f * u), Texture2D.whiteTexture);
         GUI.color = Color.white;
 
-        var titleSt = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.4f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        var titleSt = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
         titleSt.normal.textColor = ink;
-        GUI.Label(new Rect(page.x + 4f * u, page.y + 3f * u, page.width - 8f * u, 6f * u), title, titleSt);
-        var kindSt = new GUIStyle(titleSt) { fontSize = FuentePixel.Tam(u * 1.7f), fontStyle = FontStyle.Italic };
-        kindSt.normal.textColor = new Color(ink.r, ink.g, ink.b, 0.6f);
-        GUI.Label(new Rect(page.x, page.y + 9f * u, page.width, 3f * u), kind == Kind.Libro ? "— libro —" : kind == Kind.Diario ? "— página de diario —" : kind == Kind.Inscripcion ? "— inscripción en la piedra —" : "— nota —", kindSt);
+        GUI.Label(new Rect(page.x + 4f * u, page.y + 2.5f * u, page.width - 8f * u, 7f * u), title, titleSt);
+        var kindSt = new GUIStyle(titleSt) { fontSize = FuentePixel.Tam(u * 2.3f), fontStyle = FontStyle.Italic };
+        kindSt.normal.textColor = new Color(ink.r, ink.g, ink.b, 0.75f);
+        GUI.Label(new Rect(page.x, page.y + 9.5f * u, page.width, 3.5f * u), kind == Kind.Libro ? "— libro —" : kind == Kind.Diario ? "— página de diario —" : kind == Kind.Inscripcion ? "— inscripción en la piedra —" : "— nota —", kindSt);
 
-        var body = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.25f), wordWrap = true, alignment = TextAnchor.UpperLeft, richText = true };
         body.normal.textColor = ink;
-        var area = new Rect(page.x + 6f * u, page.y + 13.5f * u, page.width - 12f * u, page.height - 23f * u);
-        float textH = body.CalcHeight(new GUIContent(text), area.width - 2f * u);
+        var area = new Rect(page.x + 8f * u, page.y + 15f * u, page.width - 14f * u, page.height - 25f * u);
         scroll = GUI.BeginScrollView(area, scroll, new Rect(0, 0, area.width - 2f * u, textH), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
-        GUI.Label(new Rect(0, 0, area.width - 2f * u, textH), text, body);
+        for (int i = 0; i < lineas.Count; i++) GUI.Label(new Rect(0, i * paso, anchoTexto + 4f * u, paso), lineas[i], body);
         GUI.EndScrollView();
 
         if (!string.IsNullOrEmpty(signature))
         {
             var sig = new GUIStyle(body) { alignment = TextAnchor.MiddleRight, fontStyle = FontStyle.Italic };
-            GUI.Label(new Rect(page.x + 6f * u, page.yMax - 9f * u, page.width - 12f * u, 4f * u), signature, sig);
+            GUI.Label(new Rect(page.x + 8f * u, page.yMax - 10f * u, page.width - 16f * u, 5f * u), signature, sig);
         }
         var hint = new GUIStyle(kindSt) { fontStyle = FontStyle.Normal };
-        GUI.Label(new Rect(page.x, page.yMax - 4.5f * u, page.width, 3f * u), "Espacio / Enter / E / Esc  cerrar", hint);
+        GUI.Label(new Rect(page.x, page.yMax - 4.5f * u, page.width, 3.5f * u), "Espacio / Enter / E / Esc  cerrar", hint);
         GUI.color = prev;
     }
 }

@@ -26,7 +26,10 @@ public static class Progreso
                 case "Puerto": return "Piso 2";
                 case "Cascadas": return "Piso 3";
                 case "Acantilado": return "Piso 4";
-                case "Cima": return "Piso 5";
+                case "Cueva": return "Piso 5";
+                case "Lago": return "Piso 6";
+                case "Nevado": return "Piso 7";
+                case "Cima": return "Piso 8";
                 default: return Escena;
             }
         }

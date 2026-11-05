@@ -12,9 +12,9 @@ public partial class DioramaBuilder
     /// <summary>GDD: la demo tiene 5 pisos; el último es el del jefe final (Dante). Los demás mundos quedan fuera de la ruta.</summary>
     // Ruta completa: Menú → Intro → Expedicion → Exterior → Diorama → CuartosA → Puerto → CuartosB → Cascadas → CuartosC → Acantilado → CuartosD → Cima.
     // Esta lista son solo los dioramas (las zonas de cuartos son escenas de FloorLayout y no se regeneran con el DioramaBuilder).
-    public static readonly string[] Route = { "Diorama", "Puerto", "Cascadas", "Acantilado", "Cima" };
+    public static readonly string[] Route = { "Diorama", "Puerto", "Cascadas", "Acantilado", "Cueva", "Lago", "Nevado", "Cima" };
     /// <summary>Pisos de la ruta del GDD (4 hordas por piso).</summary>
-    bool EnRutaGDD => layout == Layout.Pueblo || layout == Layout.Puerto || layout == Layout.Cascadas || layout == Layout.Acantilado || layout == Layout.Cima;
+    bool EnRutaGDD => layout == Layout.Pueblo || layout == Layout.Puerto || layout == Layout.Cascadas || layout == Layout.Acantilado || layout == Layout.Cueva || layout == Layout.Lago || layout == Layout.Nevado || layout == Layout.Cima;
 
     public struct LevelInfo { public string title, subtitle, boss, next; public float hp; }
 
@@ -27,14 +27,14 @@ public partial class DioramaBuilder
             {
                 case Layout.Puerto: return new LevelInfo { title = "PISO 2", subtitle = "El Puerto de las Mareas", boss = "Capitán sin Barco", next = "Cascadas", hp = 1.15f };
                 case Layout.Cascadas: return new LevelInfo { title = "PISO 3", subtitle = "El Valle de las Cascadas", boss = "El Señor del Torrente", next = "Acantilado", hp = 1.3f };
-                case Layout.Acantilado: return new LevelInfo { title = "PISO 4", subtitle = "El Sendero del Acantilado", boss = "La Gárgola del Faro Roto", next = "Cima", hp = 1.45f };
+                case Layout.Acantilado: return new LevelInfo { title = "PISO 4", subtitle = "El Sendero del Acantilado", boss = "La Gárgola del Faro Roto", next = "Cueva", hp = 1.45f };
                 case Layout.Cueva: return new LevelInfo { title = "PISO 5", subtitle = "La Gruta de Cristal", boss = "Corazón de Geoda", next = "Lago", hp = 1.6f };
-                case Layout.Lago: return new LevelInfo { title = "PISO 6", subtitle = "El Lago de los Espejos", boss = "La Dama del Lago", next = "Templo", hp = 1.75f };
-                case Layout.Templo: return new LevelInfo { title = "PISO 7", subtitle = "El Templo de Arena", boss = "El Guardián Dorado", next = "Nevado", hp = 1.9f };
-                case Layout.Nevado: return new LevelInfo { title = "PISO 8", subtitle = "La Aldea de la Nieve Eterna", boss = "Escarcha, la Viuda Blanca", next = "Montana", hp = 2.05f };
+                case Layout.Lago: return new LevelInfo { title = "PISO 6", subtitle = "El Lago de los Espejos", boss = "La Dama del Lago", next = "Nevado", hp = 1.75f };
+                case Layout.Templo: return new LevelInfo { title = "TEMPLO", subtitle = "El Templo de Arena", boss = "El Guardián Dorado", next = "Nevado", hp = 1.9f };
+                case Layout.Nevado: return new LevelInfo { title = "PISO 7", subtitle = "La Aldea de la Nieve Eterna", boss = "Escarcha, la Viuda Blanca", next = "Cima", hp = 2.05f };
                 case Layout.Expedicion: return new LevelInfo { title = "PISO 20", subtitle = "La expedición", boss = "", next = "Exterior", hp = 0.8f };
                 case Layout.Montana: return new LevelInfo { title = "PISO 9", subtitle = "La Montaña del Eco", boss = "El Eco de Piedra", next = "Cima", hp = 2.2f };
-                case Layout.Cima: return new LevelInfo { title = "PISO 5", subtitle = "La cima de la torre", boss = "La Sombra", next = "", hp = 1.6f };
+                case Layout.Cima: return new LevelInfo { title = "PISO 8", subtitle = "El borde del abismo", boss = "La Sombra", next = "", hp = 1.6f };
                 default: return new LevelInfo { title = "PISO 1", subtitle = "El Pueblo del Risco", boss = "Guardián de las Ruinas", next = "CuartosA", hp = 1f };
             }
         }
@@ -58,6 +58,9 @@ public partial class DioramaBuilder
                 case Layout.Puerto: return new[] { S, J, S, B };
                 case Layout.Cascadas: return new[] { S, Em, J, B };
                 case Layout.Acantilado: return new[] { E, S, Em, B, J };
+                case Layout.Cueva: return new[] { J, E, Em, B };
+                case Layout.Lago: return new[] { H, S, E, Em };
+                case Layout.Nevado: return new[] { H, E, B, J };
                 case Layout.Cima: return new[] { H, E, Em, B, J };
             }
             switch (layout)

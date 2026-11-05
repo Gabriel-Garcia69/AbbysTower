@@ -3,19 +3,18 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Final de la demo (GDD, Acto 3): al bajar la vida del jefe a cero la pelea se interrumpe y el jefe cae. Queda en el
-/// suelo una pieza de Dante (su colgante), el jefe dice "Abby…" en texto y corte a negro. Termina en cliffhanger.
+/// Final de la pelea (GDD, Acto 3): al bajar la vida del jefe a cero se acaba todo: se van los enemigos, el jefe cae y la
+/// pantalla se funde. El final sigue en su propio escenario (EscenaFinal). Aquí viven también el colgante y los créditos.
 /// Lo agrega FloorDirector; espera el evento TowerEnemy.DanteDerrotado.
 /// </summary>
 public class DanteFinal : MonoBehaviour
 {
     public string escenaAlTerminar = "Menu";
 
-    float negro, textoT, tarjetaA;
-    string quien, texto, tarjeta, subtarjeta;
+    float negro;
     bool corriendo;
     /// <summary>La escena final está corriendo (el HUD del piso se esconde).</summary>
-    public static bool Activo { get; private set; }
+    public static bool Activo { get; set; }
 
     void OnEnable() => TowerEnemy.DanteDerrotado += Empezar;
     void OnDisable() { TowerEnemy.DanteDerrotado -= Empezar; Activo = false; }
@@ -29,85 +28,50 @@ public class DanteFinal : MonoBehaviour
 
     IEnumerator Final(TowerEnemy dante)
     {
-        // la pelea se interrumpe: Abby queda quieta, los demás enemigos se deshacen
+        // la pelea se acaba de golpe: Abby queda quieta y no queda ningún enemigo ni horda por salir
         var p = GameObject.FindWithTag("Player");
         if (p != null)
             foreach (var b in p.GetComponents<MonoBehaviour>())
                 if (b is PlayerInputReader || b is AbbyAttack || b is AbbyBlock || b is AbbyDash) b.enabled = false;
+        foreach (var r in FindObjectsByType<RoomEncounter>()) r.enabled = false;
         foreach (var e in TowerEnemy.All.ToArray())
             if (e != null && e != dante) { CombatFx.Burst(e.transform.position + Vector3.up, e.eyeColor, 20, 4f, 0.2f, 0.5f); Destroy(e.gameObject); }
+        var h = p != null ? p.GetComponent<PlayerHealth>() : null;
+        if (h != null) h.enabled = false;
         HitStop.Do(0.6f, 0.05f);
         CameraShake.Shake(0.5f, 0.8f);
+        Musica.Poner(Musica.Pista.Ninguna);
+        Sonido.Tocar(Sonido.Efecto.Impacto, 0.8f, 0.8f);
 
-        var cam = Camera.main;
-        foreach (var b in FindObjectsByType<MouseOrbitCamera>()) b.enabled = false;
-        foreach (var b in FindObjectsByType<CameraRig>()) b.enabled = false;
-        Vector3 d = dante.transform.position;
-        Vector3 desde = p != null ? p.transform.position : d + Vector3.back * 4f;
-        Vector3 lado = Vector3.Cross(Vector3.up, (d - desde).normalized);
-
-        // cae: se dobla y queda tendido; la sombra se le va desprendiendo
+        // cae doblándose, se le desprende la sombra, y huye hacia la luz: Abby lo sigue
         var sprite = dante.GetComponentInChildren<TowerEnemy.DanteSprite>();
         if (sprite != null) sprite.enabled = false;
         var sr = dante.GetComponentInChildren<SpriteRenderer>();
         Transform cuerpo = sr != null ? sr.transform : null;
         Quaternion r0 = cuerpo != null ? cuerpo.rotation : Quaternion.identity;
-        for (float t = 0f; t < 2.2f; t += Time.deltaTime)
+        for (float t = 0f; t < 2.4f; t += Time.deltaTime)
         {
-            float k = Mathf.SmoothStep(0f, 1f, t / 2.2f);
             if (cuerpo != null)
             {
-                cuerpo.rotation = r0 * Quaternion.Euler(0f, 0f, Mathf.Lerp(0f, 82f, Mathf.SmoothStep(0f, 1f, (t - 0.6f) / 1.4f)));
-                if (Mathf.Repeat(t, 0.25f) < Time.deltaTime) CombatFx.Burst(cuerpo.position + Vector3.up * 0.6f, new Color(0.25f, 0.1f, 0.35f), 10, 2f, 0.25f, 1.2f, -0.6f);
+                cuerpo.rotation = r0 * Quaternion.Euler(0f, 0f, Mathf.Lerp(0f, 40f, Mathf.SmoothStep(0f, 1f, t / 2.4f)));
+                if (Mathf.Repeat(t, 0.16f) < Time.deltaTime) CombatFx.Burst(cuerpo.position + Vector3.up * 0.6f, new Color(0.3f, 0.12f, 0.42f), 14, 2.4f, 0.26f, 1.4f, -0.7f);
             }
-            if (sr != null) sr.color = Color.Lerp(new Color(0.16f, 0.09f, 0.24f), new Color(0.32f, 0.26f, 0.4f), k);   // se le ve algo debajo de la sombra
-            if (cam != null) Encuadre(cam, d + Vector3.up * 7f - (d - desde).normalized * 6f + lado * 1.5f, d + Vector3.up * 0.6f, 1.5f);   // alta, del lado de Abby: no choca con almenas ni columnas
+            if (sr != null) sr.color = Color.Lerp(sr.color, new Color(0.1f, 0.06f, 0.16f, 0f), t / 2.4f * 0.06f);
+            negro = Mathf.Clamp01((t - 1.2f) / 1.2f);
             yield return null;
         }
-
-        // la pieza de Dante: su colgante, en el suelo junto a él
-        Vector3 pos = Vector3.Lerp(d, desde, 0.4f);   // entre Dante y Abby: siempre suelo libre (no junto a las almenas)
-        pos.y = d.y;
-        Colgante(pos);
-        for (float t = 0f; t < 2.6f; t += Time.deltaTime)
-        {
-            if (cam != null) Encuadre(cam, pos + Vector3.up * 3.6f - (d - desde).normalized * 0.8f, pos, 2f);   // casi desde arriba, sobre el colgante
-            yield return null;
-        }
-
-        Musica.Poner(Musica.Pista.Ninguna);   // silencio para la última palabra
-        // "Abby…"
-        quien = "???"; texto = "Abby…"; textoT = 0f;
-        for (float t = 0f; t < 3.6f; t += Time.deltaTime) { textoT += Time.deltaTime; yield return null; }
-        texto = null;
-
-        // corte a negro
         negro = 1f;
-        yield return new WaitForSeconds(1.2f);
-        tarjeta = "Continuará…"; subtarjeta = Historia.Titulo;
-        for (float t = 0f; t < 4f; t += Time.deltaTime) { tarjetaA = Mathf.Clamp01(Mathf.Min(t / 0.8f, (4f - t) / 0.8f)); yield return null; }
-        tarjeta = null;
+        yield return new WaitForSeconds(0.6f);
         ReintentoJefe.Escena = null;
-        // créditos (GDD: estado Créditos al terminar la demo)
-        Musica.Poner(Musica.Pista.Menu);
-        creditos = true;
-        for (creditosT = 0f; creditosT < DuracionCreditos; creditosT += Time.deltaTime)
-        {
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (creditosT > 1.5f && kb != null && (kb.enterKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) break;
-            yield return null;
-        }
-        creditos = false;
-        yield return new WaitForSeconds(0.4f);
-        Progreso.Borrar();   // juego terminado: el menú vuelve a ofrecer empezar
-        string sig = Application.CanStreamedLevelBeLoaded(escenaAlTerminar) ? escenaAlTerminar : SceneManager.GetSceneByBuildIndex(0).name;
-        Cargador.Ir(Application.CanStreamedLevelBeLoaded(sig) ? sig : "Menu");   // la Intro ya no es el principio del juego
+        Activo = true;
+        SceneManager.LoadScene("Final");
     }
 
-    GameObject Colgante(Vector3 pos)
+    public static GameObject CrearColgante(Vector3 pos)
     {
         var g = new GameObject("ColganteDeDante");
         g.transform.position = pos + Vector3.up * 0.06f;
+        g.transform.localScale = Vector3.one * 1.8f;
         var lit = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         lit.SetColor("_BaseColor", new Color(0.75f, 0.68f, 0.5f)); lit.SetFloat("_Metallic", 0.8f); lit.SetFloat("_Smoothness", 0.7f);
         var gema = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -115,12 +79,12 @@ public class DanteFinal : MonoBehaviour
         gema.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
         gema.SetColor("_EmissionColor", new Color(0.7f, 0.35f, 1f) * 0.7f);   // brillo suave (con más, el Bloom lo volvía una mancha)
         var disco = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        Destroy(disco.GetComponent<Collider>());
+        Object.Destroy(disco.GetComponent<Collider>());
         disco.transform.SetParent(g.transform, false);
         disco.transform.localScale = new Vector3(0.28f, 0.02f, 0.28f);
         disco.GetComponent<Renderer>().sharedMaterial = lit;
         var piedra = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        Destroy(piedra.GetComponent<Collider>());
+        Object.Destroy(piedra.GetComponent<Collider>());
         piedra.transform.SetParent(g.transform, false);
         piedra.transform.localPosition = new Vector3(0f, 0.03f, 0f);
         piedra.transform.localScale = new Vector3(0.12f, 0.05f, 0.12f);
@@ -128,7 +92,7 @@ public class DanteFinal : MonoBehaviour
         for (int i = 0; i < 14; i++)   // la cadena
         {
             var e = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Destroy(e.GetComponent<Collider>());
+            Object.Destroy(e.GetComponent<Collider>());
             e.transform.SetParent(g.transform, false);
             float a = i / 13f * 3.6f;
             e.transform.localPosition = new Vector3(Mathf.Sin(a) * 0.35f, 0.01f, 0.18f + Mathf.Cos(a) * 0.25f);
@@ -144,55 +108,82 @@ public class DanteFinal : MonoBehaviour
         return g;
     }
 
-    static void Encuadre(Camera cam, Vector3 pos, Vector3 mira, float vel)
-    {
-        cam.transform.position = Vector3.Lerp(cam.transform.position, pos, Time.deltaTime * vel);
-        cam.transform.rotation = Quaternion.Slerp(cam.transform.rotation, Quaternion.LookRotation(mira - cam.transform.position), Time.deltaTime * vel * 1.5f);
-    }
+    public const float DuracionCreditos = 30f;
 
-    bool creditos;
-    float creditosT;
-    public const float DuracionCreditos = 22f;
-
+    // (qué hizo, quién); sin "qué hizo" es una línea sola
     public static readonly string[][] Creditos =
     {
-        new[] { "ABBY'S TOWER", "" },
-        new[] { "Un proyecto de Estudio 02", "Integradora · IDYGS103 · UT Cancún" },
-        new[] { "Rodrigo Herrera", "Líder · Programación" },
-        new[] { "Gabriel García", "Programación · Sprites" },
-        new[] { "Francisco Uc", "Programación · Música y audio" },
-        new[] { "Ricardo Cetina", "Experiencia de usuario" },
-        new[] { "Karla Damaris", "Pruebas · Experiencia de usuario" },
-        new[] { "Gracias por jugar", "La historia de Abby continuará…" },
+        new[] { "Dirección y programación", "Rodrigo Herrera" },
+        new[] { "Programación y arte", "Gabriel García" },
+        new[] { "Música y sonido", "Francisco Uc" },
+        new[] { "Experiencia de usuario", "Ricardo Cetina" },
+        new[] { "Pruebas y experiencia de usuario", "Karla Damaris" },
+        new[] { "Un proyecto de", "Estudio 02" },
+        new[] { "Integradora · IDYGS103", "Universidad Tecnológica de Cancún" },
     };
 
-    /// <summary>Los créditos subiendo por la pantalla; t = segundos desde el principio (DuracionCreditos). Los usa también el menú principal.</summary>
+    static void Linea(Rect r, Color c) { GUI.color = c; GUI.DrawTexture(r, Texture2D.whiteTexture); GUI.color = Color.white; }
+
+    /// <summary>
+    /// Los créditos subiendo a la izquierda, sobre un velo que se difumina; lo de atrás sigue a la vista. El logo arriba y una
+    /// dedicatoria al final. t = segundos desde el principio. Los usa también el menú principal.
+    /// </summary>
     public static void DibujarCreditos(float t, bool fondoNegro = true)
     {
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         if (fondoNegro) { GUI.color = Color.black; GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture); }
-        var grande = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        var chico = new GUIStyle(grande) { fontSize = FuentePixel.Tam(u * 2.4f), fontStyle = FontStyle.Italic };
-        float y = sh + u * 4f - Mathf.Repeat(t, DuracionCreditos) * (sh + Creditos.Length * u * 16f) / DuracionCreditos;
-        for (int i = 0; i < Creditos.Length; i++, y += u * 16f)
+        // velo: de casi negro a transparente, por tiras
+        float anchoVelo = sw * 0.56f;
+        for (int i = 0; i < 32; i++)
         {
-            float a = Mathf.Clamp01(Mathf.Min((y + u * 10f) / (sh * 0.25f), (sh - y) / (sh * 0.25f)));
-            GUI.color = Color.white;
-            grande.normal.textColor = (i == 0 ? new Color(1f, 0.9f, 0.7f) : Color.white) * new Color(1, 1, 1, a);
-            chico.normal.textColor = new Color(0.8f, 0.72f, 1f, a);
-            GUI.Label(new Rect(0, y, sw, u * 6f), Creditos[i][0], grande);
-            if (Creditos[i][1] != "") GUI.Label(new Rect(0, y + u * 5.5f, sw, u * 4f), Creditos[i][1], chico);
+            float k = i / 31f;
+            GUI.color = new Color(0.015f, 0.01f, 0.035f, Mathf.Lerp(0.88f, 0f, k * k));
+            GUI.DrawTexture(new Rect(i * anchoVelo / 32f, 0, anchoVelo / 32f + 1f, sh), Texture2D.whiteTexture);
         }
+        GUI.color = Color.white;
+        float x = sw * 0.07f, w = sw * 0.4f;
+        float largo = u * (34f + Creditos.Length * 17f + 34f);
+        float y = sh - Mathf.Repeat(t, DuracionCreditos) / DuracionCreditos * (largo + sh * 0.35f);
+        Color Oro(float a) => new Color(0.95f, 0.78f, 0.45f, a);
+        float Al(float yy) => Mathf.Clamp01(Mathf.Min((yy + u * 3f) / (sh * 0.16f), (sh - yy - u * 3f) / (sh * 0.16f)));
+
+        // el logo
+        var logo = FuentePixel.Logo(new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft, wordWrap = false }, u * 7.4f);
+        float a0 = Al(y);
+        logo.normal.textColor = new Color(0f, 0f, 0f, a0 * 0.8f); GUI.Label(new Rect(x + 3f, y + 3f, sw, u * 10f), Historia.Titulo, logo);
+        logo.normal.textColor = new Color(1f, 0.92f, 0.75f, a0); GUI.Label(new Rect(x, y, sw, u * 10f), Historia.Titulo, logo);
+        var lema = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Italic };
+        lema.normal.textColor = new Color(0.85f, 0.78f, 1f, a0);
+        GUI.Label(new Rect(x, y + u * 10f, w, u * 4.5f), Historia.Subtitulo, lema);
+        Linea(new Rect(x, y + u * 16f, w, Mathf.Max(1f, u * 0.2f)), Oro(a0 * 0.8f));
+        y += u * 34f;
+
+        var cargo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.5f), wordWrap = false };
+        var nombre = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.9f), fontStyle = FontStyle.Bold, wordWrap = false };
+        foreach (var c in Creditos)
+        {
+            float a = Al(y);
+            Linea(new Rect(x, y + u * 1.2f, u * 2.6f, Mathf.Max(1f, u * 0.25f)), Oro(a));
+            cargo.normal.textColor = Oro(a);
+            GUI.Label(new Rect(x + u * 3.6f, y - u * 0.8f, w, u * 4f), c[0].ToUpperInvariant(), cargo);
+            nombre.normal.textColor = new Color(0f, 0f, 0f, a * 0.7f); GUI.Label(new Rect(x + 2f, y + u * 3.2f + 2f, w, u * 7f), c[1], nombre);
+            nombre.normal.textColor = new Color(1f, 0.97f, 0.92f, a); GUI.Label(new Rect(x, y + u * 3.2f, w, u * 7f), c[1], nombre);
+            y += u * 17f;
+        }
+        y += u * 12f;
+        var ded = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.4f), fontStyle = FontStyle.Italic, wordWrap = true };
+        float a1 = Al(y);
+        ded.normal.textColor = new Color(0.92f, 0.86f, 1f, a1);
+        GUI.Label(new Rect(x, y, w, u * 12f), "Para los que todavía dejan una luz prendida.", ded);
+        ded.fontStyle = FontStyle.Bold; ded.normal.textColor = Oro(Al(y + u * 12f));
+        GUI.Label(new Rect(x, y + u * 12f, w, u * 6f), "Gracias por jugar", ded);
         GUI.color = Color.white;
     }
 
     void OnGUI()
     {
         if (!corriendo) return;
-        if (creditos) { GUI.depth = -960; DibujarCreditos(creditosT); return; }
         GUI.depth = -960;
-        if (!string.IsNullOrEmpty(texto)) CuadroNarracion.Dialogo(quien, texto, CuadroNarracion.Letras(texto, textoT * 0.6f), 1f);
         CuadroNarracion.Negro(negro);
-        if (!string.IsNullOrEmpty(tarjeta)) CuadroNarracion.Tarjeta(tarjeta, subtarjeta, tarjetaA);
     }
 }

@@ -107,6 +107,7 @@ public class ExpedicionPiso20 : MonoBehaviour
         yield return Fundir(0f, 1.5f);
         yield return Hablar(Historia.Capitan, "Piso 20. Ninguna expedición había bajado tanto.");
         yield return Hablar(Historia.Capitan, "Mantengan la formación. Lo que encontremos aquí abajo, lo enfrentamos juntos.");
+        yield return Hablar(Historia.Hermano, "Todavía traigo tu colgante, Abby. Te lo voy a devolver.");
 
         // moverse
         Vector3 inicio = player.position;

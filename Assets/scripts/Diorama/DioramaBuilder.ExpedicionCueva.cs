@@ -12,7 +12,7 @@ public partial class DioramaBuilder
         ExpTecho + 4f - Noise(x * 0.035f + 2f, z * 0.035f + 6f) * 10f - Noise(x * 0.12f, z * 0.12f + 3f) * 4f - Noise(x * 0.4f + 5f, z * 0.4f) * 1.2f;
 
     /// <summary>Malla de roca a partir de una rejilla de puntos. La cara mira hacia 'dentro'; el UV va en metros según el eje que domina.</summary>
-    GameObject MallaRoca(Transform parent, string nombre, int nu, int nv, System.Func<int, int, Vector3> punto, Vector3 dentro, Material mat, bool techo)
+    GameObject MallaRoca(Transform parent, string nombre, int nu, int nv, System.Func<int, int, Vector3> punto, Vector3 dentro, Material mat, bool techo, bool haciaCentro = false)
     {
         var v = new List<Vector3>(); var uv = new List<Vector2>(); var t = new List<int>();
         for (int i = 0; i <= nu; i++)
@@ -31,12 +31,44 @@ public partial class DioramaBuilder
             }
         // el sentido de las caras depende de la rejilla: se revisa con una de ellas
         Vector3 n0 = Vector3.Cross(v[t[1]] - v[t[0]], v[t[2]] - v[t[0]]);
+        if (haciaCentro)
+        {
+            Vector3 cen = Vector3.zero; foreach (var q in v) cen += q; cen /= v.Count;
+            dentro = cen - (v[t[0]] + v[t[1]] + v[t[2]]) / 3f;
+        }
         if (Vector3.Dot(n0, dentro) < 0f)
             for (int k = 0; k < t.Count; k += 3) { int q = t[k + 1]; t[k + 1] = t[k + 2]; t[k + 2] = q; }
         var m = new Mesh { name = nombre, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
         m.SetVertices(v); m.SetUVs(0, uv); m.SetTriangles(t, 0);
         m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
         return MeshObject(parent, nombre, m, mat, false);
+    }
+
+    /// <summary>Agua con el carácter de su lugar: copia del agua base, con sus colores y su oleaje.</summary>
+    Material AguaDe(string nombre, Material baseM, Color poco, Color hondo, float distancia, float reflejo, float altura, float escala, float velocidad, float normales, float espuma, Color colorEspuma)
+    {
+        var m = Saved(nombre, () => new Material(baseM));
+        m.SetColor("_ShallowColor", poco); m.SetColor("_DeepColor", hondo);
+        m.SetFloat("_DepthDistance", distancia); m.SetFloat("_Reflection", reflejo);
+        m.SetFloat("_WaveHeight", altura); m.SetFloat("_WaveScale", escala); m.SetFloat("_WaveSpeed", velocidad);
+        m.SetFloat("_NormalStrength", normales); m.SetFloat("_FoamDistance", espuma); m.SetColor("_FoamColor", colorEspuma);
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(m);
+#endif
+        return m;
+    }
+
+    /// <summary>La pared de la Gruta de Cristal: un anillo de roca irregular por dentro del terreno (sin cubrir la entrada, al sur).</summary>
+    void ParedDeGruta(Transform g, Vector2 centro, Vector2 radio)
+    {
+        const int nu = 48, nv = 16;
+        MallaRoca(g, "ParedGruta", nu, nv, (i, j) =>
+        {
+            float ang = Mathf.Lerp(-60f, 240f, i / (float)nu) * Mathf.Deg2Rad, y = -2f + j * 2.2f;
+            float c = Mathf.Cos(ang), n = Mathf.Sin(ang);
+            float k = 0.9f + Noise(c * 1.6f + 3f, n * 1.6f + y * 0.09f) * 0.14f + Noise(c * 5f, n * 5f + y * 0.25f) * 0.05f - Mathf.Clamp01(y / 34f) * 0.16f;   // se cierra hacia arriba
+            return new Vector3(centro.x + c * radio.x * k, y, centro.y + n * radio.y * k);
+        }, Vector3.zero, mExpPared, false, true);
     }
 
     /// <summary>La bóveda y las paredes del abismo.</summary>

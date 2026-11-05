@@ -54,9 +54,16 @@ public partial class DioramaBuilder
         var lvl = Group("Nivel", root);
         var water = Group("Agua", root);
 
-        var lake = Flat(water, "Lago", new Vector3(8f, LakeWater, 90f), 112f, 142f, mRiver, 0.08f);
+        // el Lago de los Espejos: casi sin olas, para que refleje el cielo como un espejo
+        var espejo = AguaDe("Dio_AguaEspejo", mRiver, new Color(0.16f, 0.42f, 0.46f, 0.55f), new Color(0.02f, 0.12f, 0.2f, 0.96f), 2.6f, 0.95f, 0.012f, 0.45f, 0.3f, 0.16f, 0.18f, new Color(0.8f, 0.9f, 0.95f));
+        // la copia traía la corriente de los ríos, y una malla sin esos datos corría a toda velocidad: el lago va quieto
+        var rioEspejo = Saved("Dio_AguaEspejoRio", () => new Material(espejo));
+        rioEspejo.CopyPropertiesFromMaterial(espejo);
+        rioEspejo.SetFloat("_VertexFlow", 1f); rioEspejo.SetFloat("_WaveHeight", 0.02f); rioEspejo.SetFloat("_NormalStrength", 0.3f);
+        espejo.SetFloat("_VertexFlow", 0f); espejo.SetVector("_Flow", Vector4.zero);
+        var lake = Flat(water, "Lago", new Vector3(8f, LakeWater, 90f), 112f, 142f, espejo, 0.08f);
         lake.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        FlowFlat(water, "RioAlto", new Vector3(LakeFallX, LakeTopY - 0.7f, 212f), 8.2f, 104f, mRiver, 0.15f, new Vector2(0f, -0.6f));   // baja hacia la cascada gigante
+        FlowFlat(water, "RioAlto", new Vector3(LakeFallX, LakeTopY - 0.7f, 212f), 8.2f, 104f, rioEspejo, 0.15f, new Vector2(0f, -0.6f));   // baja hacia la cascada gigante
         // la cascada gigante y su bruma
         Waterfall(water, new Vector3(LakeFallX, (LakeTopY - 0.7f + LakeWater) / 2f, LakeCliffZ), Vector3.back, 8.5f, LakeTopY - 0.7f - LakeWater);
         Foam(water, new Vector3(LakeFallX, LakeWater + 0.1f, LakeCliffZ - 2.5f), 6f, 50f);

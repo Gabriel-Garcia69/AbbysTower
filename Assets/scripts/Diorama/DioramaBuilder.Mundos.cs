@@ -9,11 +9,11 @@ public partial class DioramaBuilder
 {
     Material mSandPix, mSnowPix, mSandstone, mCaveRock, mCaveBrick, mStoneBrick, mIce, mCrystalA, mCrystalB, mMushroom, mCloud;
 
-    Material TopMat => layout == Layout.Expedicion && mExpSuelo != null ? mExpSuelo : layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? mSnowPix : layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : mGrass;
+    Material TopMat => (layout == Layout.Expedicion || layout == Layout.Final) && mExpSuelo != null ? mExpSuelo : layout == Layout.Templo ? mSandPix : layout == Layout.Nevado ? mSnowPix : layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : mGrass;
     /// <summary>Arriba de esta altura el suelo usa el material del lecho (en la Montaña: nieve).</summary>
     float SnowAbove => layout == Layout.Montana ? MountSnowLine : 99999f;
-    Material WallMat => layout == Layout.Cueva || layout == Layout.Expedicion ? mCaveRock : layout == Layout.Templo ? mSandPix : mRock;
-    Material BedMat => layout == Layout.Expedicion && mExpSuelo != null ? mExpSuelo : layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
+    Material WallMat => layout == Layout.Cueva || layout == Layout.Expedicion || layout == Layout.Final ? mCaveRock : layout == Layout.Templo ? mSandPix : mRock;
+    Material BedMat => (layout == Layout.Expedicion || layout == Layout.Final) && mExpSuelo != null ? mExpSuelo : layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
 
     void LoadWorldMaterials()
     {
@@ -122,6 +122,7 @@ public partial class DioramaBuilder
     /// <summary>Racimo de cristales que brillan (con una luz si 'light').</summary>
     void Crystals(Transform parent, Vector3 pos, float s, bool violet, bool light)
     {
+        if (layout == Layout.Cueva) { CristalesFacetados(parent, pos, violet, light); return; }
         var c = Group("Cristales", parent);
         c.localPosition = pos;
         var mat = violet ? mCrystalB : mCrystalA;
@@ -139,6 +140,7 @@ public partial class DioramaBuilder
     /// <summary>Estalagmita (cono de roca).</summary>
     void Stalagmite(Transform parent, Vector3 pos, float h)
     {
+        if (layout == Layout.Cueva) { PilaDeRoca(parent, pos, h); return; }
         // en la gruta del tutorial la malla trae el UV en metros (32 px/m); en los demás mapas, el cono de siempre escalado
         bool exp = layout == Layout.Expedicion;
         var m = MeshObject(parent, "Estalagmita", exp ? ConoMetrico(h * 0.28f, h, 7, 0.25f) : Cone(1f, 1f, 7), mCaveRock, true);

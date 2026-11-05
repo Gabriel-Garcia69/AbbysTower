@@ -49,7 +49,7 @@ public class Musica : MonoBehaviour
     }
 
     /// <summary>Los mapas con río, mar o cascadas: al explorarlos suena "Paisaje" (nostálgica y feliz).</summary>
-    public static bool ConAgua(string n) => n == "Diorama" || n == "Puerto" || n == "Cascadas" || n == "Acantilado";
+    public static bool ConAgua(string n) => n == "Diorama" || n == "Puerto" || n == "Cascadas" || n == "Acantilado" || n == "Lago";
 
     /// <summary>Al empezar o terminar una horda: combate mientras se pelea; en los mapas con agua, vuelve el paisaje.</summary>
     public static void Pelea(bool empieza)

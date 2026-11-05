@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public static class Sonido
 {
-    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello, Impulso, Rugido, Temblor, Impacto }
+    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello, Impulso, Rugido, Temblor, Impacto, Latido }
 
     const int Hz = 22050;
     static readonly Dictionary<Efecto, AudioClip> clips = new Dictionary<Efecto, AudioClip>();
@@ -63,7 +63,7 @@ public static class Sonido
     static AudioClip Sintetizar(Efecto e)
     {
         float dur = e == Efecto.Fuente ? 1.8f : e == Efecto.Muerte ? 1.1f : e == Efecto.Alerta ? 0.45f : e == Efecto.Bloqueo ? 0.35f
-                  : e == Efecto.Paso ? 0.08f : e == Efecto.Clic ? 0.05f : e == Efecto.Destello ? 1.6f : e == Efecto.Impulso ? 0.46f : e == Efecto.Rugido ? 2.6f : e == Efecto.Temblor ? 1.8f : e == Efecto.Impacto ? 1.5f : 0.22f;
+                  : e == Efecto.Paso ? 0.08f : e == Efecto.Clic ? 0.05f : e == Efecto.Destello ? 1.6f : e == Efecto.Impulso ? 0.46f : e == Efecto.Rugido ? 2.6f : e == Efecto.Temblor ? 1.8f : e == Efecto.Impacto ? 1.5f : e == Efecto.Latido ? 0.9f : 0.22f;
         int n = Mathf.CeilToInt(dur * Hz);
         var d = new float[n];
         float lp = 0f, lp2 = 0f, banda = 0f, fase = 0f;
@@ -162,6 +162,12 @@ public static class Sonido
                     lp += (Ruido() - lp) * 0.3f;
                     lp2 += (Ruido() - lp2) * 0.04f;
                     s = Mathf.Sin(2f * Mathf.PI * fase) * Mathf.Exp(-t * 3.2f) + lp * 1.2f * Mathf.Exp(-t * 18f) + lp2 * 3.5f * Mathf.Exp(-t * 2.6f);
+                    break;
+                }
+                case Efecto.Latido:   // dos golpes graves y suaves, como un corazón
+                {
+                    float g1 = Mathf.Exp(-t * 16f), t2 = t - 0.26f, g2 = t2 > 0f ? Mathf.Exp(-t2 * 13f) * 0.75f : 0f;
+                    s = (Mathf.Sin(2f * Mathf.PI * 52f * t) * g1 + Mathf.Sin(2f * Mathf.PI * 44f * Mathf.Max(0f, t2)) * g2) * 0.95f;
                     break;
                 }
                 case Efecto.Clic:

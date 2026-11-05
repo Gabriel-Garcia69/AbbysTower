@@ -25,6 +25,9 @@ public class AbbySpriteAnimator : MonoBehaviour
     public ConjuntoSprites conjunto;
     [Tooltip("Se multiplica por el color del sprite en todo momento; Aplicar lo toma del conjunto.")]
     public Color tinteBase = Color.white;
+    /// <summary>Lo manda el final: Abby camina hacia ahí aunque el jugador ya no la controle, o se queda de rodillas.</summary>
+    [System.NonSerialized] public Vector3 caminarHacia;
+    [System.NonSerialized] public bool deRodillas;
 
     [Header("Referencias (vacío = se buscan solas)")]
     public PlayerMotor motor;
@@ -189,6 +192,7 @@ public class AbbySpriteAnimator : MonoBehaviour
         bool dashing = dash != null && dash.IsDashing;
         bool attacking = attack != null && attack.Busy && !dashing;
         Vector3 facing = dashing ? dash.Direction : attacking ? attack.Facing : motor.WorldMoveDirection;
+        if (caminarHacia.sqrMagnitude > 0.01f) facing = caminarHacia;
         if (facing.sqrMagnitude > 0.01f) dir = ScreenDirection(facing);
 
         Sprite s = null;
@@ -224,6 +228,12 @@ public class AbbySpriteAnimator : MonoBehaviour
         }
         else muerteTime = 0f;
         espejo = false;
+        if (s == null && deRodillas && rodilla != null && rodilla.Length > dir && rodilla[dir] != null) s = rodilla[dir];
+        if (s == null && caminarHacia.sqrMagnitude > 0.01f && walk[dir] != null && walk[dir].Has)
+        {
+            walkTime += dt * walkFps * 0.7f;   // pasos lentos
+            s = walk[dir].frames[Mathf.FloorToInt(walkTime) % walk[dir].frames.Length];
+        }
         if (s == null && conjunto != null && conjunto.soloPropios)
         {
             // de pie tiene las 8 direcciones; caminar y atacar, las del oeste se voltean

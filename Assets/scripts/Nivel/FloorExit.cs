@@ -24,6 +24,9 @@ public class FloorExit : MonoBehaviour
     bool used, wasUnlocked;
     float messageTimer, fadeT = -1f;
 
+    /// <summary>Ya se limpió lo que la tenía cerrada.</summary>
+    public bool EstaAbierta => Unlocked;
+
     bool Unlocked
     {
         get

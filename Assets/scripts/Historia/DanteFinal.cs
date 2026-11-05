@@ -105,6 +105,25 @@ public class DanteFinal : MonoBehaviour
         l.transform.localPosition = Vector3.up * 0.4f;
         l.type = LightType.Point; l.color = new Color(0.75f, 0.45f, 1f); l.range = 2.5f; l.intensity = 1.2f; l.shadows = LightShadows.None;
         CombatFx.Burst(pos + Vector3.up * 0.2f, new Color(0.8f, 0.6f, 1f), 30, 2f, 0.12f, 0.8f, -0.4f);
+        // el de la ilustración, en pixel art, sobre la piedra (el modelo de arriba queda solo si faltara la imagen)
+        var tex = Resources.Load<Texture2D>("Final/colgante");
+        if (tex != null)
+        {
+            tex.filterMode = FilterMode.Point;
+            foreach (var rn in g.GetComponentsInChildren<Renderer>()) rn.enabled = false;
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Object.Destroy(q.GetComponent<Collider>());
+            q.name = "ColganteArte";
+            q.transform.SetParent(g.transform, false);
+            q.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            q.transform.localScale = Vector3.one * 0.38f;
+            var mq = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            mq.SetTexture("_BaseMap", tex);
+            mq.SetFloat("_AlphaClip", 1f); mq.SetFloat("_Cutoff", 0.5f); mq.EnableKeyword("_ALPHATEST_ON");
+            var qr = q.GetComponent<Renderer>();
+            qr.sharedMaterial = mq;
+            qr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
         return g;
     }
 

@@ -35,6 +35,7 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 - **Cámara:** la apertura barre el paisaje, si Abby se queda quieta 6 s la cámara se abre y recorre la vista (no en Expedición, Cueva ni Final). Casas y árboles que tapan a Abby dejan de dibujarse.
 - **Superficies encimadas:** corregidas con el menú `Abby/Separar superficies encimadas`. **Hay que volver a correrlo si se regenera un mapa.** Quedan pocas en cada mapa (42 en Puerto, casi todas tablones).
 - **Nivel 1:** la estela que estorbaba en el camino de tierra se movió a un lado, en la escena y en el código.
+- **Imágenes nuevas (PixelLab, 30 generaciones):** `Intro/12_despedida` rehecha (Abby de 17, colgante, torre morada), `13_colgante` y `14_regreso`. Se usan en la intro y en los recuerdos del final. `Final/colgante` es el colgante recortado de la imagen 13.
 - **Sin revisar en movimiento:** nada de esto lo jugó una persona; se revisó con capturas y pruebas automáticas.
 
 ## Falta para cumplir el GDD
@@ -55,9 +56,8 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 - **Jefes sin usar:** Guardián, Capitán, Torrente y Gárgola tienen sprites y animaciones, pero **no salen en el juego**. El único jefe es Dante, como pide el GDD. ¿Se quedan fuera o se agregan?
 
 ## Detalles menores
-- La imagen 12 de la intro muestra una torre en ruinas, no la morada.
 - El bloqueo de Abby es una pose de guardia, sin animación (no gasté generaciones en eso).
-- Antes de entregar, borrar las herramientas de `Assets/Editor`: `PruebaAnim`, `TourExterior`, `TourCala`, `TourExp`, `CamaraRemota`, `PruebaPisos`, `PruebaMover`, `PruebaReglas` y `ConstruirJuego`. No van en el `.exe` ni están en Git, pero siguen en la carpeta del proyecto.
+- Antes de entregar, borrar las herramientas de `Assets/Editor`: `PruebaAnim`, `TourExterior`, `TourCala`, `TourExp`, `TourRevision`, `TourRevisionPlay`, `TourCamino`, `TourFinal`, `TourNuevos`, `CamaraRemota`, `PruebaPisos`, `PruebaMover`, `PruebaReglas` y `ConstruirJuego`. No van en el `.exe` ni están en Git, pero siguen en la carpeta del proyecto.
 
 ## Ya probado en Play (3 de noviembre)
 - Combo de 3 tajos animados de Abby (4-5 cuadros), en las direcciones este, oeste, sur y norte. Las diagonales tienen sus cuadros (las del oeste se voltean), pero no se vieron jugando.

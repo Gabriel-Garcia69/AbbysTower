@@ -106,9 +106,9 @@ public class EscenaFinal : MonoBehaviour
         yield return Decir(Historia.Protagonista, "Era de papá. Yo te lo di.", 3f);
 
         // los recuerdos
-        yield return Recuerdo("Intro/08_hermanos", Historia.Hermano, "Con él al frente estaremos bien. Volveré...", 4.4f);
-        yield return Recuerdo("Intro/12_despedida", Historia.Hermano, "Te lo devuelvo en persona. Te lo prometo.", 4.4f);
-        yield return Recuerdo(null, Historia.Hermano, "Voy de regreso, Abby. Te dije que volvería.", 4f);
+        yield return Recuerdo("Intro/12_despedida", Historia.Hermano, "Con él al frente estaremos bien. Volveré...", 4.4f);
+        yield return Recuerdo("Intro/13_colgante", Historia.Hermano, "Te lo devuelvo en persona. Te lo prometo.", 4.4f);
+        yield return Recuerdo("Intro/14_regreso", Historia.Hermano, "Voy de regreso, Abby. Te dije que volvería.", 5f);
 
         // 8) lejos y de lado: los dos, tan chiquitos, y la puerta tan cerca
         StartCoroutine(Plano(new Vector3(4f, 15f, 35f), new Vector3(1.5f, 13.5f, 33f), () => Vector3.Lerp(cuerpo, ante, 0.5f) + Vector3.up * 0.4f, 38f, 9.5f));

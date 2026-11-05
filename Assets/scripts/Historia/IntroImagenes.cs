@@ -39,7 +39,8 @@ public class IntroImagenes : MonoBehaviour
         new Pieza(9,  3f, Historia.Discurso[0], Historia.Discurso[1]),
         new Pieza(10, 3f, Historia.Discurso[2]),
         new Pieza(11, 3f, Historia.Discurso[3], Historia.Discurso[4]),
-        new Pieza(12, 3f, Historia.Despedida[0], Historia.Despedida[1], Historia.Despedida[2], Historia.Despedida[3]),
+        new Pieza(12, 3f, Historia.Despedida[0], Historia.Despedida[1]),
+        new Pieza(13, 3f, Historia.Despedida[2], Historia.Despedida[3]),   // el colgante en sus manos
     };
 
     const int ImagenAntesDeTarjeta = 8;

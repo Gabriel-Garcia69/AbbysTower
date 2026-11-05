@@ -9,7 +9,7 @@ Este documento resume cómo quedó el juego frente al GDD (`GDD_Abbys_Tower_deta
 | Tema | GDD | Juego | Por qué |
 |---|---|---|---|
 | Protagonista | Abby | Abby (no "Abis" del guion) | El GDD manda sobre el guion |
-| Combate | Combo 10/10/15, bloqueo con stamina | Igual, **y se conservan salto e impulso** | Los mapas usan saltos y el impulso |
+| Combate | Combo 10/10/15, bloqueo con stamina | Igual, **y se conservan salto e impulso**; el impulso gasta 20 de stamina | Los mapas usan saltos y el impulso; así no se abusa de él |
 | Ruta | 5 pisos + Dante | Pueblo → Puerto → Cascadas → Acantilado → Cima (Dante) | Recorte a 5 pisos |
 | Objetos | Solo notas | Solo notas (fuera mercaderes, cofres, pociones y minerales del HUD) | GDD |
 | Cámara | Fija | Fija; **F3** cámara libre para apreciar el mundo, **F4** vuelve | Pedido para mostrar los mapas |

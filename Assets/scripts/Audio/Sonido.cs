@@ -3,13 +3,13 @@ using UnityEngine;
 
 /// <summary>
 /// Efectos de sonido del GDD (05 · Audio): golpe de espada (corte), bloqueo (metal apagado), daño recibido (golpe
-/// sordo), fuente de curación (campana suave), alerta de sombra (pulso grave), pasos en piedra y muerte (caída).
+/// sordo), fuente de curación (campana suave), alerta de sombra (pulso grave), pasos en piedra, muerte (caída) e impulso (ráfaga con filo).
 /// Estéreo simple, sin audio espacial. Si existe Resources/Audio/&lt;Nombre&gt; (wav/ogg de Francisco) se usa ese; si no,
 /// suena uno provisional sintetizado aquí. Volumen = general × efectos (Ajustes).
 /// </summary>
 public static class Sonido
 {
-    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello }
+    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello, Impulso, Rugido, Temblor, Impacto }
 
     const int Hz = 22050;
     static readonly Dictionary<Efecto, AudioClip> clips = new Dictionary<Efecto, AudioClip>();
@@ -63,10 +63,10 @@ public static class Sonido
     static AudioClip Sintetizar(Efecto e)
     {
         float dur = e == Efecto.Fuente ? 1.8f : e == Efecto.Muerte ? 1.1f : e == Efecto.Alerta ? 0.45f : e == Efecto.Bloqueo ? 0.35f
-                  : e == Efecto.Paso ? 0.08f : e == Efecto.Clic ? 0.05f : e == Efecto.Destello ? 1.6f : 0.22f;
+                  : e == Efecto.Paso ? 0.08f : e == Efecto.Clic ? 0.05f : e == Efecto.Destello ? 1.6f : e == Efecto.Impulso ? 0.46f : e == Efecto.Rugido ? 2.6f : e == Efecto.Temblor ? 1.8f : e == Efecto.Impacto ? 1.5f : 0.22f;
         int n = Mathf.CeilToInt(dur * Hz);
         var d = new float[n];
-        float lp = 0f, lp2 = 0f;
+        float lp = 0f, lp2 = 0f, banda = 0f, fase = 0f;
         for (int i = 0; i < n; i++)
         {
             float t = i / (float)Hz, k = t / dur, s = 0f;
@@ -120,6 +120,50 @@ public static class Sonido
                     if (k > 0.55f) { lp += (Ruido() - lp) * 0.06f; s += lp * 1.6f * Mathf.Exp(-(t - dur * 0.55f) * 12f); }
                     break;
                 }
+                case Efecto.Impulso:   // ráfaga: viento que sube y baja, golpe grave al arrancar y un filo metálico que se apaga
+                {
+                    float fc = 320f + 3600f * Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.55f));
+                    float f = 2f * Mathf.Sin(Mathf.PI * Mathf.Min(fc, 7000f) / Hz);
+                    lp2 += f * banda;
+                    banda += f * (Ruido() - lp2 - 0.6f * banda);
+                    float viento = Mathf.Min(1f, t * 40f) * Mathf.Pow(1f - k, 2.2f);
+                    float golpe = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(115f, 48f, Mathf.Min(1f, k * 3f)) * t) * Mathf.Exp(-t * 15f);
+                    float filo = (Mathf.Sin(2f * Mathf.PI * 3170f * t) * 0.55f + Mathf.Sin(2f * Mathf.PI * 4730f * t) * 0.3f + Mathf.Sin(2f * Mathf.PI * 6210f * t) * 0.15f)
+                                 * Mathf.Min(1f, t * 70f) * Mathf.Exp(-t * 11f);
+                    s = banda * viento * 1.1f + golpe * 0.6f + filo * 0.16f;
+                    break;
+                }
+                case Efecto.Rugido:   // garganta enorme: grave áspero que sube, se sostiene y se apaga, con un rasposo encima
+                {
+                    float env = Mathf.Clamp01(k * 5f) * Mathf.Clamp01((1f - k) * 2.4f);
+                    float f = Mathf.Lerp(46f, 74f, Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.7f))) + Mathf.Sin(t * 37f) * 3f;
+                    fase += f / Hz;
+                    float sierra = 2f * (fase - Mathf.Floor(fase)) - 1f;
+                    float fc = 500f + 1100f * Mathf.Sin(Mathf.PI * k);
+                    float g = 2f * Mathf.Sin(Mathf.PI * fc / Hz);
+                    lp2 += g * banda;
+                    banda += g * (sierra * 0.8f + Ruido() * 0.5f - lp2 - 0.7f * banda);
+                    s = (lp2 * 0.75f + banda * 0.55f + Mathf.Sin(2f * Mathf.PI * fase * 0.5f) * 0.45f) * env;
+                    break;
+                }
+                case Efecto.Temblor:   // la gruta tiembla: retumbo grave con golpes de piedra
+                {
+                    lp += (Ruido() - lp) * 0.03f;
+                    float env = Mathf.Clamp01(k * 6f) * Mathf.Pow(1f - k, 1.2f);
+                    lp2 += (Ruido() - lp2) * 0.2f;
+                    float piedras = lp2 * Mathf.Max(0f, Mathf.Sin(t * 19f) - 0.75f) * 3f;
+                    s = lp * 6f * env + Mathf.Sin(2f * Mathf.PI * 38f * t) * 0.35f * env + piedras * env;
+                    break;
+                }
+                case Efecto.Impacto:   // los puños contra el suelo: golpe grave enorme, estallido de piedra y cola larga
+                {
+                    float f = Mathf.Lerp(90f, 30f, Mathf.Min(1f, k * 4f));
+                    fase += f / Hz;
+                    lp += (Ruido() - lp) * 0.3f;
+                    lp2 += (Ruido() - lp2) * 0.04f;
+                    s = Mathf.Sin(2f * Mathf.PI * fase) * Mathf.Exp(-t * 3.2f) + lp * 1.2f * Mathf.Exp(-t * 18f) + lp2 * 3.5f * Mathf.Exp(-t * 2.6f);
+                    break;
+                }
                 case Efecto.Clic:
                     s = Mathf.Sin(2f * Mathf.PI * 1500f * t) * Mathf.Exp(-t * 120f) * 0.5f;
                     break;
@@ -131,7 +175,14 @@ public static class Sonido
                     break;
                 }
             }
-            d[i] = Mathf.Clamp(s, -1f, 1f);
+            d[i] = e == Efecto.Rugido || e == Efecto.Temblor || e == Efecto.Impacto || e == Efecto.Impulso ? s : Mathf.Clamp(s, -1f, 1f);
+        }
+        if (e == Efecto.Rugido || e == Efecto.Temblor || e == Efecto.Impacto || e == Efecto.Impulso)
+        {
+            // el filtro resuena: se normaliza para que nunca sature ni quede bajito
+            float pico = 0.001f;
+            foreach (var x in d) pico = Mathf.Max(pico, Mathf.Abs(x));
+            for (int i = 0; i < n; i++) d[i] *= 0.92f / pico;
         }
         var clip = AudioClip.Create("Sonido_" + e, n, 1, Hz, false);
         clip.SetData(d, 0);

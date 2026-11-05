@@ -42,6 +42,9 @@ public class PersonaSprite : MonoBehaviour
         return null;
     }
 
+    /// <summary>Cuadro que manda una cinemática (el rugido del coloso); null = el sprite normal.</summary>
+    public Sprite Forzado;
+
     void Start()
     {
         sprites = new Sprite[8];
@@ -98,6 +101,7 @@ public class PersonaSprite : MonoBehaviour
         float ang = Mathf.Atan2(Vector3.Dot(mira, f), Vector3.Dot(mira, r)) * Mathf.Rad2Deg;
         int k = ((Mathf.RoundToInt(ang / 45f) % 8) + 8) % 8;
         if (sprites[k] != null) dir = k;
-        if (sprites[dir] != null) sr.sprite = sprites[dir];
+        if (Forzado != null) sr.sprite = Forzado;   // una cinemática está animando este sprite
+        else if (sprites[dir] != null) sr.sprite = sprites[dir];
     }
 }

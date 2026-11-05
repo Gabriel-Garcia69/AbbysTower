@@ -4,12 +4,12 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// Bloqueo y stamina de Abby (GDD, Mecánica 02): con clic derecho sostenido Abby se cubre y recibe solo el 8 % del
 /// daño, pero cada golpe bloqueado gasta 20 de stamina; sin stamina no puede bloquear. La stamina (100) se regenera a
-/// 25 por segundo después de 1 s sin bloquear. Atacar no gasta stamina. Mientras bloquea camina más despacio y no ataca.
+/// 25 por segundo después de 1 s sin bloquear. El impulso gasta 20; sin stamina no sale. Atacar no gasta stamina. Mientras bloquea camina más despacio y no ataca.
 /// </summary>
 [DefaultExecutionOrder(-90)]
 public class AbbyBlock : MonoBehaviour
 {
-    public const float MaxStamina = 100f, CostoPorGolpe = 20f, Regeneracion = 25f, EsperaRegeneracion = 1f, DanoRecibido = 0.08f;
+    public const float MaxStamina = 100f, CostoPorGolpe = 20f, CostoImpulso = 20f, Regeneracion = 25f, EsperaRegeneracion = 1f, DanoRecibido = 0.08f;
 
     public float Stamina { get; private set; } = MaxStamina;
     public float Normalized => Stamina / MaxStamina;
@@ -52,6 +52,15 @@ public class AbbyBlock : MonoBehaviour
         }
         BlockFlash = Mathf.MoveTowards(BlockFlash, 0f, dt * 4f);
         EmptyFlash = Mathf.MoveTowards(EmptyFlash, 0f, dt * 2f);
+    }
+
+    /// <summary>Gasta stamina si alcanza (la recuperación vuelve a esperar); si no, la barra parpadea y devuelve false.</summary>
+    public bool Gastar(float costo)
+    {
+        if (Stamina < costo) { EmptyFlash = 1f; return false; }
+        Stamina -= costo;
+        sinBloquear = 0f;
+        return true;
     }
 
     /// <summary>Lo llama PlayerHealth al recibir un golpe: si está bloqueando, gasta stamina y reduce el daño.</summary>

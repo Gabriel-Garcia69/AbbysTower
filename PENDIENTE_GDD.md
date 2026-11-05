@@ -20,6 +20,13 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 - En `Assets/Resources/DanteHumano`: de pie en 8 direcciones; caminar y atacar en 5 (las del oeste se voltean por código). No tiene impulso, bloqueo ni golpe recibido propios: usa caminar, de pie y el tinte rojo.
 - Solo se usa en el tutorial. `Personajes/Dante` y `EnemigosAnim/Dante` siguen siendo su sombra de jefe final, en Cima.
 
+## Gruta del tutorial y HUD (5 de noviembre)
+- **Gruta (Expedición):** paredes de bloques en terrazas (`ExpHeight`), salas anchas (`ExpMitad`), luz sombría sin azul (`LuzDeSala`, `VolumenExpedicion`), suelo gris. Para ver cambios del builder: regenerar la escena y guardarla.
+- **Jefe:** animaciones `Resources/ColosoAnim` (rugido y golpe, PixelLab) y cinemática nueva en `ExpedicionPiso20.Derrota`, en contrapicado con lente abierto. Sonidos sintetizados: `Rugido`, `Temblor`, `Impacto`.
+- **HUD:** fuente Inter (el logo sigue pixelado), diálogos más grandes con interlineado, retrato centrado en la cabeza, barra de stamina más gruesa.
+- **Impulso:** gasta 20 de stamina y tiene sonido propio. Los sonidos no los pude escuchar: hay que revisarlos jugando.
+- **Cámara:** se corrigió un bug: lo que subía para no meterse al suelo nunca se deshacía.
+
 ## Falta para cumplir el GDD
 | Falta | Quién | Estado |
 |---|---|---|

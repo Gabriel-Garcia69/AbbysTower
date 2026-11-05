@@ -15,8 +15,8 @@ public partial class DioramaBuilder
     {
         var hueso = Plain("Dio_Hueso", new Color(0.72f, 0.67f, 0.56f), 0.22f);
         var hierro = Plain("Dio_HierroViejo", new Color(0.16f, 0.15f, 0.15f), 0.45f);
-        var runa = Glow("Dio_Runa", new Color(0.3f, 0.85f, 1f), 3.2f);
-        var runaRoja = Glow("Dio_RunaRoja", new Color(1f, 0.22f, 0.12f), 3f);
+        var runa = Glow("Dio_RunaSuave", new Color(0.32f, 0.72f, 0.95f), 1.3f);
+        var runaRoja = Glow("Dio_RunaRojaSuave", new Color(1f, 0.25f, 0.14f), 1.5f);
 
         // ---- la bóveda: techo de roca, paredes que suben hasta él y estalactitas
         var boveda = Group("Boveda", g);
@@ -26,6 +26,20 @@ public partial class DioramaBuilder
         Wall(boveda, "ParedAbismo", new Vector3(0f, (ExpTecho - 46f) / 2f, ExpEdgeZ + 50f), Vector3.back, 90f, ExpTecho + 46f, mCaveRock, 0.25f);
         foreach (float sx in new[] { -1f, 1f })
             Wall(boveda, "CostadoAbismo", new Vector3(sx * 26f, -16f, ExpEdgeZ + 25f), new Vector3(-sx, 0f, 0f), 52f, 62f, mCaveRock, 0.25f);
+        // encima, bloques de roca a distintas profundidades: la pared deja de verse como un plano
+        for (float x = -44f; x <= 44f; x += 4.2f)
+            for (float y = -40f; y < ExpTecho; y += 3f)
+            {
+                float fondo = R(1f, 5f);
+                Box(boveda, "BloqueFondo", new Vector3(x, y, ExpEdgeZ + 49.9f - fondo / 2f), new Vector3(4.2f, 3f, fondo), mExpFondo, false, 0.25f);
+            }
+        foreach (float sx in new[] { -1f, 1f })
+            for (float z = ExpEdgeZ; z < ExpEdgeZ + 50f; z += 4.2f)
+                for (float y = -40f; y < ExpTecho; y += 3f)
+                {
+                    float fondo = R(1f, 4f);
+                    Box(boveda, "BloqueCostado", new Vector3(sx * (26f - fondo / 2f), y, z), new Vector3(fondo, 3f, 4.2f), mExpFondo, false, 0.25f);
+                }
         var colgantes = Group("Estalactitas", boveda);
         for (int i = 0; i < 70; i++)
         {
@@ -53,7 +67,7 @@ public partial class DioramaBuilder
         for (int k = 0; k < 9; k++)
         {
             float z = 40f + k * 9f, s = 1f - Mathf.Abs(k - 4f) * 0.06f;   // más grandes al centro, como un tórax
-            float rx = 17f * s, ry = 14f * s;
+            float rx = Mathf.Max(17f * s, ExpMitad(z) - 2.5f), ry = 14f * s;   // la costilla sale de la pared, por ancha que sea la sala
             bool rota = k == 2 || k == 6;   // un par roto, caído a medias
             int segs = 16;
             var arco = Group("Arco" + k, esq);   // una malla por arco: la oclusión suave lo atenúa entero
@@ -72,21 +86,15 @@ public partial class DioramaBuilder
         for (int k = 0; k < 9; k++)
         {
             float z = 40f + k * 9f, s = 1f - Mathf.Abs(k - 4f) * 0.06f;
-            Prim(columna, PrimitiveType.Sphere, "Vertebra", new Vector3(17.2f, 0.7f * s, z), new Vector3(2.4f, 1.6f, 2.6f) * s, hueso);
-            Prim(columna, PrimitiveType.Capsule, "Apofisis", new Vector3(17.2f, 1.7f * s, z), new Vector3(0.6f, 1.2f, 1f) * s, hueso);
-            if (k < 8) Prim(columna, PrimitiveType.Cylinder, "Columna", new Vector3(17.2f, 0.7f * s, z + 4.5f), new Vector3(1.2f, 4.5f, 1.2f) * s, hueso)
-                .transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        }
-        // el cráneo, partido, junto a la entrada de la oleada
-        var craneo = Group("Craneo", esq);
-        craneo.localPosition = new Vector3(19f, 0f, 112f);   // contra la pared, no a 14 m (donde pasa la cámara girada)
-        craneo.localRotation = Quaternion.Euler(0f, -35f, 18f);
-        Prim(craneo, PrimitiveType.Sphere, "Boveda", new Vector3(0f, 2.6f, 0f), new Vector3(6f, 4.6f, 7f), hueso);
-        Prim(craneo, PrimitiveType.Sphere, "Mandibula", new Vector3(0f, 0.7f, -3.4f), new Vector3(4.4f, 1.4f, 5.4f), hueso);
-        foreach (float sx in new[] { -1f, 1f })
-        {
-            Prim(craneo, PrimitiveType.Sphere, "Cuenca", new Vector3(sx * 1.6f, 2.8f, -3f), new Vector3(1.5f, 1.3f, 1f), Plain("Dio_Negro", Color.black, 0f));
-            Prim(craneo, PrimitiveType.Capsule, "Colmillo", new Vector3(sx * 1.4f, 0.2f, -5.6f), new Vector3(0.45f, 1.2f, 0.45f), hueso).transform.localRotation = Quaternion.Euler(-20f, 0f, 0f);
+            float cx = ExpMitad(z) - 3.5f;
+            Prim(columna, PrimitiveType.Sphere, "Vertebra", new Vector3(cx, 0.7f * s, z), new Vector3(2.4f, 1.6f, 2.6f) * s, hueso);
+            Prim(columna, PrimitiveType.Capsule, "Apofisis", new Vector3(cx, 1.7f * s, z), new Vector3(0.6f, 1.2f, 1f) * s, hueso);
+            if (k < 8)
+            {
+                Vector3 a = new Vector3(cx, 0.7f * s, z), b = new Vector3(ExpMitad(z + 9f) - 3.5f, 0.7f * s, z + 9f);
+                var hueco = Prim(columna, PrimitiveType.Cylinder, "Columna", (a + b) / 2f, new Vector3(1.2f * s, Vector3.Distance(a, b) / 2f, 1.2f * s), hueso);
+                hueco.transform.localRotation = Quaternion.FromToRotation(Vector3.up, b - a);
+            }
         }
 
         // ---- runas en el suelo: anillos de energía bajo las dos peleas y en la barrera
@@ -121,12 +129,17 @@ public partial class DioramaBuilder
             {
                 var p = new Vector3(sx * 18.5f, 0f, z);
                 var unPilar = Group("PilarRoca", g);   // fuera de "Pilares": cada pilar es su propia malla para poder atenuarlo
-                MeshObject(unPilar, "Pilar", CilindroMetrico(1.3f, ExpTecho, 14, 0.25f), mExpParedAlt, false).transform.localPosition = p;   // UV en metros: no se estira en 30 m de alto
-                MeshObject(unPilar, "Base", CilindroMetrico(1.8f, 1.2f, 14, 0.25f), mExpParedAlt, false).transform.localPosition = p;
+                // de bloques de roca, como las paredes: cada tramo un poco corrido y de otro ancho
+                for (float y = 0f; y < ExpTecho; y += 3f)
+                {
+                    float lado = R(2.6f, 3.3f) + (y < 3f ? 1f : 0f);
+                    Box(unPilar, "Tramo", p + new Vector3(R(-0.2f, 0.2f), y + 1.5f, R(-0.2f, 0.2f)), new Vector3(lado, 3f, lado), mExpParedAlt, false, 0.25f)
+                        .transform.localRotation = Quaternion.Euler(0f, R(-5f, 5f), 0f);
+                }
                 Fundir(unPilar);
                 foreach (var mr in unPilar.GetComponentsInChildren<MeshRenderer>()) MarcarOcluible(mr);
                 foreach (float y in new[] { 3.5f, 9f, 15f })
-                    Prim(pil, PrimitiveType.Cylinder, "Banda", p + Vector3.up * y, new Vector3(2.75f, 0.18f, 2.75f), runa);
+                    Prim(pil, PrimitiveType.Cube, "Banda", p + Vector3.up * y, new Vector3(3.2f, 0.1f, 3.2f), Glow("Dio_RunaPilar", new Color(0.3f, 0.62f, 0.85f), 0.7f));
                 Cadena(pil, p + new Vector3(-sx * 1.4f, 20f, 0f), new Vector3(-sx * 9f, ExpTecho - 2f, z + 18f), hierro);
             }
         foreach (float x in new[] { -14f, 14f })   // las cadenas de la criatura de abajo
@@ -145,13 +158,8 @@ public partial class DioramaBuilder
             if (i % 3 == 0 && i < 18)   // los muros de la escalera, con runas rojas que se apagan al bajar
                 foreach (float sx in new[] { -1f, 1f })
                 {
-                    {
-                    float hr = R(5f, 8f);
-                    var roca = MeshObject(esc, "Roca", ConoMetrico(hr * 0.46f, hr, 11, 0.25f), mExpParedAlt, true);   // peñascos de roca a los lados de la escalera
-                    roca.transform.localPosition = new Vector3(EscX(i) + sx * 7.4f, y - 0.8f, z);
-                    roca.transform.localRotation = Quaternion.Euler(R(-8f, 8f), R(0f, 360f), sx * R(4f, 12f));
-                }
-                    if (i < 12) Prim(esc, PrimitiveType.Cube, "Runa", new Vector3(EscX(i) + sx * 5.95f, y + 2.5f, z), new Vector3(0.05f, 0.9f, 2.4f), runaRoja);
+                    if (EscX(i) + sx * 7.4f < -17f)   // el centro queda libre: ahí sube la criatura
+                        PilaDeRoca(esc, new Vector3(EscX(i) + sx * 7.4f, y - 0.8f, z), R(5f, 8f));   // peñascos de bloques a los lados de la escalera
                 }
         }
 
@@ -161,7 +169,7 @@ public partial class DioramaBuilder
             Fundir(parte);
             foreach (var mr in parte.GetComponentsInChildren<MeshRenderer>()) MarcarOcluible(mr);
         }
-        Fundir(runas); Fundir(pil); Fundir(esc);
+        Fundir(runas); Fundir(pil);
     }
 
     /// <summary>La escalera baja en diagonal hacia la izquierda: el centro queda libre para la criatura.</summary>

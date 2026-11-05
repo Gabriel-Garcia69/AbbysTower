@@ -143,33 +143,70 @@ public class ExpedicionPiso20 : MonoBehaviour
         foreach (var b in FindObjectsByType<MouseOrbitCamera>()) b.enabled = false;
         foreach (var b in FindObjectsByType<CameraRig>()) b.enabled = false;
         Vector3 edge = new Vector3(0f, 0f, 128f);
+        // Dante se queda antes de donde se ponen las cámaras bajas: si no, le pasan pegadas a la cara
+        if (player.position.z > 116f)
+        {
+            var cc = player.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            player.position = new Vector3(player.position.x, player.position.y, 116f);
+            if (cc != null) cc.enabled = true;
+        }
         Vector3 yo = player.position;
         Vector3 a = coloso != null ? coloso.position : edge, arriba = new Vector3(a.x, -6f, a.z);
 
-        // 1) tiembla la gruta: plano detrás de la expedición, mirando al borde
+        var cuerpo = coloso != null ? coloso.GetComponent<PersonaSprite>() : null;
+        if (coloso != null) foreach (var l in coloso.GetComponentsInChildren<Light>(true)) l.enabled = true;   // sus luces, solo ahora
+        var rugido = CuadrosColoso("Rugido"); var golpe = CuadrosColoso("Golpe");
+        if (cuerpo != null && rugido.Length > 0) cuerpo.Forzado = rugido[0];   // sube encorvada, con la cabeza gacha
+
+        // lente abierto y cámara casi a ras del suelo: la criatura se ve entera y enorme (la cámara de juego usa 24°, que la corta en los hombros)
+        Vector3 centro = new Vector3(a.x, 13f, a.z);
+        if (cam != null) cam.fieldOfView = 52f;
+
+        // 1) tiembla la gruta: plano detrás de la expedición, mirando al borde; cae polvo del techo
+        Sonido.Tocar(Sonido.Efecto.Temblor, 1f);
         CameraShake.Shake(1.2f, 0.6f);
         CombatFx.Burst(edge + Vector3.up, new Color(0.6f, 0.5f, 0.45f), 60, 8f, 0.3f, 1.2f);
+        for (int k = 0; k < 8; k++) CombatFx.Burst(yo + new Vector3((k - 3.5f) * 5f, 18f, 8f + k * 4f), new Color(0.5f, 0.46f, 0.44f), 14, 1.5f, 0.28f, 1.8f, 1.1f);
         yield return Toma(cam, yo + new Vector3(0f, 2.4f, -9f), yo + new Vector3(0f, 2f, -7.5f), () => edge + Vector3.up * 5f, 1.8f,
             t => Subir(a, arriba, t * 0.3f));
-        // 2) desde el borde, mirando hacia arriba: la criatura sube del abismo; la cámara sigue su cabeza
-        yield return Toma(cam, edge + new Vector3(-10f, 5f, -9f), edge + new Vector3(-8f, 3.5f, -5f), () => { var c = Cabeza(); c.y = Mathf.Max(c.y, 1f); return c; }, 3.2f,
-            t => { Subir(a, arriba, 0.3f + t * 0.7f); if (Mathf.Repeat(t * 3.2f, 1.1f) < Time.deltaTime) CameraShake.Shake(0.6f, 0.5f); });
-        // 3) primer plano: los ojos
-        Vector3 ojos = Cabeza();
-        CameraShake.Shake(0.9f, 0.8f);
-        yield return Toma(cam, ojos + new Vector3(3f, -1.5f, -22f), ojos + new Vector3(1.5f, -0.6f, -15f), Cabeza, 2.2f,
-            t => Subir(a, arriba, 1f));
+        // 2) contrapicado desde el suelo, lejos del borde: la cámara se queda quieta y la criatura se alza del abismo hasta llenar el cuadro
+        Sonido.Tocar(Sonido.Efecto.Temblor, 1f, 0.8f);
+        yield return Toma(cam, edge + new Vector3(-7f, 0.9f, -8f), edge + new Vector3(-5f, 0.8f, -6f), () => centro, 3.6f,
+            t => { Subir(a, arriba, 0.3f + t * 0.7f); if (Mathf.Repeat(t * 3.2f, 1.1f) < Time.deltaTime) { CameraShake.Shake(0.6f, 0.5f); Sonido.Tocar(Sonido.Efecto.Alerta, 0.9f, 0.8f); } });
+        // 3) el rugido: de frente y desde abajo, se alza y abre los brazos; la cámara retrocede por el golpe de aire
+        StartCoroutine(Cuadros(cuerpo, rugido, 0, rugido.Length, 2.8f));
+        Sonido.Tocar(Sonido.Efecto.Rugido, 1f);
+        CameraShake.Shake(1.1f, 1.8f);
+        CombatFx.Burst(edge + Vector3.up * 1.5f, new Color(0.55f, 0.48f, 0.5f), 120, 14f, 0.45f, 1.6f, 0.4f);
+        yield return Toma(cam, edge + new Vector3(3f, 1f, -5f), edge + new Vector3(1.5f, 0.9f, -8f), () => centro, 2.8f, t =>
+        {
+            if (cam != null) cam.fieldOfView = 52f + Mathf.Sin(Mathf.PI * Mathf.Clamp01(t * 1.6f)) * 8f;
+            if (Mathf.Repeat(t * 2.8f, 0.35f) < Time.deltaTime) CameraShake.Shake(0.45f, 0.3f);
+        });
+        if (cam != null) cam.fieldOfView = 50f;
         // 4) plano abierto: la expedición, pequeña, frente a la criatura
-        Vector3 medio = Vector3.Lerp(yo, Cabeza(), 0.6f);
-        StartCoroutine(Toma(cam, yo + new Vector3(9f, 2f, -20f), yo + new Vector3(8f, 2.6f, -26f), () => medio, 6f, null));   // abajo, detrás de la expedición: ellos pequeños, la criatura enorme
+        StartCoroutine(Toma(cam, yo + new Vector3(7f, 1.5f, -9f), yo + new Vector3(6f, 1.6f, -12f), () => centro, 9f, null));   // abajo, detrás de la expedición: ellos pequeños, la criatura enorme
         yield return Hablar(Historia.Capitan, "¿Qué es eso...?");
-        // el golpe: destello, la expedición cae
-        tomaId++;   // corta el plano abierto: la cámara se queda ahí para el golpe
-        CombatFx.Burst(edge + Vector3.up * 2f, new Color(1f, 0.25f, 0.15f), 200, 18f, 0.5f, 1.4f);
-        CameraShake.Shake(1.6f, 1f);
+        // 5) el golpe: alza los puños despacio y los estrella contra el suelo
+        Sonido.Tocar(Sonido.Efecto.Alerta, 1f, 0.7f);
+        if (golpe.Length > 0)
+        {
+            yield return Cuadros(cuerpo, golpe, 0, 4, 1.3f);
+            yield return Cuadros(cuerpo, golpe, 4, 2, 0.1f);
+        }
+        tomaId++;   // corta el plano abierto: la cámara se queda ahí para el impacto
+        Sonido.Tocar(Sonido.Efecto.Impacto, 1f);
+        Sonido.Tocar(Sonido.Efecto.Temblor, 1f, 0.7f);
+        Vector3 piso = new Vector3(0f, 0.3f, edge.z - 3f);
+        CombatFx.Burst(piso, new Color(1f, 0.25f, 0.15f), 200, 18f, 0.5f, 1.4f);
+        CombatFx.Burst(piso, new Color(0.5f, 0.46f, 0.44f), 160, 24f, 0.7f, 1.8f, 0.8f);
+        for (int k = 0; k < 3; k++) CombatFx.Ring(piso, 14f + k * 14f, new Color(1f, 0.35f, 0.2f, 0.9f - k * 0.25f), 0.45f + k * 0.2f);
+        CameraShake.Shake(1.8f, 1.2f);
         negro = 0.7f;
         foreach (var m in miembros) StartCoroutine(Caer(m));
         if (capitan != null) StartCoroutine(Caer(capitan));
+        if (golpe.Length > 6) StartCoroutine(Cuadros(cuerpo, golpe, 6, 2, 1.6f));
         if (health != null)
         {
             Vector3 src = player.position + Vector3.forward * 3f;
@@ -183,6 +220,26 @@ public class ExpedicionPiso20 : MonoBehaviour
     }
 
     int tomaId;
+
+    static Sprite[] CuadrosColoso(string anim)
+    {
+        var fr = Resources.LoadAll<Sprite>("ColosoAnim/" + anim);
+        System.Array.Sort(fr, (x, y) => string.CompareOrdinal(x.name, y.name));
+        return fr;
+    }
+
+    /// <summary>Pasa cuadros del coloso, repartidos en dur segundos; el último se queda puesto.</summary>
+    IEnumerator Cuadros(PersonaSprite cuerpo, Sprite[] fr, int desde, int cuantos, float dur)
+    {
+        if (cuerpo == null || fr.Length == 0) yield break;
+        for (float t = 0f; t < dur; t += Time.deltaTime)
+        {
+            int k = desde + Mathf.Min(cuantos - 1, Mathf.FloorToInt(t / dur * cuantos));
+            cuerpo.Forzado = fr[Mathf.Clamp(k, 0, fr.Length - 1)];
+            yield return null;
+        }
+        cuerpo.Forzado = fr[Mathf.Clamp(desde + cuantos - 1, 0, fr.Length - 1)];
+    }
 
     /// <summary>Un plano de cámara: corte a p0, se acerca despacio a p1 mirando a 'mira' (que puede moverse).</summary>
     IEnumerator Toma(Camera cam, Vector3 p0, Vector3 p1, System.Func<Vector3> mira, float dur, System.Action<float> cada)
@@ -207,13 +264,11 @@ public class ExpedicionPiso20 : MonoBehaviour
         if (prop != null) prop.Colocar(p); else coloso.position = p;
     }
 
-    /// <summary>Dónde están los ojos de la criatura (a 53% de su altura, al frente).</summary>
+    /// <summary>Dónde está la cabeza de la criatura.</summary>
     Vector3 Cabeza()
     {
         if (coloso == null) return new Vector3(0f, 10f, 150f);
-        var rs = coloso.GetComponentsInChildren<Renderer>();
-        foreach (var r in rs) if (r.name == "Ojo") return new Vector3(coloso.position.x, r.bounds.center.y, r.bounds.center.z);
-        return coloso.position + Vector3.up * 16f;
+        return coloso.position + new Vector3(0f, 23f, -1f);   // la cabeza del sprite (mide unos 32 m, y la cabeza va arriba)
     }
 
     /// <summary>Ya usó la fuente del campamento, o no le falta vida (no hay nada que enseñar).</summary>

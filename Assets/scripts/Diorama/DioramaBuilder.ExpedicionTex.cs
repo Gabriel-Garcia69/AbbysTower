@@ -11,7 +11,7 @@ using UnityEditor;
 public partial class DioramaBuilder
 {
     const string TexExp = "Assets/Textures/Expedicion/";
-    Material mExpSuelo, mExpGrava, mExpPared, mExpParedAlt, mExpCristal, mExpGrieta, mExpCharco, mExpReflejo;
+    Material mExpSuelo, mExpGrava, mExpPared, mExpParedAlt, mExpFondo, mExpCristal, mExpGrieta, mExpCharco, mExpReflejo;
 
     static Color Desat(Color c, float k)
     {
@@ -50,14 +50,15 @@ public partial class DioramaBuilder
         TexturasExpedicion.Asegurar();
 #endif
         // el tono frío viene de la luz, no del albedo: las texturas van sin tinte azul
-        mExpSuelo = MatTex("Dio_ExpSuelo", "suelo_gruta", Color.white, 0.12f);
-        mExpGrava = MatTex("Dio_ExpGrava", "suelo_grava", Color.white, 0.1f);
-        mExpPared = MatTex("Dio_ExpPared", "pared_roca", Color.white, 0.2f);
-        mExpParedAlt = MatTex("Dio_ExpParedAlt", "pared_alternativa", Color.white, 0.2f);
+        mExpSuelo = MatTex("Dio_ExpSueloGris", "suelo_gris", Color.white, 0.1f);
+        mExpGrava = MatTex("Dio_ExpGravaGris", "grava_gris", Color.white, 0.08f);
+        mExpPared = MatTex("Dio_ExpParedClara", "pared_roca", new Color(1.7f, 1.65f, 1.75f), 0.15f);
+        mExpParedAlt = MatTex("Dio_ExpParedAltClara", "pared_alternativa", new Color(1.6f, 1.55f, 1.65f), 0.15f);
         mCaveRock = mExpPared;
-        mSenderoExp = MatTex("Dio_ExpSendero", "sendero_losas", new Color(1.1f, 1f, 0.9f), 0.12f);
-        mCloth = MatTex("Dio_ExpLonaRoja", "lona_tienda", new Color(0.7f, 0.32f, 0.3f), 0.05f);     // la roja sigue roja, pero apagada
-        mClothB = MatTex("Dio_ExpLonaCrema", "lona_tienda", new Color(0.85f, 0.8f, 0.7f), 0.05f);
+        mSenderoExp = MatTex("Dio_ExpSenderoApagado", "sendero_losas", new Color(0.72f, 0.66f, 0.62f), 0.1f);
+        mCloth = MatTex("Dio_ExpLonaRojaClara", "lona_tienda", new Color(2f, 0.85f, 0.72f), 0.05f);     // la roja sigue roja, pero apagada
+        mClothB = MatTex("Dio_ExpLonaCremaClara", "lona_tienda", new Color(2.2f, 2.05f, 1.75f), 0.05f);
+        mExpFondo = MatTex("Dio_ExpParedFondo", "pared_roca", new Color(0.62f, 0.58f, 0.68f), 0.1f);   // la pared detrás de la criatura: oscura, para que resalte
 
         // postes, letreros y cajas: sin textura, solo desaturados
         mTimber = Plain("Dio_ExpViga", Desat(new Color(0.26f, 0.17f, 0.11f), 0.75f), 0.1f);
@@ -243,21 +244,6 @@ public partial class DioramaBuilder
             PlanoDecal(gv, guv, gt, new Vector3(x, y + 0.03f, z), R(1.4f, 3.2f), R(0f, 360f));
             i++;
         }
-        // charcos junto a las fogatas (el campamento y algunos braseros), con una mancha naranja encima que hace de reflejo
-        var fuegos = new List<Vector2> { new Vector2(0f, -50f) };
-        int k = 0;
-        for (float z = -40f; z < ExpEdgeZ; z += 16f, k++) if (k % 3 == 1) fuegos.Add(new Vector2((k % 2 == 0 ? -1f : 1f) * 7f, z));
-        foreach (var f in fuegos)
-            for (int p = 0, intentos = 0; p < (f.x == 0f ? 4 : 1) && intentos < 40; intentos++)
-            {
-                float ang = R(0f, Mathf.PI * 2f), d = f.x == 0f ? R(3.2f, 6.5f) : R(2.2f, 3.4f);
-                float x = f.x + Mathf.Cos(ang) * d, z = f.y + Mathf.Sin(ang) * d;
-                if (CercaDelSendero(x, z, 1.8f) || Mathf.Abs(x) > 19f || !SuperficieBajo(x, z, out float y) || Mathf.Abs(y) > 0.35f) continue;
-                float lado = R(1.8f, 3.4f), yaw = R(0f, 360f);
-                PlanoDecal(cv, cuv, ct, new Vector3(x, y + 0.035f, z), lado, yaw);
-                PlanoDecal(rv, ruv, rt, new Vector3(x - Mathf.Cos(ang) * lado * 0.12f, y + 0.045f, z - Mathf.Sin(ang) * lado * 0.12f), lado * 0.55f, yaw);   // el reflejo se corre hacia el fuego
-                p++;
-            }
         void Malla(string nombre, List<Vector3> v, List<Vector2> uv, List<int> t, Material mat)
         {
             if (v.Count == 0) return;
@@ -267,7 +253,5 @@ public partial class DioramaBuilder
             MeshObject(grp, nombre, m, mat, false);
         }
         Malla("Grietas", gv, guv, gt, mExpGrieta);
-        Malla("Charcos", cv, cuv, ct, mExpCharco);
-        Malla("Reflejos", rv, ruv, rt, mExpReflejo);
     }
 }

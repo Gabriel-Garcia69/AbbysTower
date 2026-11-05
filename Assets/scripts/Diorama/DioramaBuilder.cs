@@ -1004,11 +1004,11 @@ public partial class DioramaBuilder : MonoBehaviour
                 // casi sin luz de afuera: alumbran los cristales; la oscuridad esconde los bordes
                 sun.transform.localRotation = Quaternion.Euler(60f, 30f, 0f);
                 sun.color = new Color(0.4f, 0.55f, 0.95f); sun.intensity = 0.45f;
-                if (layout == Layout.Expedicion) { sun.transform.localRotation = Quaternion.Euler(52f, 25f, 0f); sun.color = new Color(0.55f, 0.68f, 1f); sun.intensity = 0.8f; }   // relleno frío
+                if (layout == Layout.Expedicion) { sun.transform.localRotation = Quaternion.Euler(52f, 25f, 0f); sun.color = new Color(0.66f, 0.65f, 0.78f); sun.intensity = 0.42f; }   // apenas recorta las formas, como la luna de la Cala
                 sky.zenith = new Color(0.005f, 0.01f, 0.02f); sky.horizon = new Color(0.02f, 0.04f, 0.07f); sky.ground = new Color(0.01f, 0.02f, 0.03f);
                 sky.sunColor = Color.black; sky.cloudCover = 0f;
                 fog = new Color(0.03f, 0.07f, 0.12f); fogStart = 40f; fogEnd = 220f;
-                if (layout == Layout.Expedicion) { fog = new Color(0.08f, 0.11f, 0.16f); fogStart = 90f; fogEnd = 320f; }   // se ve más lejos
+                if (layout == Layout.Expedicion) { fog = new Color(0.05f, 0.045f, 0.07f); fogStart = 60f; fogEnd = 250f; }   // la sala se pierde en la oscuridad
                 fireflies = true;
                 break;
             case Mood.Crepusculo:
@@ -1071,9 +1071,9 @@ public partial class DioramaBuilder : MonoBehaviour
             RenderSettings.ambientGroundColor = new Color(0.05f, 0.06f, 0.1f);
             if (layout == Layout.Expedicion)   // la gruta del tutorial: más ambiente frío para que el jugador y el sendero se lean
             {
-                RenderSettings.ambientSkyColor = new Color(0.34f, 0.4f, 0.52f);       // menos saturado: el frío lo pone la luz
-                RenderSettings.ambientEquatorColor = new Color(0.25f, 0.29f, 0.38f);
-                RenderSettings.ambientGroundColor = new Color(0.1f, 0.1f, 0.13f);
+                RenderSettings.ambientSkyColor = new Color(0.34f, 0.33f, 0.42f);      // sin azul: el color lo ponen el fuego y los cristales
+                RenderSettings.ambientEquatorColor = new Color(0.32f, 0.28f, 0.38f);
+                RenderSettings.ambientGroundColor = new Color(0.1f, 0.09f, 0.12f);
             }
         }
 
@@ -1086,7 +1086,7 @@ public partial class DioramaBuilder : MonoBehaviour
         main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 10f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f);
         main.startSize = fireflies ? new ParticleSystem.MinMaxCurve(0.08f, 0.18f) : new ParticleSystem.MinMaxCurve(0.05f, 0.12f);
-        main.startColor = fireflies ? (mood == Mood.Gruta ? new Color(0.5f, 0.9f, 1f, 1f) : new Color(0.85f, 1f, 0.45f, 1f)) : new Color(1f, 0.92f, 0.65f, 0.7f);
+        main.startColor = fireflies ? (mood == Mood.Gruta ? (layout == Layout.Expedicion ? new Color(0.72f, 0.66f, 0.9f, 0.75f) : new Color(0.5f, 0.9f, 1f, 1f)) : new Color(0.85f, 1f, 0.45f, 1f)) : new Color(1f, 0.92f, 0.65f, 0.7f);
         main.maxParticles = 400;
         main.prewarm = true;
         main.simulationSpace = ParticleSystemSimulationSpace.World;

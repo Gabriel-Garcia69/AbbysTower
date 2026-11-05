@@ -468,7 +468,8 @@ public class MouseOrbitCamera : MonoBehaviour
 
         // muy cerca (un muro la empujó): en vez de meterse en la cara de Abby, la cámara sube y mira hacia abajo
         float near = Mathf.Clamp01((2.8f - currentDistance) / 2.2f), lift = near * 2.6f;
-        var lp = cam.transform.localPosition;
+        var lp = cam.transform.localPosition - alzadoLocal;   // quita lo que subió el cuadro pasado por el suelo: si no, se acumula y la cámara ya nunca baja
+        alzadoLocal = Vector3.zero;
         cam.transform.localPosition = new Vector3(lp.x, lp.y - appliedLift + lift, -currentDistance);
         appliedLift = lift;
         if (lift > 0.01f) cam.transform.localRotation *= Quaternion.Euler(Mathf.Atan2(lift, Mathf.Max(currentDistance, 0.6f)) * Mathf.Rad2Deg * 0.85f, 0f, 0f);
@@ -480,6 +481,7 @@ public class MouseOrbitCamera : MonoBehaviour
         {
             Vector3 antes = cam.transform.position, mira = arm.position;
             cam.transform.position = antes + Vector3.up * sueloAlzado;
+            alzadoLocal = cam.transform.parent != null ? cam.transform.parent.InverseTransformVector(Vector3.up * sueloAlzado) : Vector3.up * sueloAlzado;
             cam.transform.rotation = Quaternion.LookRotation(mira - cam.transform.position, Vector3.up) * Quaternion.Euler(-viewLookUp, 0f, 0f);
         }
     }
@@ -488,6 +490,7 @@ public class MouseOrbitCamera : MonoBehaviour
     float MinChoque => Mathf.Max(minCollisionDistance, 2.5f);
 
     float appliedLift, sueloAlzado, sueloVel;
+    Vector3 alzadoLocal;
     const float SueloLibre = 0.6f;
 
     /// <summary>

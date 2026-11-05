@@ -246,7 +246,7 @@ public class IntroImagenes : MonoBehaviour
         }
         if (mostrarTitulo)
         {
-            sTit.fontSize = Mathf.RoundToInt(H / 8f); sTarjChica.fontSize = Mathf.RoundToInt(H / 22f);
+            sTit.font = FuentePixel.FuenteLogo; sTit.fontSize = Mathf.RoundToInt(H / 8f); sTarjChica.fontSize = Mathf.RoundToInt(H / 22f);
             GUI.color = new Color(1, 1, 1, 1f - negro);
             GUI.Label(new Rect(0, H * 0.32f, W, H * 0.2f), Historia.Titulo, sTit);
             GUI.Label(new Rect(0, H * 0.52f, W, H * 0.1f), Historia.Subtitulo, sTarjChica);

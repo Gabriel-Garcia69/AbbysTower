@@ -36,7 +36,8 @@ public class FloorDirector : MonoBehaviour
     Transform player;
     PlayerHealth health;
     AbbyBlock block;
-    Sprite retrato, retratoFijo;
+    Sprite retrato, retratoFijo, retratoMedido;
+    Rect uvRetrato;
     RoomEncounter[] rooms;
     RoomEncounter activeRoom;
     TowerEnemy boss;
@@ -227,8 +228,42 @@ public class FloorDirector : MonoBehaviour
 
     // ------------------------------------------------------------------ ciclo
 
+    /// <summary>Encuadre del retrato: un cuadrado centrado en la cabeza. El lienzo no sirve de referencia porque la espada corre al personaje a un lado.</summary>
+    void MedirRetrato()
+    {
+        retratoMedido = retrato;
+        if (retrato == null) return;
+        var tx = retrato.texture; var tr = retrato.textureRect;
+        // las texturas de los sprites no se pueden leer directo: se copian a una temporal
+        var rt = RenderTexture.GetTemporary(tx.width, tx.height, 0, RenderTextureFormat.ARGB32);
+        var antes = RenderTexture.active;
+        Graphics.Blit(tx, rt);
+        RenderTexture.active = rt;
+        var copia = new Texture2D(tx.width, tx.height, TextureFormat.RGBA32, false);
+        copia.ReadPixels(new Rect(0, 0, tx.width, tx.height), 0, 0);
+        copia.Apply();
+        RenderTexture.active = antes;
+        RenderTexture.ReleaseTemporary(rt);
+        var px = copia.GetPixels32();
+        int x0 = (int)tr.x, y0 = (int)tr.y, w = (int)tr.width, h = (int)tr.height, arriba = -1, abajo = -1;
+        for (int y = y0 + h - 1; y >= y0; y--)
+            for (int x = x0; x < x0 + w; x++)
+                if (px[y * tx.width + x].a > 128) { if (arriba < 0) arriba = y; abajo = y; break; }
+        Destroy(copia);
+        if (arriba < 0) { uvRetrato = new Rect(tr.x / tx.width, tr.y / tx.height, tr.width / tx.width, tr.height / tx.height); return; }
+        float alto = arriba - abajo + 1;
+        // la cabeza: lo más ancho de la franja de arriba; la espada va abajo y no cuenta
+        int izq = int.MaxValue, der = int.MinValue, fin = Mathf.RoundToInt(arriba - alto * 0.28f);
+        for (int y = arriba; y >= fin; y--)
+            for (int x = x0; x < x0 + w; x++)
+                if (px[y * tx.width + x].a > 128) { if (x < izq) izq = x; if (x > der) der = x; }
+        float centro = (izq + der + 1) / 2f, lado = alto * 0.62f, techo = arriba + 1 + alto * 0.03f;
+        uvRetrato = new Rect((centro - lado / 2f) / tx.width, (techo - lado) / tx.height, lado / tx.width, lado / tx.height);
+    }
+
     void Update()
     {
+        if (retrato != retratoMedido) MedirRetrato();
         float dt = Time.unscaledDeltaTime;
         if (player != null) Shader.SetGlobalVector("_AbbyJugador", player.position);   // los límites del piso se encienden cerca de Abby
         bannerTime += dt;
@@ -325,13 +360,10 @@ public class FloorDirector : MonoBehaviour
             var marco = new Rect(px, py, ps, ps);
             Box(new Rect(marco.x - 3, marco.y - 3, marco.width + 6, marco.height + 6), new Color(0.75f, 0.6f, 1f, 0.9f));
             Box(marco, new Color(0.08f, 0.06f, 0.14f, 0.92f));
-            if (retrato != null)
+            if (retrato != null && retrato == retratoMedido)
             {
-                var tr = retrato.textureRect; var tx = retrato.texture;
-                // el retrato es la cabeza y el torso (la mitad de arriba del sprite)
-                var uv = new Rect(tr.x / tx.width, (tr.y + tr.height * 0.45f) / tx.height, tr.width / tx.width, tr.height * 0.55f / tx.height);
                 GUI.color = Color.white;
-                GUI.DrawTextureWithTexCoords(new Rect(marco.x + u * 0.5f, marco.y + u * 0.5f, marco.width - u, marco.height - u), tx, uv, true);
+                GUI.DrawTextureWithTexCoords(new Rect(marco.x + u * 0.5f, marco.y + u * 0.5f, marco.width - u, marco.height - u), retrato.texture, uvRetrato, true);
             }
             var label = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
             float bx = marco.xMax + u * 1.5f, bw = u * 30f;
@@ -343,18 +375,18 @@ public class FloorDirector : MonoBehaviour
             Box(new Rect(bar.x, bar.y, bar.width * shownHealth, bar.height), new Color(1f, 0.85f, 0.55f, 0.9f));
             Color hc = Color.Lerp(new Color(1f, 0.25f, 0.3f), new Color(0.45f, 1f, 0.6f), health.Normalized);
             Box(new Rect(bar.x, bar.y, bar.width * health.Normalized, bar.height), new Color(hc.r, hc.g, hc.b, parpadeo));
-            var num = new GUIStyle(label) { fontSize = FuentePixel.Tam(u * 1.8f), alignment = TextAnchor.MiddleCenter };
+            var num = new GUIStyle(label) { fontSize = FuentePixel.Tam(u * 1.8f), alignment = TextAnchor.MiddleCenter, padding = new RectOffset(), margin = new RectOffset() };
             Text(bar, $"VIDA  {Mathf.CeilToInt(health.Health)} / {Mathf.RoundToInt(health.maxHealth)}", num, Color.white);
             if (block != null)
             {
-                var sb = new Rect(bx, bar.yMax + u * 1.2f, bw * 0.8f, u * 1.6f);
+                var sb = new Rect(bx, bar.yMax + u * 1.1f, bw * 0.8f, u * 2.3f);
                 // stamina baja (no alcanza para bloquear otro golpe): cambia de color; si intentó bloquear sin stamina, parpadea
                 bool poca = block.Stamina < AbbyBlock.CostoPorGolpe * 2f;
                 Color sc = block.Stamina < AbbyBlock.CostoPorGolpe ? new Color(1f, 0.35f, 0.25f) : poca ? new Color(1f, 0.7f, 0.25f) : new Color(0.45f, 0.75f, 1f);
                 if (block.Blocking) sc = Color.Lerp(sc, Color.white, 0.35f);
                 Box(new Rect(sb.x - 2, sb.y - 2, sb.width + 4, sb.height + 4), new Color(0f, 0f, 0f, 0.7f + block.EmptyFlash * 0.3f));
                 Box(new Rect(sb.x, sb.y, sb.width * block.Normalized, sb.height), sc);
-                var sn = new GUIStyle(num) { fontSize = FuentePixel.Tam(u * 1.4f) };
+                var sn = new GUIStyle(num) { fontSize = FuentePixel.Tam(u * 1.6f) };
                 Text(sb, "STAMINA", sn, new Color(1f, 1f, 1f, 0.9f));
                 if (block.BlockFlash > 0f) Box(new Rect(marco.x - 3, marco.y - 3, marco.width + 6, marco.height + 6), new Color(0.6f, 0.8f, 1f, 0.5f * block.BlockFlash));
             }

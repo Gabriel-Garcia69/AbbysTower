@@ -362,7 +362,7 @@ public class ExteriorIntro : MonoBehaviour
         {
             var big = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(sh / 8f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             var small = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(sh / 28f), alignment = TextAnchor.MiddleCenter };
-            Shadowed(new Rect(0, sh * 0.30f, sw, sh * 0.2f), title, big, titleAlpha);
+            Shadowed(new Rect(0, sh * 0.30f, sw, sh * 0.2f), title, FuentePixel.Logo(big, sh / 8f), titleAlpha);
             Shadowed(new Rect(0, sh * 0.48f, sw, sh * 0.08f), subtitle, small, titleAlpha);
         }
 

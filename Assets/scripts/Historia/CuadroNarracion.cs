@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -64,13 +65,63 @@ public static class CuadroNarracion
     static GUIStyle Estilo(float tam, FontStyle fs = FontStyle.Normal, TextAnchor a = TextAnchor.UpperLeft)
         => new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(Screen.height / 100f * tam), fontStyle = fs, alignment = a, wordWrap = true, richText = false };
 
-    /// <summary>Estilo con la letra más grande (hasta tam) con la que el texto completo no pasa de altoMax: los textos largos se achican en vez de salirse del cuadro.</summary>
-    static GUIStyle Cabe(float tam, FontStyle fs, TextAnchor a, string texto, float ancho, float altoMax)
+    /// <summary>Espacio de una línea a la siguiente, en veces el tamaño de la letra (OnGUI no deja cambiar el interlineado: las líneas se dibujan una por una).</summary>
+    const float Interlineado = 1.5f;
+
+    /// <summary>Parte el texto en líneas que caben en ancho.</summary>
+    static List<string> Partir(string texto, GUIStyle st, float ancho)
     {
-        var st = Estilo(tam, fs, a);
-        var gc = new GUIContent(texto);
-        for (float t = tam - 0.15f; t >= 1.7f && st.CalcHeight(gc, ancho) > altoMax; t -= 0.15f) st = Estilo(t, fs, a);
-        return st;
+        var lineas = new List<string>();
+        foreach (var parrafo in texto.Split('\n'))
+        {
+            string linea = "";
+            foreach (var palabra in parrafo.Split(' '))
+            {
+                string prueba = linea.Length == 0 ? palabra : linea + " " + palabra;
+                if (linea.Length > 0 && st.CalcSize(new GUIContent(prueba)).x > ancho) { lineas.Add(linea); linea = palabra; }
+                else linea = prueba;
+            }
+            lineas.Add(linea);
+        }
+        return lineas;
+    }
+
+    static string ultimoTexto; static float ultimoAncho, ultimoTam, ultimoFinal; static List<string> ultimasLineas;
+
+    /// <summary>La letra más grande (hasta tam) con la que el texto completo no pasa de altoMax: los textos largos se achican en vez de salirse del cuadro. Se recuerda porque esto corre en cada cuadro.</summary>
+    static GUIStyle Cabe(float tam, FontStyle fs, TextAnchor a, string texto, float ancho, float altoMax, out List<string> lineas)
+    {
+        if (texto != ultimoTexto || ancho != ultimoAncho || tam != ultimoTam)
+        {
+            ultimoTexto = texto; ultimoAncho = ancho; ultimoTam = tam;
+            float t = tam;
+            var prueba = Estilo(t, fs, a);
+            ultimasLineas = Partir(texto, prueba, ancho);
+            while (t > 1.7f && ultimasLineas.Count * prueba.fontSize * Interlineado > altoMax)
+            {
+                t -= 0.15f;
+                prueba = Estilo(t, fs, a);
+                ultimasLineas = Partir(texto, prueba, ancho);
+            }
+            ultimoFinal = t;
+        }
+        lineas = ultimasLineas;
+        return Estilo(ultimoFinal, fs, a);
+    }
+
+    /// <summary>Dibuja las líneas con su interlineado, solo hasta la letra que va la máquina de escribir; cada línea ya está en su lugar final, así no brinca al escribirse.</summary>
+    static void Lineas(List<string> lineas, int letras, Rect r, GUIStyle st, bool centrado, Color c)
+    {
+        var una = new GUIStyle(st) { wordWrap = false, alignment = TextAnchor.UpperLeft };
+        float paso = st.fontSize * Interlineado;
+        int quedan = letras;
+        for (int i = 0; i < lineas.Count && quedan > 0; i++)
+        {
+            string l = lineas[i];
+            float x = centrado ? r.x + (r.width - st.CalcSize(new GUIContent(l)).x) / 2f : r.x;
+            Texto(new Rect(x, r.y + i * paso, r.width, paso), l.Substring(0, Mathf.Min(quedan, l.Length)), una, c);
+            quedan -= l.Length + 1;
+        }
     }
 
     static void Texto(Rect r, string s, GUIStyle st, Color c)
@@ -95,13 +146,12 @@ public static class CuadroNarracion
     {
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         float w = Mathf.Min(sw * 0.72f, u * 150f);
-        var st = Cabe(2.6f, FontStyle.Normal, TextAnchor.MiddleCenter, texto, w - u * 10f, sh * 0.3f);
-        float h = st.CalcHeight(new GUIContent(texto), w - u * 10f) + u * 7f;
+        var st = Cabe(3.6f, FontStyle.Normal, TextAnchor.UpperLeft, texto, w - u * 10f, sh * 0.32f, out var lineas);
+        float alto = lineas.Count * st.fontSize * Interlineado;
+        float h = alto + u * 5f;
         var caja = new Rect((sw - w) / 2f, sh - h - u * 8f, w, h);
         Marco(caja, alpha);
-        string vis = texto.Substring(0, Mathf.Clamp(letras, 0, texto.Length));
-        // se reserva el alto final para que el texto no "salte" al escribirse
-        Texto(new Rect(caja.x + u * 5f, caja.y + u * 3.5f, caja.width - u * 10f, caja.height - u * 7f), vis, st, new Color(0.97f, 0.95f, 0.9f, alpha));
+        Lineas(lineas, letras, new Rect(caja.x + u * 5f, caja.y + u * 2.5f, caja.width - u * 10f, alto), st, true, new Color(0.97f, 0.95f, 0.9f, alpha));
         if (letras >= texto.Length) Siguiente(caja, alpha);
     }
 
@@ -115,17 +165,18 @@ public static class CuadroNarracion
         ultimoDialogo = alpha; cuadroDialogo = Time.frameCount;
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         float w = Mathf.Min(sw * 0.8f, u * 160f);
-        var st = Cabe(2.5f, FontStyle.Normal, TextAnchor.UpperLeft, texto, w - u * 10f, sh * 0.3f);
-        float h = Mathf.Max(u * 14f, st.CalcHeight(new GUIContent(texto), w - u * 10f) + u * 8f);
+        var st = Cabe(3.5f, FontStyle.Normal, TextAnchor.UpperLeft, texto, w - u * 10f, sh * 0.32f, out var lineas);
+        float alto = lineas.Count * st.fontSize * Interlineado;
+        float h = Mathf.Max(u * 12f, alto + u * 7.5f);
         var caja = new Rect((sw - w) / 2f, sh - h - u * 6f, w, h);
         Marco(caja, alpha);
-        var placaSt = Estilo(2.3f, FontStyle.Bold, TextAnchor.MiddleCenter);
+        var placaSt = Estilo(2.9f, FontStyle.Bold, TextAnchor.MiddleCenter);
         float pw = placaSt.CalcSize(new GUIContent(quien)).x + u * 6f;
         var placa = new Rect(caja.x + u * 4f, caja.y - u * 3.2f, pw, u * 5f);
         Marco(placa, alpha);
         Texto(placa, quien, placaSt, new Color(Oro.r, Oro.g, Oro.b, alpha));
-        string vis = texto.Substring(0, Mathf.Clamp(letras, 0, texto.Length));
-        Texto(new Rect(caja.x + u * 5f, caja.y + u * 4f, caja.width - u * 10f, caja.height - u * 6f), vis, st, new Color(0.97f, 0.95f, 0.9f, alpha));
+        // centrado a lo alto, un poco abajo por la placa del nombre
+        Lineas(lineas, letras, new Rect(caja.x + u * 5f, caja.y + (h - alto) / 2f + u * 0.8f, caja.width - u * 10f, alto), st, false, new Color(0.97f, 0.95f, 0.9f, alpha));
         if (letras >= texto.Length) Siguiente(caja, alpha);
     }
 

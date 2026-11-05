@@ -190,8 +190,8 @@ public class MenuPrincipal : MonoBehaviour
         }
         // título
         var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 9f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        Sombra(new Rect(0, sh * 0.1f, sw, u * 12f), "ABBY'S TOWER", titulo, new Color(1f, 0.92f, 0.75f));
-        var sub = new GUIStyle(titulo) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Italic };
+        Sombra(new Rect(0, sh * 0.1f, sw, u * 12f), "ABBY'S TOWER", FuentePixel.Logo(titulo, u * 9f), new Color(1f, 0.92f, 0.75f));
+        var sub = new GUIStyle(titulo) { font = null, fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Italic };
         Sombra(new Rect(0, sh * 0.1f + u * 11f, sw, u * 4f), "La torre del abismo", sub, new Color(0.85f, 0.78f, 1f));
 
         var ops = Opciones();

@@ -25,6 +25,20 @@ public static class AmbienteHistoria
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     static readonly int ColorId = Shader.PropertyToID("_Color");
 
+    /// <summary>Con el sol del puerto las tejas se encendían en rojo puro: se bajan a barro.</summary>
+    static void TejasApagadas()
+    {
+        var bloque = new MaterialPropertyBlock();
+        foreach (var r in Object.FindObjectsByType<MeshRenderer>())
+        {
+            var m = r.sharedMaterial;
+            if (m == null || !m.name.StartsWith("Dio_Tejas") || !m.HasProperty(BaseColorId)) continue;
+            r.GetPropertyBlock(bloque);
+            bloque.SetColor(BaseColorId, new Color(0.62f, 0.42f, 0.38f));
+            r.SetPropertyBlock(bloque);
+        }
+    }
+
     static void Aplicar()
     {
         var b = Object.FindAnyObjectByType<DioramaBuilder>();
@@ -32,6 +46,7 @@ public static class AmbienteHistoria
         if (exterior) { Apagar(); return; }
         if (b == null) return;
         bool cascadas = b.layout == DioramaBuilder.Layout.Cascadas, acantilado = b.layout == DioramaBuilder.Layout.Acantilado;
+        if (b.layout == DioramaBuilder.Layout.Puerto) TejasApagadas();
         if (b.CurrentMood != DioramaBuilder.Mood.Dia && !acantilado) return;
 
         // GDD: cada piso tiene su color dominante. Pueblo: ámbar · Cascadas: azul violeta · Acantilado: carmesí
@@ -41,15 +56,15 @@ public static class AmbienteHistoria
         Color ambCielo = new Color(0.66f, 0.56f, 0.72f), ambMedio = new Color(0.64f, 0.48f, 0.44f), ambSuelo = new Color(0.24f, 0.19f, 0.21f);
         if (cascadas)
         {
-            luz = new Color(0.72f, 0.74f, 1f); arriba = new Color(0.07f, 0.12f, 0.34f); horizonte = new Color(0.56f, 0.5f, 0.86f);
+            luz = new Color(0.86f, 0.86f, 1f); arriba = new Color(0.14f, 0.22f, 0.5f); horizonte = new Color(0.72f, 0.62f, 0.95f);
             disco = new Color(0.8f, 0.78f, 1f); nubes = new Color(0.62f, 0.6f, 0.88f); bruma = new Color(0.42f, 0.46f, 0.66f);
-            ambCielo = new Color(0.56f, 0.62f, 0.82f); ambMedio = new Color(0.46f, 0.5f, 0.64f); ambSuelo = new Color(0.18f, 0.2f, 0.26f);
+            ambCielo = new Color(0.78f, 0.84f, 1f); ambMedio = new Color(0.66f, 0.7f, 0.82f); ambSuelo = new Color(0.3f, 0.32f, 0.38f);
         }
         else if (acantilado)
         {
-            luz = new Color(1f, 0.46f, 0.36f); arriba = new Color(0.27f, 0.17f, 0.4f); horizonte = new Color(1f, 0.46f, 0.3f);
+            luz = new Color(1f, 0.68f, 0.52f); arriba = new Color(0.27f, 0.17f, 0.4f); horizonte = new Color(1f, 0.46f, 0.3f);
             disco = new Color(1f, 0.52f, 0.3f); nubes = new Color(0.98f, 0.56f, 0.5f); bruma = new Color(0.58f, 0.3f, 0.36f);
-            ambCielo = new Color(0.66f, 0.46f, 0.6f); ambMedio = new Color(0.62f, 0.4f, 0.4f); ambSuelo = new Color(0.24f, 0.16f, 0.2f);
+            ambCielo = new Color(0.84f, 0.66f, 0.74f); ambMedio = new Color(0.8f, 0.6f, 0.54f); ambSuelo = new Color(0.34f, 0.26f, 0.28f);
         }
 
         // sol bajo de lado: caras iluminadas y sombras largas
@@ -57,9 +72,9 @@ public static class AmbienteHistoria
         if (sol == null) foreach (var l in Object.FindObjectsByType<Light>()) if (l.type == LightType.Directional) { sol = l; break; }
         if (sol != null)
         {
-            sol.transform.rotation = Quaternion.Euler(28f, 118f, 0f);
+            sol.transform.rotation = Quaternion.Euler(cascadas ? 42f : 36f, 118f, 0f);
             sol.color = luz;
-            sol.intensity = cascadas ? 1.7f : 2.1f;
+            sol.intensity = cascadas ? 2.2f : 2.2f;
             sol.shadowStrength = 0.85f;
         }
 

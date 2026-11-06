@@ -30,6 +30,10 @@ public class CameraShot : MonoBehaviour
     [Tooltip("Segundos que tarda en llegar al encuadre.")]
     public float blendTime = 1.4f;
     public int priority;
+    [Tooltip("Zona de cámara: yaw es absoluto, pero pitch y distance se SUMAN a los del estilo; lente y encuadre quedan iguales.")]
+    public bool relativa;
+    [Tooltip("También vale durante las peleas.")]
+    public bool enCombate;
 
     [Header("Apertura de escena")]
     [Tooltip("> 0: toma de apertura que dura estos segundos al cargar la escena.")]
@@ -48,17 +52,17 @@ public class CameraShot : MonoBehaviour
 
     public bool Contains(Vector3 world)
     {
-        if (introSeconds > 0f) return Time.timeSinceLevelLoad < IntroDuracion;
+        if (introSeconds > 0f) return false;   // la entrada al mundo ahora es VueloApertura
         Vector3 p = transform.InverseTransformPoint(world);
         return Mathf.Abs(p.x) <= size.x / 2f && Mathf.Abs(p.z) <= size.y / 2f && p.y >= yMin && p.y <= yMax;
     }
 
     /// <summary>La toma que manda en esta posición (la de mayor prioridad), o null.</summary>
-    public static CameraShot At(Vector3 world)
+    public static CameraShot At(Vector3 world, bool combate = false)
     {
         CameraShot best = null;
         foreach (var s in All)
-            if (s != null && s.isActiveAndEnabled && s.Contains(world) && (best == null || s.priority > best.priority)) best = s;
+            if (s != null && s.isActiveAndEnabled && (!combate || s.enCombate) && s.Contains(world) && (best == null || s.priority > best.priority)) best = s;
         return best;
     }
 

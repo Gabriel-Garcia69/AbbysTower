@@ -1018,10 +1018,10 @@ public partial class DioramaBuilder : MonoBehaviour
             case Mood.Crepusculo:
                 sun.transform.localRotation = Quaternion.Euler(20f, 118f, 0f);
                 sun.color = new Color(0.76f, 0.55f, 0.84f); sun.intensity = 1.35f;
-                sky.zenith = new Color(0.03f, 0.02f, 0.1f); sky.horizon = new Color(0.42f, 0.14f, 0.3f); sky.ground = new Color(0.08f, 0.05f, 0.14f);
+                sky.zenith = new Color(0.07f, 0.05f, 0.22f); sky.horizon = new Color(0.9f, 0.46f, 0.38f); sky.ground = new Color(0.9f, 0.46f, 0.38f);
                 sky.sunColor = new Color(0.95f, 0.4f, 0.5f) * 1.5f; sky.sunSize = 0.01f;
                 sky.cloudColor = new Color(0.4f, 0.25f, 0.42f); sky.cloudCover = 0.5f;
-                fog = new Color(0.12f, 0.07f, 0.17f); fogStart = 60f; fogEnd = 420f;
+                fog = new Color(0.9f, 0.46f, 0.38f); fogStart = 110f; fogEnd = 900f;
                 stars = true;
                 break;
             case Mood.Amanecer:
@@ -1070,8 +1070,8 @@ public partial class DioramaBuilder : MonoBehaviour
         {
             sky.driveAmbient = false;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = mood == Mood.Gruta ? (layout == Layout.Cueva ? new Color(0.66f, 0.6f, 0.82f) : new Color(0.26f, 0.24f, 0.36f)) : layout == Layout.Nevado ? new Color(0.36f, 0.42f, 0.62f) : new Color(0.22f, 0.28f, 0.5f);
-            RenderSettings.ambientEquatorColor = mood == Mood.Gruta ? (layout == Layout.Cueva ? new Color(0.5f, 0.45f, 0.62f) : new Color(0.2f, 0.17f, 0.28f)) : layout == Layout.Nevado ? new Color(0.26f, 0.3f, 0.46f) : new Color(0.15f, 0.18f, 0.32f);
+            RenderSettings.ambientSkyColor = mood == Mood.Gruta ? (layout == Layout.Cueva ? new Color(0.46f, 0.56f, 0.72f) : new Color(0.26f, 0.24f, 0.36f)) : layout == Layout.Nevado ? new Color(0.36f, 0.42f, 0.62f) : new Color(0.22f, 0.28f, 0.5f);
+            RenderSettings.ambientEquatorColor = mood == Mood.Gruta ? (layout == Layout.Cueva ? new Color(0.36f, 0.42f, 0.54f) : new Color(0.2f, 0.17f, 0.28f)) : layout == Layout.Nevado ? new Color(0.26f, 0.3f, 0.46f) : new Color(0.15f, 0.18f, 0.32f);
             RenderSettings.ambientGroundColor = new Color(0.05f, 0.06f, 0.1f);
             if (layout == Layout.Expedicion || layout == Layout.Final)   // la gruta del tutorial: más ambiente frío para que el jugador y el sendero se lean
             {

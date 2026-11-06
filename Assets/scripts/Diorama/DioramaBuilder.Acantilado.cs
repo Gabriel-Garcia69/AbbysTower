@@ -2,244 +2,336 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Piso 4 — El Sendero del Acantilado (atardecer). Costa baja y abierta sobre el mar, en tres repisas poco altas para que la
-/// cámara, que mira desde tierra, siempre vea el camino y el agua. Desde la repisa baja, puentes colgantes saltan entre islotes
-/// anchos hasta el faro roto, donde espera el jefe. Una cascada cae al mar. El sol se pone enfrente, sobre el agua.
+/// Piso 4 — El Sendero del Acantilado (atardecer carmesí). Costa de bloques, como el piso 1: un prado baja por una escalinata a una playa con aldea de
+/// pescadores y el esqueleto de un barco; un puente cruza a la isla del naufragio y otro, largo, llega al promontorio del faro roto.
+/// Una cascada cae de la meseta a una laguna que desagua al mar; arcos y farallones de roca recortan el sol.
+/// La cámara mira al mar desde tierra: lo alto queda a los lados, nunca entre ella y el camino.
 /// </summary>
 public partial class DioramaBuilder
 {
-    static readonly Rect CliffArea = new Rect(-90f, -70f, 180f, 130f);
-    static readonly Rect CliffWalk = new Rect(-48f, -40f, 100f, 76f);
-    static readonly Vector3 CliffSpawn = new Vector3(-38f, 9.6f, -32f);
-    const float CliffTop = 5f, CliffMid = 3.2f, CliffLow = 1.4f;   // repisas bajas: la cámara, atrás y arriba, ve por encima de todas
-    static readonly Vector4[] Stacks = { new Vector4(-14f, 15f, 9.5f, 1.4f), new Vector4(10f, 19f, 9f, 1.9f), new Vector4(36f, 15f, 13f, 2.4f) };   // x, z, radio, alto
-    const float CliffFallX = 24f;
+    static readonly Rect CliffArea = new Rect(-90f, -70f, 190f, 150f);
+    static readonly Rect CliffWalk = new Rect(-66f, -46f, 150f, 112f);
+    static readonly Vector3 CliffSpawn = new Vector3(-46f, 3.6f, -30f);
+    const float PlayaY = 0.6f, PradoY = 2.6f, MesetaY = 5.5f, IsletaY = 1.4f, RellanoY = 2.2f, LagunaY = 0.1f;
+    static readonly Vector2 LagunaC = new Vector2(25f, -13f), IsletaC = new Vector2(4f, 31f), RellanoC = new Vector2(43f, 37f), FaroC = new Vector2(68f, 48f);
+    static readonly Vector2 RampaA = new Vector2(46f, 37f), RampaB = new Vector2(60f, 42f);
+    static readonly Vector2 Puente1A = new Vector2(1f, 4f), Puente1B = new Vector2(3f, 19.5f), Puente2A = new Vector2(16f, 33.4f), Puente2B = new Vector2(37f, 36.5f);
+    static readonly Vector2 EscalaA = new Vector2(1f, -2f), EscalaB = new Vector2(1f, -9f);   // de la playa al prado
+    // el camino de tierra
+    static readonly Vector2[][] CliffRoad =
+    {
+        new[] { new Vector2(-46f, -30f), new Vector2(-34f, -24f), new Vector2(-20f, -19f), new Vector2(-6f, -13f), EscalaB },
+        new[] { EscalaA, Puente1A },
+        new[] { EscalaA, new Vector2(-14f, 0f), new Vector2(-30f, 6f) },
+        new[] { Puente1B, new Vector2(9f, 28f), Puente2A },
+        new[] { Puente2B, RampaA },
+        new[] { RampaB, new Vector2(64f, 44f) },
+    };
 
+    static float Liso(float a, float b, float x) => Mathf.SmoothStep(0f, 1f, (x - a) / (b - a));
+
+    static float DistSeg(Vector2 p, Vector2 a, Vector2 b, out float t)
+    {
+        Vector2 ab = b - a;
+        t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
+        return Vector2.Distance(p, a + ab * t);
+    }
+
+    static float CostaZ(float x)
+    {
+        float c = (x - 4f) / 30f;
+        return 24f - 16f * Mathf.Exp(-c * c) + 18f * Liso(50f, 64f, x) + 9f * Liso(40f, 72f, -x);
+    }
+
+    static float DistCamino(float x, float z)
+    {
+        float best = 999f; var p = new Vector2(x, z);
+        foreach (var r in CliffRoad)
+            for (int i = 0; i + 1 < r.Length; i++) best = Mathf.Min(best, DistSeg(p, r[i], r[i + 1], out _));
+        return best;
+    }
+
+    /// <summary>Alturas por escalones, igual que el piso 1: cada celda del terreno es un bloque.</summary>
     float CliffHeight(float x, float z)
     {
         float e = EdgeNoise(x, z);
-        foreach (var s in Stacks)
-            if (Vector2.Distance(new Vector2(x, z), new Vector2(s.x, s.y)) < s.z + e * 1.8f) return s.w;   // islotes de contorno irregular
-        // pasillos de las escalinatas
-        if (Mathf.Abs(x + 36f) < 3.4f && z > -23.4f && z < -13f) return CliffMid;
-        if (Mathf.Abs(x + 20f) < 3.4f && z > -12.2f && z < -4f) return CliffLow;
-        float zTop = -20f + e * 1.2f, zMid = -8f + e * 1.2f, zLow = 0.5f + e * 0.6f;   // repisa baja honda: al pie de la escalinata queda un descanso amplio
-        float h;
-        if (z < zTop)
+        var p = new Vector2(x, z);
+        // los pasillos de las escaleras van primero: su suelo es recto
+        if (Mathf.Abs(x - EscalaA.x) < 4f && z <= EscalaA.y + 1f && z > EscalaB.y) return PlayaY;
+        if (Mathf.Abs(x - EscalaA.x) < 6f && z <= EscalaB.y && z > EscalaB.y - 6f) return PradoY;
+        if (DistSeg(p, RampaA, RampaB, out float tr) < 3.6f && tr < 0.98f) return RellanoY;
+        // islas: la del naufragio, el rellano y el promontorio del faro
+        if (Vector2.Distance(p, IsletaC) < 13f + e * 2f) return IsletaY;
+        if (Vector2.Distance(p, IsletaC) < 15f + e * 2f) return PlayaY;
+        if (Vector2.Distance(p, RellanoC) < 7f + e * 0.8f) return RellanoY;
+        if (Vector2.Distance(p, new Vector2(66f, 46f)) < 17f + e * 2f) return MesetaY;
+        float d = CostaZ(x) + e * 2.5f - z;
+        if (d < 0f) return d > -5f ? -4f : d > -12f ? -6f : -8f;
+        // la laguna al pie de la cascada y su desagüe al mar
+        if (Vector2.Distance(p, LagunaC) < 8.5f + e) return -0.8f;
+        if (Mathf.Abs(x - LagunaC.x) < 2.4f && z > LagunaC.y) return -0.8f;
+        // la meseta del este
+        if (x > 34f + e * 2f)
         {
-            // el arroyo baja en un cauce hundido desde el manantial hasta el borde (antes era agua pegada encima del pasto)
-            float zs = -20f + EdgeNoise(CliffFallX, -20f) * 1.2f;
-            bool cauce = Mathf.Abs(x - CliffFallX) < 2.1f + e * 0.25f && z > zs - 16f;
-            bool poza = Vector2.Distance(new Vector2(x, z), new Vector2(CliffFallX, zs - 18f)) < 3.6f + e * 0.3f;
-            h = cauce || poza ? CliffTop - 0.8f : CliffTop;
+            if (Mathf.Abs(z + 13f) < 2.4f) return MesetaY - 1.1f;   // el arroyo de arriba
+            return MesetaY + Lomas(x, z);
         }
-        else if (z < zMid) h = Mathf.Abs(x - CliffFallX) < 1.9f + e * 0.2f ? CliffMid - 0.6f : CliffMid;
-        else if (z < zLow) h = Mathf.Abs(x - CliffFallX) < 3f ? CliffLow - 0.9f : CliffLow;   // la repisa baja, con la poza donde cae la cascada
-        else h = z - zLow < 6f ? -6f : -8f;
-        // al oeste el risco termina en el mar abierto, en escalones de roca
-        float dW = x + 60f + e * 2f;
-        if (dW < 0f) return -8f;
-        if (dW < 3f) return Mathf.Min(h, CliffLow);
-        if (dW < 6f) return Mathf.Min(h, CliffMid);
-        return h;
+        if (d < 16f + e) return PlayaY;
+        return PradoY + Lomas(x, z);
     }
 
-    /// <summary>Repisas de un risco según la distancia a la orilla (d mayor que 0 = tierra): mar, repisa baja, media y lo alto.</summary>
-    static float Terraza(float d, float a, float b)
+    /// <summary>Afuera del mapa: lomas al sur y al este, también por escalones.</summary>
+    static float Lomas(float x, float z)
     {
-        return -8f + (CliffLow + 8f) * Mathf.SmoothStep(0f, 1f, d / 1.4f) + (CliffMid - CliffLow) * Mathf.SmoothStep(0f, 1f, (d - a + 1.4f) / 1.4f)
-             + (CliffTop - CliffMid) * Mathf.SmoothStep(0f, 1f, (d - b + 1.4f) / 1.4f);
+        float k = Mathf.Max(Liso(70f, 220f, -z) * 11f, Liso(110f, 260f, x) * 8f);
+        return k <= 0f ? 0f : Mathf.Round(k * (0.45f + 0.55f * Noise(x * 0.04f + 3f, z * 0.04f)) / 2f) * 2f;
     }
 
-    /// <summary>
-    /// Lo de afuera del mapa: al este, la costa de acantilados en tres repisas que se curva hacia el horizonte; al sur,
-    /// montes con árboles; al oeste, mar abierto. Coincide con CliffHeight en la orilla del mapa.
-    /// </summary>
-    float CostaH(float x, float z)
+    Material mArenaCosta;
+    Material ArenaCosta()
     {
-        float e = EdgeNoise(x, z);
-        float bend = x > 90f ? (x - 90f) * (x - 90f) * 0.0035f : 0f;
-        float dN = 0.5f + bend + e * 1.5f - z, dW = x + 60f + e * 2f;
-        float h = Mathf.Min(Terraza(dN, 8.5f, 20.5f), Terraza(dW, 3f, 6f));
-        if (h < CliffTop - 0.01f) return h;
-        float adentro = Mathf.SmoothStep(0f, 1f, (dN - 20.5f) / 30f) * Mathf.SmoothStep(0f, 1f, (dW - 6f) / 25f);
-        float sur = Mathf.SmoothStep(0f, 1f, (-70f - z) / 130f), este = Mathf.SmoothStep(0f, 1f, (x - 90f) / 150f);
-        float n = Noise(x * 0.012f + 7f, z * 0.012f), n2 = Noise(x * 0.04f, z * 0.04f + 3f);
-        return h + (Mathf.Max(sur * 11f, este * 9f) * (0.45f + 0.55f * n) + n2 * 2.5f * Mathf.Max(sur, este)) * adentro;
+        if (mArenaCosta == null) mArenaCosta = PixelMat("Dio_ArenaCosta2", "pix_sand", new Color(0.36f, 0.3f, 0.32f), 0.05f);
+        return mArenaCosta;
     }
 
-    void Costa(Transform parent)
+    /// <summary>Peñasco de la costa, con la roca del mapa.</summary>
+    void PenascoCosta(Transform g, Vector3 pos, float radio)
     {
-        const float cell = 6f;
-        float x0 = -108f, x1 = 402f, z0 = -342f, z1 = 438f;
-        int nx = Mathf.CeilToInt((x1 - x0) / cell), nz = Mathf.CeilToInt((z1 - z0) / cell);
-        var hh = new float[nx + 1, nz + 1];
-        for (int i = 0; i <= nx; i++) for (int j = 0; j <= nz; j++) hh[i, j] = CostaH(x0 + i * cell, z0 + j * cell);
-        var v = new List<Vector3>(); var uv = new List<Vector2>(); var pasto = new List<int>(); var roca = new List<int>();
-        var dentro = new Rect(CliffArea.xMin + 1f, CliffArea.yMin + 1f, CliffArea.width - 2f, CliffArea.height - 2f);
-        void Tri(Vector3 a, Vector3 b, Vector3 c)
-        {
-            var n = Vector3.Cross(b - a, c - a).normalized;
-            bool plano = n.y > 0.8f;
-            int k = v.Count;
-            foreach (var p in new[] { a, b, c })
-            {
-                v.Add(p);
-                uv.Add(plano ? new Vector2(p.x, p.z) * 0.25f : Mathf.Abs(n.x) > Mathf.Abs(n.z) ? new Vector2(p.z, p.y) * 0.25f : new Vector2(p.x, p.y) * 0.25f);
-            }
-            var lista = plano ? pasto : roca;
-            lista.Add(k); lista.Add(k + 1); lista.Add(k + 2);
-        }
-        for (int i = 0; i < nx; i++)
-            for (int j = 0; j < nz; j++)
-            {
-                float xa = x0 + i * cell, za = z0 + j * cell;
-                if (dentro.Contains(new Vector2(xa, za)) && dentro.Contains(new Vector2(xa + cell, za + cell))) continue;   // ahí va el terreno del mapa
-                float h00 = hh[i, j], h10 = hh[i + 1, j], h01 = hh[i, j + 1], h11 = hh[i + 1, j + 1];
-                if (Mathf.Max(Mathf.Max(h00, h10), Mathf.Max(h01, h11)) < -7.5f) continue;   // fondo del mar
-                var a = new Vector3(xa, h00, za); var b = new Vector3(xa + cell, h10, za); var c = new Vector3(xa, h01, za + cell); var d = new Vector3(xa + cell, h11, za + cell);
-                Tri(a, c, d); Tri(a, d, b);
-            }
-        var m = new Mesh { name = "Costa", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
-        m.SetVertices(v); m.SetUVs(0, uv);
-        m.subMeshCount = 2; m.SetTriangles(pasto, 0); m.SetTriangles(roca, 1);
-        m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
-        var go = MeshObject(parent, "Costa", m, TopMat, true);
-        go.GetComponent<MeshRenderer>().sharedMaterials = new[] { TopMat, WallMat };
-        // árboles arriba de los riscos y en los montes (no en lo empinado ni pegados a la orilla)
-        for (int i = 0, tries = 0; i < 300 && tries < 6000; tries++)
-        {
-            var q = new Vector2(R(-60f, 330f), R(-300f, 260f));
-            if (CliffArea.Contains(q) || Vector2.Distance(q, new Vector2(15f, -20f)) > 260f) continue;
-            float h = CostaH(q.x, q.y);
-            if (h < CliffTop - 0.01f || Mathf.Abs(CostaH(q.x + 2f, q.y) - h) > 1.2f || Mathf.Abs(CostaH(q.x, q.y + 2f) - h) > 1.2f) continue;
-            float dN = 0.5f + (q.x > 90f ? (q.x - 90f) * (q.x - 90f) * 0.0035f : 0f) - q.y;
-            if (dN < 26f || q.x + 60f < 10f) continue;
-            if (rng.NextDouble() < 0.55) Pine(parent, q, h - 0.1f, R(0.9f, 1.5f), false); else Tree(parent, q, h - 0.1f, R(0.9f, 1.3f), false);
-            i++;
-        }
-        // farallones sueltos frente a la costa
-        for (int i = 0; i < 14; i++)
-        {
-            float x = R(100f, 330f), z = 0.5f + (x - 90f) * (x - 90f) * 0.0035f + R(6f, 30f), s = R(3f, 7f);
-            var r = Prim(parent, PrimitiveType.Sphere, "Farallon", new Vector3(x, SeaY + s * 0.4f, z), new Vector3(s * R(0.8f, 1.2f), s * R(1.6f, 3f), s * R(0.8f, 1.2f)), mRock);
-            r.transform.localRotation = Quaternion.Euler(R(-8f, 8f), R(0f, 360f), R(-8f, 8f));
-            Foam(parent, new Vector3(x, SeaY + 0.05f, z), s * 0.9f, 6f);
-        }
-        // mar abierto también al suroeste (el mar general no llega tan al sur)
-        var mar = Flat(parent, "MarOeste", new Vector3(-480f, SeaY, -470f), 840f, 440f, mWater, 0.05f);
-        mar.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var m = MeshObject(g, "Penasco", RocaIrregular(radio, radio * R(0.8f, 1.4f), k => Mathf.Sin(Mathf.PI * Mathf.Clamp(k, 0.04f, 0.96f)) * 0.85f + 0.15f, 9, 6), mRock, true);
+        m.transform.localPosition = pos + Vector3.down * radio * 0.15f;
+        m.transform.localRotation = Quaternion.Euler(R(-10f, 10f), R(0f, 360f), R(-10f, 10f));
     }
+
+    bool EnAgua(Vector2 q) => CliffHeight(q.x, q.y) < 0.1f;
+
+    /// <summary>¿Hay lugar para plantar? Lejos del camino, en suelo de pasto y sin mucha pendiente.</summary>
+    bool SueloDePasto(Vector2 q, out float h)
+    {
+        h = CliffHeight(q.x, q.y);
+        return h >= PradoY && DistCamino(q.x, q.y) > 4.5f && Free(q, 1f) && CliffHeight(q.x + 1.5f, q.y) == h && CliffHeight(q.x, q.y + 1.5f) == h;
+    }
+
+    Vector3 EnSuelo(float x, float z) => new Vector3(x, CliffHeight(x, z), z);
 
     void BuildCliffs()
     {
         BuildTerrain();
+        var bg = Group("Fondo", root);
+        // afuera, la misma costa con bloques más grandes
+        foreach (var r in new[] { new Rect(-330f, -350f, 240f, 800f), new Rect(100f, -350f, 330f, 800f), new Rect(-90f, -350f, 190f, 280f), new Rect(-90f, 80f, 190f, 370f) })
+            BuildOuterTerrain(bg, r, 6f);
         BuildSea();
-        // sendero por lo alto (sin árboles encima) desde el campamento hasta la escalinata
-        blocked.Add(new Rect(-70f, -72f, 150f, 34f));   // atrás del mapa va la cámara: nada alto ahí
-        blocked.Add(new Rect(-46f, -38f, 14f, 12f));
-        blocked.Add(new Rect(-40f, -27f, 8f, 16f));
-        blocked.Add(new Rect(-46f, -20f, 96f, 15f));   // la repisa media es camino
-        blocked.Add(new Rect(-26f, -5f, 18f, 6f));     // descanso al pie de la escalinata baja y entrada al puente
         var g = Group("Acantilado", root);
         var lvl = Group("Nivel", root);
+        foreach (var r in new[] { new Rect(-54f, -38f, 16f, 14f), new Rect(-6f, -10f, 14f, 16f), new Rect(44f, 33f, 18f, 12f) }) blocked.Add(r);
+        foreach (var r in CliffRoad) for (int i = 0; i + 1 < r.Length; i++) AnotarTramo(PisoSendero(), r[i], r[i + 1], 4.4f);
 
-        // escalinatas entre repisas y puentes a los farallones
-        Stairs(lvl, "EscalinataAlta", new Vector3(-36f, CliffMid, -17.2f), new Vector3(-36f, CliffTop, -23.5f), 5.6f);
-        Stairs(lvl, "EscalinataBaja", new Vector3(-20f, CliffLow, -4.5f), new Vector3(-20f, CliffMid, -12.2f), 5.6f);
-        RopeBridge(lvl, "Puente1", new Vector3(-14f, CliffLow, -0.6f), new Vector3(-14f, Stacks[0].w, Stacks[0].y - Stacks[0].z + 2.5f));
-        for (int k = 0; k < 2; k++)
-        {
-            Vector3 s0 = new Vector3(Stacks[k].x, Stacks[k].w, Stacks[k].y), s1 = new Vector3(Stacks[k + 1].x, Stacks[k + 1].w, Stacks[k + 1].y);
-            Vector3 dir = new Vector3(s1.x - s0.x, 0f, s1.z - s0.z).normalized;
-            RopeBridge(lvl, "Puente" + (k + 2), s0 + dir * (Stacks[k].z - 2.5f), s1 - dir * (Stacks[k + 1].z - 2.5f));
-        }
+        Agua(g);
+        Stairs(lvl, "EscalaPrado", new Vector3(EscalaA.x, PlayaY, EscalaA.y), new Vector3(EscalaB.x, PradoY, EscalaB.y), 7f);
+        Stairs(lvl, "EscalaFaro", new Vector3(RampaA.x, RellanoY, RampaA.y), new Vector3(RampaB.x, MesetaY, RampaB.y), 6f);
+        Puentes(lvl);
+        Aldea(g, lvl);
+        Naufragio(g, lvl);
+        Farallones(g);
+        Faro(g, lvl);
+        Vegetacion(g);
+        Orilla(lvl);
 
-        // el arroyo: nace en un manantial entre rocas, baja por su cauce y cae del risco a la repisa media
-        float zt = -20f + EdgeNoise(CliffFallX, -20f) * 1.2f, zm = -8f + EdgeNoise(CliffFallX, -8f) * 1.2f;
-        float aguaAlta = CliffTop - 0.35f, zSrc = zt - 18f;
-        Prim(g, PrimitiveType.Cylinder, "Manantial", new Vector3(CliffFallX, aguaAlta, zSrc), new Vector3(7.4f, 0.005f, 7.4f), mRiver);
-        FlowFlat(g, "ArroyoAlto", new Vector3(CliffFallX, aguaAlta + 0.005f, (zSrc + 3.6f + zt) / 2f), 4.6f, zt - zSrc - 3.6f + 0.3f, mRiver, 0.2f, new Vector2(0f, 0.5f));
-        var pena = Group("Manantial", g);   // el peñasco de donde brota el agua, con una caída chica
-        for (int i = 0; i < 9; i++)
-        {
-            float ang = Mathf.Lerp(200f, 340f, i / 8f) * Mathf.Deg2Rad, rr = R(4.6f, 6f), sz = R(2f, 3.6f);
-            var r = Prim(pena, PrimitiveType.Sphere, "Roca", new Vector3(CliffFallX + Mathf.Cos(ang) * rr, CliffTop + sz * 0.25f, zSrc + Mathf.Sin(ang) * rr), new Vector3(sz * 1.3f, sz * R(0.9f, 1.4f), sz), mRock);
-            r.transform.localRotation = Quaternion.Euler(R(-10f, 10f), R(0f, 360f), R(-10f, 10f));
-        }
-        for (int i = 0; i < 6; i++)   // el peñasco: rocas apiladas, la de arriba más chica
-        {
-            float k = i / 5f, sz = Mathf.Lerp(4.2f, 2f, k);
-            var r = Prim(pena, PrimitiveType.Sphere, "Pico", new Vector3(CliffFallX + R(-2.2f, 2.2f) * (1f - k), CliffTop + 0.8f + k * 3.6f, zSrc - 5.6f + R(-0.8f, 0.8f)), new Vector3(sz * R(1f, 1.4f), sz * R(0.6f, 0.85f), sz * R(0.8f, 1.1f)), mRock);
-            r.transform.localRotation = Quaternion.Euler(R(-14f, 14f), R(0f, 360f), R(-14f, 14f));
-        }
-        Waterfall(g, new Vector3(CliffFallX, (CliffTop + 3.4f + aguaAlta) / 2f, zSrc - 3.4f), Vector3.forward, 1.6f, CliffTop + 3.4f - aguaAlta);
-        for (int i = 0; i < 8; i++)   // piedras en las orillas del cauce (no dentro del agua)
-        {
-            float sx = i % 2 == 0 ? -1f : 1f, z = Mathf.Lerp(zSrc + 4f, zt - 1.5f, i / 7f);
-            Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + sx * R(2.9f, 3.4f), CliffTop + 0.1f, z), new Vector3(R(0.9f, 1.5f), R(0.5f, 0.9f), R(0.9f, 1.4f)), mRock);
-        }
-        blocked.Add(new Rect(CliffFallX - 7f, zSrc - 9f, 14f, zt - zSrc + 9f));
-        Waterfall(g, new Vector3(CliffFallX, (aguaAlta + CliffMid - 0.3f) / 2f, zt + 0.05f), Vector3.forward, 3f, aguaAlta - (CliffMid - 0.3f) + 0.1f);
-        FlowFlat(g, "Arroyo", new Vector3(CliffFallX, CliffMid - 0.3f, (zt + zm) / 2f), 4f, zm - zt, mRiver, 0.2f, new Vector2(0f, 0.6f));   // cruza la repisa media en su cauce
-        // cae a una poza en la repisa baja y de ahí, en una segunda cascada, al mar
-        float zl = 0.5f + EdgeNoise(CliffFallX, 0.5f) * 0.6f;
-        float pozaY = CliffLow - 0.3f;
-        Waterfall(g, new Vector3(CliffFallX, (CliffMid + pozaY) / 2f, zm + 0.05f), Vector3.forward, 3f, CliffMid - pozaY + 0.1f);
-        FlowFlat(g, "PozaBaja", new Vector3(CliffFallX, pozaY, (zm + zl) / 2f), 6.1f, zl - zm + 0.2f, mRiver, 0.2f, new Vector2(0f, 0.25f));   // se va despacio hacia el mar
-        Foam(g, new Vector3(CliffFallX, pozaY + 0.05f, zm + 1f), 2f, 18f);
-        Waterfall(g, new Vector3(CliffFallX, (pozaY + SeaY) / 2f, zl + 0.05f), Vector3.forward, 5f, pozaY - SeaY + 0.2f);
-        for (int i = 0; i < 6; i++)
-            Prim(g, PrimitiveType.Sphere, "Pena", new Vector3(CliffFallX + (i % 2 == 0 ? -3.3f : 3.3f), CliffLow, Mathf.Lerp(zm + 1f, zl - 1f, i / 5f)), new Vector3(R(1f, 1.6f), R(0.7f, 1.1f), R(1f, 1.5f)), mRock);
-        BankGuard(g, new List<Vector3> { new Vector3(CliffFallX - 3.2f, CliffLow, zm), new Vector3(CliffFallX - 3.2f, CliffLow, zl) }, p => false);
-        BankGuard(g, new List<Vector3> { new Vector3(CliffFallX + 3.2f, CliffLow, zm), new Vector3(CliffFallX + 3.2f, CliffLow, zl) }, p => false);
-        Foam(g, new Vector3(CliffFallX, CliffMid - 0.25f, zt + 0.8f), 1.6f, 14f);
-        Foam(g, new Vector3(CliffFallX, SeaY + 0.1f, zl + 1.4f), 3.2f, 30f);
+        // combate
+        Arena(lvl, "El camino del prado", EnSuelo(-28f, -22f), new Vector2(18f, 12f), 5);
+        Arena(lvl, "La playa de los naufragios", EnSuelo(-4f, -2f), new Vector2(18f, 11f), 5);
+        Arena(lvl, "La isla del naufragio", EnSuelo(-1f, 30f), new Vector2(13f, 12f), 4);
+        var boss = Arena(lvl, "Jefe", EnSuelo(60f, 44f), new Vector2(15f, 13f), 1, true);
+        Exit(lvl, EnSuelo(64f, 53f), boss);
+        Chest(lvl, EnSuelo(46f, -28f), 26, 180f);
+        Chest(lvl, EnSuelo(-4f, 37f), 22, 200f);
+        Note(lvl, EnSuelo(-42f, -36f), 180f, LoreNote.Kind.Diario, "dio3_diario", "Diario de la expedición — día 6",
+             "En este piso el sol nunca termina de ponerse. Cruzamos los puentes colgantes de uno en uno.\nLa criatura del faro salta desde lo alto: cuando su sombra cae al suelo, hay que moverse.", "— " + Historia.Hermano);
+        Note(lvl, EnSuelo(58f, 50f), 0f, LoreNote.Kind.Inscripcion, "dio3_faro", "Placa del faro",
+             "Este faro alumbra un mar que no existe afuera de la torre.\nNadie sabe quién lo encendió. Se apaga cuando una criatura fuerte anda cerca.");
 
-        // enredaderas que cuelgan de las orillas de las repisas
-        for (float x = -46f; x < 50f; x += R(2.2f, 4f))
+        WalkBoundary(CliffWalk);
+        ArbolesLejos(bg);
+        Ship(bg, new Vector3(-90f, SeaY, 170f), 110f, 24f, 6f, false);
+        Gaviotas(bg);
+
+        var shots = Group("Tomas", root);
+        Shot(shots, "Apertura", Vector3.zero, Vector2.one, 180f, 22f, 95f, 32f, 4f, new Vector3(0f, 6f, -8f), 2.6f, 10, intro: 4.5f);
+        Shot(shots, "Playa", new Vector3(-6f, PlayaY, -4f), new Vector2(14f, 8f), 12f, 15f, 24f, 40f, 7f, new Vector3(2f, 1f, 10f), 2.2f, 2,
+             "LA PLAYA DE LOS NAUFRAGIOS", "El mar de la torre no devuelve nada", still: true);
+        Shot(shots, "Puente", new Vector3((Puente2A.x + Puente2B.x) / 2f, IsletaY, (Puente2A.y + Puente2B.y) / 2f), new Vector2(18f, 6f), 330f, 12f, 22f, 44f, 8f, new Vector3(0f, 2f, 4f), 2f, 3,
+             "EL PUENTE LARGO", "");
+        Shot(shots, "Ocaso", new Vector3(IsletaC.x, IsletaY, IsletaC.y), new Vector2(10f, 8f), 15f, 8f, 14f, 46f, 9f, new Vector3(0f, 2f, 6f), 2.2f, 2,
+             "EL OCASO", "El sol se hunde en el mar de la torre", still: true);
+        Shot(shots, "Cascada", new Vector3(LagunaC.x - 9f, PlayaY, LagunaC.y + 2f), new Vector2(8f, 10f), 75f, 12f, 16f, 42f, 5f, new Vector3(4f, 1f, 0f), 2f, 2,
+             "LA CASCADA DE LA MESETA", "", still: true);
+        Shot(shots, "Faro", new Vector3(62f, MesetaY, 48f), new Vector2(10f, 8f), 35f, 14f, 18f, 44f, 7f, new Vector3(3f, 3f, 2f), 2.2f, 2,
+             "EL FARO ROTO", "", still: true);
+        FinishWorld(false, true);
+    }
+
+    void Agua(Transform g)
+    {
+        // el arroyo de la meseta, la cascada, la laguna y el desagüe
+        float arriba = MesetaY - 0.6f, xFall = 33f;
+        var rio = FlowFlat(g, "ArroyoAlto", new Vector3(xFall + 22f, arriba, -13f), 3.8f, 44f, mRiver, 0.2f, new Vector2(0f, 0.5f));
+        rio.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+        Waterfall(g, new Vector3(xFall, (arriba + LagunaY) / 2f, -13f), Vector3.left, 4.2f, arriba - LagunaY + 0.2f);
+        Prim(g, PrimitiveType.Cylinder, "Laguna", new Vector3(LagunaC.x, LagunaY, LagunaC.y), new Vector3(19f, 0.005f, 19f), mRiver);
+        float zMar = CostaZ(25f);
+        FlowFlat(g, "Desague", new Vector3(25f, LagunaY - 0.02f, (LagunaC.y + zMar - 0.5f) / 2f), 4.8f, zMar - 0.5f - LagunaC.y, mRiver, 0.2f, new Vector2(0f, 0.6f));
+        Waterfall(g, new Vector3(25f, (LagunaY + SeaY) / 2f, zMar - 0.5f), Vector3.forward, 4.8f, LagunaY - SeaY + 0.2f);
+        Foam(g, new Vector3(xFall - 2f, LagunaY + 0.05f, -13f), 3f, 26f);
+        Foam(g, new Vector3(25f, SeaY + 0.1f, zMar + 1f), 2.5f, 18f);
+        for (int i = 0; i < 16; i++)
         {
-            if (Mathf.Abs(x - CliffFallX) < 4f) continue;
-            float z1 = -20f + EdgeNoise(x, -20f) * 1.2f, z2 = -8f + EdgeNoise(x, -8f) * 1.2f;
-            if (rng.NextDouble() < 0.6) Vine(g, new Vector3(x, CliffTop, z1 + 0.3f), R(0.5f, 1.2f));
-            if (rng.NextDouble() < 0.6) Vine(g, new Vector3(x, CliffMid, z2 + 0.3f), R(0.6f, 1.4f));
+            float a = i / 16f * Mathf.PI * 2f + R(-0.15f, 0.15f), rr = R(9f, 11f);
+            PenascoCosta(g, EnSuelo(LagunaC.x + Mathf.Cos(a) * rr, LagunaC.y + Mathf.Sin(a) * rr), R(0.6f, 1.5f));
         }
-        // faroles a lo largo de la repisa media y en los farallones
-        for (float x = -42f; x < 46f; x += 9f)
-            if (Mathf.Abs(x - CliffFallX) > 4f && Mathf.Abs(x + 36f) > 3f && Mathf.Abs(x + 20f) > 3f)
-                PortLamp(lvl, new Vector3(x, CliffMid, -9.8f + EdgeNoise(x, -8f) * 1.2f - 1.2f));
-        foreach (var s in Stacks) for (int k = 0; k < 2; k++)
+        blocked.Add(new Rect(LagunaC.x - 12f, LagunaC.y - 12f, 24f, 24f));
+    }
+
+    void Puentes(Transform lvl)
+    {
+        RopeBridge(lvl, "Puente1", EnSuelo(Puente1A.x, Puente1A.y), EnSuelo(Puente1B.x, Puente1B.y), 5f);
+        RopeBridge(lvl, "Puente2", EnSuelo(Puente2A.x, Puente2A.y), EnSuelo(Puente2B.x, Puente2B.y), 5f);
+        foreach (var r in CliffRoad)
+            for (int i = 0; i + 1 < r.Length; i++)
             {
-                float a = k * 2.4f + 0.8f;
-                PortLamp(lvl, new Vector3(s.x + Mathf.Cos(a) * (s.z - 3.2f), s.w, s.y + Mathf.Sin(a) * (s.z - 3.2f)));
+                float largo = Vector2.Distance(r[i], r[i + 1]);
+                Vector2 dir = (r[i + 1] - r[i]) / largo, lado = new Vector2(-dir.y, dir.x);
+                for (float s = 4f; s < largo; s += 12f)
+                {
+                    float sx = Mathf.Repeat(s, 24f) < 12f ? 1f : -1f;
+                    Vector2 q = r[i] + dir * s + lado * sx * 3.2f;
+                    if (!EnAgua(q)) PortLamp(lvl, EnSuelo(q.x, q.y));
+                }
             }
+    }
 
-        // el faro roto en el último farallón
-        var c = Stacks[2];
+    void Aldea(Transform g, Transform lvl)
+    {
+        // caserío de pescadores al oeste de la playa, de espaldas al prado y mirando al mar
+        House(g, EnSuelo(-35f, 0f), 180f, 6.5f, 5f, 3.6f, true);
+        House(g, EnSuelo(-46f, 5f), 165f, 6f, 4.6f, 3.4f, true);
+        House(g, EnSuelo(-24f, -3f), 190f, 5.5f, 4.4f, 3.2f, false);
+        House(g, EnSuelo(-58f, 11f), 155f, 6f, 4.6f, 3.4f, true);
+        blocked.Add(new Rect(-58f, -4f, 40f, 20f));
+        Clutter(g, EnSuelo(-30f, 4f));
+        Clutter(g, EnSuelo(-40f, 7f));
+        // redes tendidas y barcas en la arena
+        foreach (var q in new[] { new Vector2(-15f, 8f), new Vector2(-26f, 11f), new Vector2(-36f, 14f) })
+        {
+            var b = Group("BarcaVarada", g);
+            b.localPosition = EnSuelo(q.x, q.y);
+            b.localRotation = Quaternion.Euler(R(-6f, 6f), R(0f, 360f), R(6f, 14f));
+            Boat(b, Vector3.zero, R(3.4f, 4.4f));
+        }
+        for (int k = 0; k < 3; k++)
+        {
+            var t = Group("Secadero", g);
+            t.localPosition = EnSuelo(-46f + k * 9f, -8f + k * 2f);
+            t.localRotation = Quaternion.Euler(0f, R(-15f, 15f), 0f);
+            foreach (float sx in new[] { -2.2f, 2.2f }) Box(t, "Poste", new Vector3(sx, 1.1f, 0f), new Vector3(0.18f, 2.2f, 0.18f), mTimber, false);
+            Box(t, "Travesano", new Vector3(0f, 2.1f, 0f), new Vector3(4.6f, 0.12f, 0.12f), mTimber, false);
+            Box(t, "Red", new Vector3(0f, 1.3f, 0f), new Vector3(4.2f, 1.5f, 0.05f), mClothB, false);
+        }
+        MerchantPost(lvl, EnSuelo(-18f, -8f), 160f);
+        // el campamento donde empieza Abby
+        Tent(lvl, EnSuelo(-52f, -34f), 70f, mClothB);
+        Campfire(lvl, EnSuelo(-48f, -36f));
+        Tent(lvl, EnSuelo(-43f, -41f), 20f, mCloth);
+        HealShrine(lvl, EnSuelo(-40f, -26f));
+        HealShrine(lvl, EnSuelo(12f, 27f));
+    }
+
+    void Naufragio(Transform g, Transform lvl)
+    {
+        // el barco encallado en la isla, partido y ladeado
+        var w = Group("Naufragio", g);
+        w.localPosition = EnSuelo(9f, 38f) + Vector3.down * 0.5f;
+        w.localRotation = Quaternion.Euler(-9f, 28f, 17f);
+        Ship(w, Vector3.zero, 0f, 18f, 6f, false);
+        SolidBox(lvl, "Collider_Naufragio", EnSuelo(9f, 38f) + Vector3.up * 2f, new Vector3(9f, 5f, 15f));
+        blocked.Add(new Rect(1f, 28f, 16f, 18f));
+        // el esqueleto de otro barco en la playa: costillas y quilla
+        var c = Group("Costillar", g);
+        c.localPosition = EnSuelo(-13f, 4f);
+        c.localRotation = Quaternion.Euler(0f, 62f, 0f);
+        Box(c, "Quilla", new Vector3(0f, 0.15f, 0f), new Vector3(0.5f, 0.35f, 15f), mTimber, true);
+        for (int k = 0; k < 8; k++)
+            foreach (float sx in new[] { -1f, 1f })
+            {
+                if (R(0f, 1f) < 0.12f) continue;   // le faltan algunas
+                float z = -6.3f + k * 1.8f, alto = 1f + Mathf.Sin(k / 7f * Mathf.PI) * 0.4f;
+                for (int s = 0; s < 5; s++)
+                {
+                    float a = s / 4f * 1.35f;
+                    var b = Box(c, "Costilla", new Vector3(sx * Mathf.Sin(a) * 2.3f * alto, Mathf.Sin(a * 0.5f + 0.1f) * 3.6f * alto, z), new Vector3(0.26f, 1.35f, 0.3f), mTimber, false);
+                    b.transform.localRotation = Quaternion.Euler(0f, 0f, -sx * (a * Mathf.Rad2Deg * 0.75f - 8f));
+                }
+            }
+        SolidBox(lvl, "Collider_Costillar", c.localPosition + Vector3.up, new Vector3(5f, 2f, 5f));
+    }
+
+    Mesh RocaMar(float r, float alto) => RocaIrregular(r, alto, k => 1f - k * 0.55f + Mathf.Sin(k * 9f) * 0.06f, 12, 9);
+
+    void Farallones(Transform g)
+    {
+        var f = Group("Farallones", g);
+        foreach (var s in new[] { new Vector4(-50f, 50f, 5.5f, 17f), new Vector4(-12f, 62f, 7f, 24f), new Vector4(30f, 62f, 6f, 19f), new Vector4(-66f, 40f, 4f, 11f),
+                                  new Vector4(92f, 58f, 7f, 22f), new Vector4(-82f, 70f, 9f, 28f), new Vector4(48f, 86f, 8f, 25f), new Vector4(18f, 54f, 3f, 8f), new Vector4(-34f, 72f, 5f, 15f) })
+        {
+            var m = MeshObject(f, "Farallon", RocaMar(s.z, s.w), mRock, true);
+            m.transform.localPosition = new Vector3(s.x, SeaY - 1f, s.y);
+            m.transform.localRotation = Quaternion.Euler(R(-4f, 4f), R(0f, 360f), R(-4f, 4f));
+            Foam(f, new Vector3(s.x, SeaY + 0.05f, s.y), s.z * 0.9f, 8f);
+        }
+        // el arco: rocas en semicírculo, con la del centro colgando
+        Arco(f, new Vector3(-30f, SeaY, 50f), 13f, 15f, 15f);
+        Arco(f, new Vector3(70f, SeaY, 84f), 11f, 12f, -20f);
+    }
+
+    void Arco(Transform p, Vector3 c, float rx, float ry, float yaw)
+    {
+        var a = Group("Arco", p);
+        a.localPosition = c;
+        a.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        const int n = 15;
+        for (int i = 0; i <= n; i++)
+        {
+            float t = i / (float)n * Mathf.PI, grueso = Mathf.Lerp(5.4f, 3f, Mathf.Sin(t)) * R(0.9f, 1.15f);
+            var m = MeshObject(a, "RocaArco", RocaIrregular(grueso, grueso * 1.7f, k => Mathf.Sin(Mathf.PI * Mathf.Clamp(k, 0.04f, 0.96f)) * 0.9f + 0.1f, 10, 7), mRock, true);
+            m.transform.localPosition = new Vector3(Mathf.Cos(t) * rx, Mathf.Sin(t) * ry - 1f, R(-0.6f, 0.6f));
+            m.transform.localRotation = Quaternion.Euler(R(-12f, 12f), R(0f, 360f), R(-12f, 12f));
+        }
+        foreach (float sx in new[] { -1f, 1f }) Foam(a, new Vector3(sx * rx, 0.05f, 0f), 5f, 10f);
+    }
+
+    void Faro(Transform g, Transform lvl)
+    {
         var tower = Group("FaroRoto", g);
-        tower.localPosition = new Vector3(c.x + 4f, c.w, c.y + 4f);
+        tower.localPosition = new Vector3(FaroC.x, MesetaY - 0.1f, FaroC.y);
+        tower.localScale = Vector3.one * 1.7f;
         Box(tower, "Zocalo", new Vector3(0f, 0.4f, 0f), new Vector3(5f, 0.8f, 5f), mStoneBrick, true);
         float y = 0.8f;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 4; i++)
         {
-            Prim(tower, PrimitiveType.Cylinder, "Tramo", new Vector3(0f, y + 1.3f, 0f), new Vector3(3.6f - i * 0.3f, 1.3f, 3.6f - i * 0.3f), i % 2 == 0 ? mWhite : mRedPaint, true);
+            Prim(tower, PrimitiveType.Cylinder, "Tramo", new Vector3(0f, y + 1.3f, 0f), new Vector3(3.6f - i * 0.28f, 1.3f, 3.6f - i * 0.28f), i % 2 == 0 ? mWhite : mRedPaint, true);
             y += 2.6f;
         }
-        // borde roto: un muro curvo hecho de dovelas que se asientan sobre el último tramo, con alturas desiguales
-        float rTop = (3.6f - 2 * 0.3f) / 2f - 0.15f;
+        // borde roto: dovelas de alturas desiguales sobre el último tramo
+        float rTop = (3.6f - 3 * 0.28f) / 2f - 0.15f;
         for (int i = 0; i < 6; i++)
         {
-            R(0.2f, 1.2f);   // (azar que gastaba la versión anterior)
             float alto = R(0.6f, 2f), inc = R(-10f, 10f);
             for (int k = 0; k < 3; k++)
             {
-                float a = (i * 3 + k) / 18f * Mathf.PI * 2f;
-                float hk = alto * (k == 1 ? 1f : 0.65f);
+                float a = (i * 3 + k) / 18f * Mathf.PI * 2f, hk = alto * (k == 1 ? 1f : 0.65f);
                 var b = Box(tower, "Diente", new Vector3(Mathf.Cos(a) * rTop, y + hk / 2f, Mathf.Sin(a) * rTop), new Vector3(0.6f, hk, 0.35f), mWhite, false);
                 b.transform.localRotation = Quaternion.Euler(0f, -90f - a * Mathf.Rad2Deg, k == 1 ? inc * 0.3f : 0f);
             }
         }
-        // la linterna de hierro caída al pie del faro y una escalera de caracol que asoma
         MaterialesFuego();
         var linterna = Group("LinternaCaida", tower);
         linterna.localPosition = new Vector3(3.2f, 0.9f, -1.2f);
@@ -251,52 +343,94 @@ public partial class DioramaBuilder
             Box(linterna, "Barra", new Vector3(Mathf.Cos(a) * 1.05f, 0.7f, Mathf.Sin(a) * 1.05f), new Vector3(0.08f, 1.4f, 0.08f), mHierro, false);
         }
         Prim(linterna, PrimitiveType.Sphere, "Cupula", new Vector3(0f, 1.45f, 0f), new Vector3(2.2f, 0.9f, 2.2f), mRedPaint);
-        Box(tower, "Puerta", new Vector3(0f, 1.9f, 1.62f), new Vector3(1f, 1.9f, 0.2f), mDoor, false);
-        foreach (float yy in new[] { 3.6f, 6.2f })
-            Box(tower, "Ventanuco", new Vector3(0f, yy, 1.55f - (yy - 3.6f) * 0.06f), new Vector3(0.35f, 0.7f, 0.1f), mWindow, false);
-        for (int i = 0; i < 8; i++)
+        Box(tower, "Puerta", new Vector3(0f, 1.9f, -1.62f), new Vector3(1f, 1.9f, 0.2f), mDoor, false);
+        foreach (float yy in new[] { 3.6f, 6.2f, 8.8f })
+            Box(tower, "Ventanuco", new Vector3(0f, yy, -1.55f + (yy - 3.6f) * 0.05f), new Vector3(0.35f, 0.7f, 0.1f), mWindow, false);
+        for (int i = 0; i < 10; i++)
         {
-            var r = Box(tower, "Escombro", new Vector3(R(-5f, 2f), 0.25f, R(-5f, 2f)), new Vector3(R(0.5f, 1.2f), R(0.3f, 0.7f), R(0.5f, 1f)), i % 2 == 0 ? mWhite : mStoneBrick, true);
+            var r = Box(tower, "Escombro", new Vector3(R(-5f, 3f), 0.25f, R(-5f, 1f)), new Vector3(R(0.5f, 1.2f), R(0.3f, 0.7f), R(0.5f, 1f)), i % 2 == 0 ? mWhite : mStoneBrick, true);
             r.transform.localRotation = Quaternion.Euler(R(-15f, 15f), R(0f, 90f), R(-15f, 15f));
         }
-        Brazier(tower, new Vector3(-2.6f, 0f, -2.6f));
-        blocked.Add(new Rect(c.x + 1f, c.y + 1f, 7f, 7f));
+        foreach (var q in new[] { new Vector2(58f, 40f), new Vector2(70f, 40f), new Vector2(56f, 52f) }) Brazier(lvl, EnSuelo(q.x, q.y));
+        blocked.Add(new Rect(FaroC.x - 6f, FaroC.y - 6f, 12f, 12f));
+    }
 
-        // campamento en el primer farallón: mercader, santuario, fogata
-        var a0 = Stacks[0];
-        MerchantPost(lvl, new Vector3(a0.x - 2f, a0.w, a0.y + 2.6f), 160f);
-        HealShrine(lvl, new Vector3(a0.x + 3f, a0.w, a0.y - 1f));
-        Campfire(lvl, new Vector3(a0.x + 1f, a0.w, a0.y + 0.5f));
-        Tent(lvl, new Vector3(a0.x - 3.8f, a0.w, a0.y - 2.4f), 30f, mCloth);
-        // caserío de pescadores en la repisa media y molino arriba
-        House(g, new Vector3(44f, CliffLow, -3.4f), 180f, 6f, 4.5f, 3.4f, true);
-        House(g, new Vector3(-48f, CliffLow, -3.4f), 180f, 5.5f, 4.2f, 3.2f, true);
-        House(g, new Vector3(62f, CliffTop, -30f), -90f, 7f, 5f, 3.6f, true);
-        Clutter(g, new Vector3(38f, CliffLow, -2.4f));
-        Clutter(g, new Vector3(40f, CliffTop, -28f));
-        // campamento de salida arriba
-        Tent(lvl, new Vector3(-43f, CliffTop, -35f), 70f, mClothB);
-        Campfire(lvl, new Vector3(-40f, CliffTop, -36.5f));
+    void Vegetacion(Transform g)
+    {
+        var a = Group("Arboles", g);
+        // prado del suroeste y meseta; junto al mar, palmeras
+        for (int i = 0, tries = 0; i < 34 && tries < 900; tries++)
+        {
+            var q = new Vector2(R(-80f, 32f), R(-68f, -14f));
+            if (q.y > -30f && q.x > -12f) continue;   // el prado que baja a la playa queda abierto
+            if (!SueloDePasto(q, out float h)) continue;
+            if (rng.NextDouble() < 0.5) Pine(a, q, h - 0.1f, R(0.9f, 1.5f), true); else Tree(a, q, h - 0.1f, R(0.9f, 1.4f), true);
+            blocked.Add(new Rect(q.x - 2f, q.y - 2f, 4f, 4f));
+            i++;
+        }
+        for (int i = 0, tries = 0; i < 26 && tries < 900; tries++)
+        {
+            var q = new Vector2(R(38f, 90f), R(-66f, 18f));
+            if (Mathf.Abs(q.y + 13f) < 6f || !SueloDePasto(q, out float h)) continue;
+            if (rng.NextDouble() < 0.7) Pine(a, q, h - 0.1f, R(1f, 1.7f), true); else Tree(a, q, h - 0.1f, R(1f, 1.4f), true);
+            blocked.Add(new Rect(q.x - 2f, q.y - 2f, 4f, 4f));
+            i++;
+        }
+        foreach (var q in new[] { new Vector2(10f, -4f), new Vector2(14f, 2f), new Vector2(-6f, 8f), new Vector2(18f, -2f), new Vector2(-2f, 40f), new Vector2(-8f, 28f), new Vector2(14f, 24f), new Vector2(-14f, -2f), new Vector2(38f, 40f), new Vector2(47f, 32f) })
+            if (CliffHeight(q.x, q.y) > 0.2f && DistCamino(q.x, q.y) > 3f) Palm(a, EnSuelo(q.x, q.y), R(0.9f, 1.3f));
+        for (int i = 0, tries = 0; i < 40 && tries < 900; tries++)
+        {
+            var q = new Vector2(R(-70f, 90f), R(-60f, 60f));
+            if (!SueloDePasto(q, out float h)) continue;
+            Bush(a, new Vector3(q.x, h, q.y), R(0.7f, 1.3f));
+            i++;
+        }
+        // peñascos: en las orillas de la playa y en el risco
+        for (int i = 0, tries = 0; i < 46 && tries < 1200; tries++)
+        {
+            var q = new Vector2(R(-66f, 84f), R(-44f, 62f));
+            float h = CliffHeight(q.x, q.y);
+            if (DistCamino(q.x, q.y) < 4.5f || !Free(q, 1.5f) || h < -1.2f) continue;
+            bool cercaAgua = h <= PlayaY && (CliffHeight(q.x + 3f, q.y) < 0f || CliffHeight(q.x, q.y + 3f) < 0f), risco = Mathf.Abs(CliffHeight(q.x + 2f, q.y) - h) > 1f || Mathf.Abs(CliffHeight(q.x, q.y + 2f) - h) > 1f;
+            if (!cercaAgua && !risco) continue;
+            PenascoCosta(g, new Vector3(q.x, h, q.y), R(0.8f, 2.6f));
+            i++;
+        }
+    }
 
-        // combate: emboscada en la repisa media, el segundo farallón y el jefe en el faro roto
-        Arena(lvl, "Emboscada en la repisa", new Vector3(2f, CliffMid, -14.2f), new Vector2(22f, 9f), 5);
-        var b2 = Stacks[1];
-        Arena(lvl, "El farallón del viento", new Vector3(b2.x, b2.w, b2.y), new Vector2(12f, 12f), 4);
-        var boss = Arena(lvl, "Jefe", new Vector3(c.x - 2f, c.w, c.y - 1f), new Vector2(18f, 16f), 1, true);
-        Exit(lvl, new Vector3(c.x - 3.5f, c.w, c.y + 2.5f), boss);
-        Chest(lvl, new Vector3(30f, CliffTop, -26f), 26, 180f);
-        Chest(lvl, new Vector3(b2.x + 3f, b2.w, b2.y + 3.2f), 22, 200f);
-        Note(lvl, new Vector3(-34f, CliffTop, -34f), 180f, LoreNote.Kind.Diario, "dio3_diario", "Diario de la expedición — día 6",
-             "En este piso el sol nunca termina de ponerse. Cruzamos los puentes colgantes de uno en uno.\nLa criatura del faro salta desde lo alto: cuando su sombra cae al suelo, hay que moverse.", "— " + Historia.Hermano);
-        Note(lvl, new Vector3(c.x + 1f, c.w, c.y - 5.5f), 0f, LoreNote.Kind.Inscripcion, "dio3_faro", "Placa del faro",
-             "Este faro alumbra un mar que no existe afuera de la torre.\nNadie sabe quién lo encendió. Se apaga cuando una criatura fuerte anda cerca.");
+    /// <summary>Barrera invisible a lo largo de toda la orilla, menos donde están los puentes.</summary>
+    void Orilla(Transform lvl)
+    {
+        var o = Group("Limites", lvl);
+        const float c = 2.5f;
+        for (float x = CliffWalk.xMin; x < CliffWalk.xMax; x += c)
+            for (float z = CliffWalk.yMin; z < CliffWalk.yMax; z += c)
+            {
+                if (CliffHeight(x, z) > -0.7f) continue;
+                bool orilla = CliffHeight(x + c, z) > -0.7f || CliffHeight(x - c, z) > -0.7f || CliffHeight(x, z + c) > -0.7f || CliffHeight(x, z - c) > -0.7f;
+                if (!orilla) continue;
+                var p = new Vector2(x, z);
+                if (DistSeg(p, Puente1A, Puente1B, out _) < 4f || DistSeg(p, Puente2A, Puente2B, out _) < 4f || DistSeg(p, RampaA, RampaB, out _) < 4.6f) continue;
+                SolidBox(o, "Limite_Orilla", new Vector3(x, 3f, z), new Vector3(c, 22f, c));
+            }
+    }
 
-        WalkBoundary(CliffWalk);
-        var bg = Group("Fondo", root);
-        Costa(bg);   // costa de riscos al este, montes al sur, mar abierto al oeste (antes: dos muros gigantes y llano)
-        Ship(bg, new Vector3(-60f, SeaY, 150f), 110f, 24f, 6f, false);
-        // gaviotas sobre los farallones
-        foreach (var s in Stacks)
+    void ArbolesLejos(Transform parent)
+    {
+        for (int i = 0, tries = 0; i < 260 && tries < 5000; tries++)
+        {
+            var q = new Vector2(R(-280f, 400f), R(-330f, 70f));
+            if (CliffArea.Contains(q)) continue;
+            float h = CliffHeight(q.x, q.y);
+            if (h < PradoY || CliffHeight(q.x + 3f, q.y) != h) continue;
+            if (rng.NextDouble() < 0.55) Pine(parent, q, h - 0.1f, R(1f, 1.7f), false); else Tree(parent, q, h - 0.1f, R(1f, 1.5f), false);
+            i++;
+        }
+    }
+
+    void Gaviotas(Transform bg)
+    {
+        foreach (var c in new[] { new Vector3(4f, 2f, 34f), new Vector3(-30f, 2f, 48f), new Vector3(66f, 6f, 48f), new Vector3(-8f, 1f, 10f) })
         {
             var bird = Group("Gaviota", bg);
             Prim(bird, PrimitiveType.Sphere, "Cuerpo", Vector3.zero, new Vector3(0.22f, 0.2f, 0.6f), mWhite);
@@ -304,18 +438,8 @@ public partial class DioramaBuilder
             Box(wl, "Ala", new Vector3(-0.45f, 0f, 0f), new Vector3(0.9f, 0.03f, 0.28f), mWhite, false);
             Box(wr, "Ala", new Vector3(0.45f, 0f, 0f), new Vector3(0.9f, 0.03f, 0.28f), mWhite, false);
             var gull = bird.gameObject.AddComponent<Gull>();
-            gull.center = new Vector3(s.x, s.w, s.y); gull.radius = R(7f, 12f); gull.height = R(6f, 10f); gull.phase = R(0f, 6f); gull.speed = 0.35f;
+            gull.center = c; gull.radius = R(7f, 14f); gull.height = R(7f, 13f); gull.phase = R(0f, 6f); gull.speed = 0.35f;
             gull.wingL = wl; gull.wingR = wr;
         }
-
-        var shots = Group("Tomas", root);
-        Shot(shots, "Apertura", Vector3.zero, Vector2.one, 180f, 22f, 95f, 32f, 4f, new Vector3(0f, 6f, -8f), 2.6f, 10, intro: 4.5f);
-        Shot(shots, "Puentes", new Vector3(-2f, 1.6f, 17f), new Vector2(10f, 5f), 100f, 27f, 22f, 36f, 6f, new Vector3(4f, 1f, 0f), 1.6f, 2,
-             "LOS PUENTES DEL ACANTILADO", "");
-        Shot(shots, "Ocaso", new Vector3(a0.x, a0.w, a0.y), new Vector2(8f, 8f), 15f, 8f, 12f, 44f, 9f, new Vector3(0f, 2f, 5f), 2.2f, 3,
-             "EL OCASO", "El sol se hunde en el mar de la torre", still: true);
-        Shot(shots, "Cascada", new Vector3(CliffFallX - 5f, CliffMid, -14f), new Vector2(6f, 7f), 60f, 16f, 16f, 36f, 4f, new Vector3(3f, 0f, 2f), 1.8f, 2,
-             "LA CASCADA DEL RISCO", "", still: true);
-        FinishWorld();
     }
 }

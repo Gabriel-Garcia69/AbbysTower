@@ -16,7 +16,7 @@ public partial class DioramaBuilder
     Material mRocaNevada;
     /// <summary>Los muros de la nieve, escarchados: con la roca café bajo la luna quedaban franjas negras.</summary>
     Material RocaNevada => mRocaNevada != null ? mRocaNevada : mRocaNevada = Plain("Dio_RocaNevada", new Color(0.46f, 0.52f, 0.68f), 0.1f);
-    Material BedMat => (layout == Layout.Expedicion || layout == Layout.Final) && mExpSuelo != null ? mExpSuelo : layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
+    Material BedMat => (layout == Layout.Expedicion || layout == Layout.Final) && mExpSuelo != null ? mExpSuelo : layout == Layout.Pueblo || layout == Layout.Cascadas ? mDirt : layout == Layout.Acantilado ? ArenaCosta() : layout == Layout.Cueva ? mCaveRock : layout == Layout.Nevado ? mIce : layout == Layout.Montana ? mSnowPix : mSand ?? mDirt;
 
     void LoadWorldMaterials()
     {

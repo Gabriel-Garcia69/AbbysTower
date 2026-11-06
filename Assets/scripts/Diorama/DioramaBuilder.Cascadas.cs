@@ -73,8 +73,9 @@ public partial class DioramaBuilder
         }
         // las laderas del valle suben a los lados
         float side = Mathf.Abs(x) - 58f + e * 2f;
-        if (side > 20f) return 30f + (Noise(x * 0.06f, z * 0.06f) > 0.55f ? 4f : 0f);   // paredes del valle, a la altura de afuera
-        if (side > 0f) return T + (side < 6f ? 3f : side < 12f ? 6.5f : 10f) + (side > 12f && Noise(x * 0.08f, z * 0.08f) > 0.6f ? 2.5f : 0f);
+        if (side > 48f) return 30f;   // ya en la orilla, a la altura de afuera
+        // bancales anchos y bajos: el valle se abre en lugar de encerrarse entre murallas
+        if (side > 0f) return Mathf.Min(29f, T + (side < 10f ? 1.5f : side < 20f ? 3.5f : side < 32f ? 6f : 10f)) + (side > 20f && Noise(x * 0.08f, z * 0.08f) > 0.6f ? 1.5f : 0f);
         if (z < -64f + e * 2f) return T + 3f;   // al sur, un bancal que cierra el valle (la cámara pasa por encima)
         return T;
     }
@@ -111,9 +112,9 @@ public partial class DioramaBuilder
         // las Gemelas: dos cascadas de 20 m al fondo, con sus acequias arriba
         foreach (float fx in new[] { 12f, 26f })
         {
-            Waterfall(water, new Vector3(fx, (FallsCliffY - 0.4f + 14.8f) / 2f, FallsCliffZ), Vector3.back, 6f, FallsCliffY - 0.4f - 14.8f);
+            Waterfall(water, new Vector3(fx, (FallsCliffY - 0.4f + 14.8f) / 2f, FallsCliffZ - 2f), Vector3.back, 6f, FallsCliffY - 0.4f - 14.8f);   // adelante del risco: su orilla irregular le tapaba la parte de arriba
             FlowFlat(water, "Acequia", new Vector3(fx, FallsCliffY - 0.4f, FallsCliffZ + 9f), 5.2f, 18f, mRiver, 0.2f, new Vector2(0f, -0.7f));   // corre hacia la caída
-            Foam(water, new Vector3(fx, 14.9f, FallsCliffZ - 2.5f), 5f, 40f);
+            Foam(water, new Vector3(fx, 14.9f, FallsCliffZ - 4f), 5f, 40f);
         }
         var mist = Group("Bruma", water);
         mist.localPosition = new Vector3(19f, 15.5f, FallsCliffZ - 3f);

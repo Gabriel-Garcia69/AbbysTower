@@ -23,7 +23,7 @@ public static class AutoOcluyentes
         foreach (var t in Object.FindObjectsByType<Transform>())
         {
             string n = t.name;
-            if (n != "Casa" && n != "Pino" && n != "PinoValle" && n != "Arbol" && n != "Arbusto" && n != "Palmera") continue;
+            if (n != "Casa" && n != "Pino" && n != "PinoValle" && n != "Arbol" && n != "Arbusto" && n != "Palmera" && n != "Columna") continue;
             if (t.GetComponent<OccluderFade>() == null) t.gameObject.AddComponent<OccluderFade>();
         }
     }

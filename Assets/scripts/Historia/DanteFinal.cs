@@ -151,14 +151,9 @@ public class DanteFinal : MonoBehaviour
     {
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         if (fondoNegro) { GUI.color = Color.black; GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture); }
-        // velo: de casi negro a transparente, por tiras
-        float anchoVelo = sw * 0.56f;
-        for (int i = 0; i < 32; i++)
-        {
-            float k = i / 31f;
-            GUI.color = new Color(0.015f, 0.01f, 0.035f, Mathf.Lerp(0.88f, 0f, k * k));
-            GUI.DrawTexture(new Rect(i * anchoVelo / 32f, 0, anchoVelo / 32f + 1f, sh), Texture2D.whiteTexture);
-        }
+        // velo: de casi negro a transparente
+        GUI.color = new Color(0.015f, 0.01f, 0.035f, 0.88f);
+        GUI.DrawTexture(new Rect(0f, 0f, sw * 0.56f, sh), Degradado.Horizontal);
         GUI.color = Color.white;
         float x = sw * 0.07f, w = sw * 0.4f;
         float largo = u * (34f + Creditos.Length * 17f + 34f);

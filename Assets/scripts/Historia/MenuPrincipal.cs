@@ -190,11 +190,8 @@ public class MenuPrincipal : MonoBehaviour
         }
         // título
         // abajo el fondo se oscurece, para que el panel y el título respiren
-        for (int k = 0; k < 24; k++)
-        {
-            GUI.color = new Color(0.01f, 0.005f, 0.03f, Mathf.Lerp(0f, 0.72f, k / 23f));
-            GUI.DrawTexture(new Rect(0, sh * 0.4f + k * sh * 0.6f / 24f, sw, sh * 0.6f / 24f + 1f), Texture2D.whiteTexture);
-        }
+        GUI.color = new Color(0.01f, 0.005f, 0.03f, 0.72f);
+        GUI.DrawTexture(new Rect(0f, sh * 0.4f, sw, sh * 0.6f), Degradado.Vertical);
         GUI.color = Color.white;
         var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 11f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         Sombra(new Rect(0, sh * 0.09f, sw, u * 15f), "ABBY'S TOWER", FuentePixel.Logo(titulo, u * 12.5f), new Color(1f, 0.92f, 0.75f));
@@ -234,17 +231,12 @@ public class MenuPrincipal : MonoBehaviour
             if (on)
             {
                 // la opción elegida: una franja que se desvanece a los lados, con filete dorado
-                int tiras = 40;
-                float fy = r.y + u * 0.7f, fh = r.height - u * 1.4f;
-                for (int k = 0; k < tiras; k++)
-                {
-                    float c = 1f - Mathf.Abs(k / (tiras - 1f) * 2f - 1f);
-                    GUI.color = new Color(0.62f, 0.42f, 0.95f, 0.5f * c * a);
-                    GUI.DrawTexture(new Rect(r.x + k * r.width / tiras, fy, r.width / tiras + 1f, fh), Texture2D.whiteTexture);
-                    GUI.color = new Color(0.95f, 0.78f, 0.45f, 0.9f * c * a);
-                    GUI.DrawTexture(new Rect(r.x + k * r.width / tiras, fy, r.width / tiras + 1f, Mathf.Max(1f, u * 0.14f)), Texture2D.whiteTexture);
-                    GUI.DrawTexture(new Rect(r.x + k * r.width / tiras, fy + fh, r.width / tiras + 1f, Mathf.Max(1f, u * 0.14f)), Texture2D.whiteTexture);
-                }
+                float fy = r.y + u * 0.7f, fh = r.height - u * 1.4f, filete = Mathf.Max(1f, u * 0.14f);
+                GUI.color = new Color(0.62f, 0.42f, 0.95f, 0.5f * a);
+                GUI.DrawTexture(new Rect(r.x, fy, r.width, fh), Degradado.Centro);
+                GUI.color = new Color(0.95f, 0.78f, 0.45f, 0.9f * a);
+                GUI.DrawTexture(new Rect(r.x, fy, r.width, filete), Degradado.Centro);
+                GUI.DrawTexture(new Rect(r.x, fy + fh, r.width, filete), Degradado.Centro);
             }
             Sombra(r, (on ? "◆   " : "") + ops[i] + (on ? "   ◆" : ""), st, on ? new Color(1f, 0.87f, 0.55f, a) : new Color(1f, 1f, 1f, 0.82f * a));
         }

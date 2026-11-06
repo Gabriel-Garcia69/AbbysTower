@@ -107,7 +107,7 @@ public partial class DioramaBuilder
     /// <summary>¿Esa celda es lecho (grava del río) aunque esté arriba? (cauce del valle de las cascadas)</summary>
     bool IsBedAt(float x, float z, float h)
     {
-        return layout == Layout.Cascadas && FallsInRiver(x, z);
+        return (layout == Layout.Cascadas && FallsInRiver(x, z)) || (layout == Layout.Acantilado && h <= PlayaY);
     }
 
     /// <summary>Montañas lejanas (bultos facetados) en un arco, con cumbre nevada opcional.</summary>

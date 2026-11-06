@@ -11,7 +11,7 @@ public partial class DioramaBuilder
     public static readonly Vector3 FinalSpawn = new Vector3(0f, 0.1f, -26f);
     public static readonly Rect FinalWalk = new Rect(-30f, -40f, 60f, 90f);
     static readonly Rect FinalArea = new Rect(-90f, -80f, 180f, 180f);
-    public const float FinalEscalonZ0 = 12f, FinalEscalonZ1 = 32f, FinalRellano = 8f, FinalPuertaZ = 46f;
+    public const float FinalEscalonZ0 = 12f, FinalEscalonZ1 = 32f, FinalRellano = 6f, FinalDescanso = 3f, FinalPuertaZ = 46f;
     /// <summary>Donde está la casa de los créditos, lejos de la sala.</summary>
     public static readonly Vector3 FinalCasa = new Vector3(600f, 0f, 0f);
 
@@ -38,6 +38,13 @@ public partial class DioramaBuilder
         bajo.transform.localPosition = new Vector3(0f, -0.4f, 2f);
         bajo.transform.localRotation = Quaternion.Euler(180f, 0f, 0f);
         bajo.transform.localScale = new Vector3(30f, 90f, 54f);
+        // abajo, un mar de nubes que se funde con el horizonte (sin esto se veía una franja negra y luego el cielo)
+        var nubeFinal = Saved("Dio_NubeLisa", () => new Material(Shader.Find("Universal Render Pipeline/Unlit")));
+        nubeFinal.SetColor("_BaseColor", new Color(0.5f, 0.22f, 0.3f));
+        var marNubes = Flat(g, "Nubes", new Vector3(0f, -26f, 0f), 2400f, 2400f, nubeFinal, 0.01f);
+        marNubes.GetComponent<MeshRenderer>().receiveShadows = false;
+        marNubes.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        BrumaAbismo(g, -24f);
         var flotan = Group("Flotan", g);
         for (int i = 0; i < 70; i++)
         {
@@ -50,7 +57,10 @@ public partial class DioramaBuilder
 
         // la escalinata y el rellano
         var lvl = Group("Nivel", root);
-        Stairs(lvl, "Escalinata", new Vector3(0f, 0f, FinalEscalonZ0), new Vector3(0f, FinalRellano, FinalEscalonZ1), 18f, mCaveBrick);
+        // la escalinata tiene un descanso plano a media subida: ahí se quedó él
+        Stairs(lvl, "EscalinataBaja", new Vector3(0f, 0f, FinalEscalonZ0), new Vector3(0f, FinalDescanso, 19f), 18f, mCaveBrick);
+        Box(lvl, "Descanso", new Vector3(0f, FinalDescanso / 2f, 22f), new Vector3(18f, FinalDescanso, 6f), mCaveBrick, true, 0.25f);
+        Stairs(lvl, "EscalinataAlta", new Vector3(0f, FinalDescanso, 25f), new Vector3(0f, FinalRellano, FinalEscalonZ1), 18f, mCaveBrick);
         Box(lvl, "Rellano", new Vector3(0f, FinalRellano / 2f, (FinalEscalonZ1 + FinalPuertaZ) / 2f), new Vector3(26f, FinalRellano, FinalPuertaZ - FinalEscalonZ1), mCaveBrick, true, 0.25f);
 
         // la puerta enorme, entreabierta; atrás de ella, el amanecer
@@ -112,6 +122,23 @@ public partial class DioramaBuilder
         dir.transform.SetParent(root, false);
         dir.AddComponent<EscenaFinal>();
         BuildAtmosphere();
+    }
+
+    /// <summary>Bancos de bruma sobre el mar de nubes.</summary>
+    void BrumaAbismo(Transform g, float y)
+    {
+        var ps = new GameObject("Bruma").AddComponent<ParticleSystem>();
+        ps.transform.SetParent(g, false);
+        ps.transform.localPosition = new Vector3(0f, y, 0f);
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.startLifetime = 30f; main.startSpeed = new ParticleSystem.MinMaxCurve(0.3f, 0.8f);
+        main.startSize = new ParticleSystem.MinMaxCurve(26f, 60f); main.startColor = new Color(1f, 0.66f, 0.58f, 0.2f);
+        main.maxParticles = 500; main.prewarm = true; main.simulationSpace = ParticleSystemSimulationSpace.World;
+        var em = ps.emission; em.rateOverTime = 15f;
+        var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Box; sh.scale = new Vector3(500f, 4f, 500f);
+        ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = mSmoke;
+        ps.Play();
     }
 
     void CasaDeLaNieve()

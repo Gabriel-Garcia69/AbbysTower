@@ -54,9 +54,9 @@ public class EscenaFinal : MonoBehaviour
         {
             return Physics.Raycast(new Vector3(x, y0 + 12f, z), Vector3.down, out var h0, 30f, ~0, QueryTriggerInteraction.Ignore) ? h0.point.y + 0.05f : y0;
         }
-        Vector3 cuerpo = new Vector3(0.5f, 0f, 23f); cuerpo.y = Suelo(cuerpo.x, cuerpo.z, 4f) + 0.05f;
-        Vector3 pos = new Vector3(0f, 0f, 19f); pos.y = Suelo(pos.x, pos.z, 3f);
-        Vector3 ante = new Vector3(-0.4f, 0f, 16.2f); ante.y = Suelo(ante.x, ante.z, 2f);
+        Vector3 cuerpo = new Vector3(0.5f, DioramaBuilder.FinalDescanso + 0.02f, 23f);
+        Vector3 pos = new Vector3(-0.3f, DioramaBuilder.FinalDescanso + 0.02f, 20.8f);
+        Vector3 ante = new Vector3(-0.4f, DioramaBuilder.FinalDescanso + 0.05f, 19.6f);
         dante = CrearDante(cuerpo, abby);
         var colgante = DanteFinal.CrearColgante(pos);
         var sombra = StartCoroutine(SombraSube());

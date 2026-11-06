@@ -80,7 +80,7 @@ public class GuiaHordas : MonoBehaviour
 
     void OnGUI()
     {
-        bool mostrar = hay && jugador != null && !DanteFinal.Activo && !VueloApertura.Activo && !PauseMenu.IsPaused && baliza != null && baliza.activeSelf;
+        bool mostrar = hay && jugador != null && !DanteFinal.Activo && !PauseMenu.IsPaused && baliza != null && baliza.activeSelf;
         alfaGui = Mathf.MoveTowards(alfaGui, mostrar ? 1f : 0f, Time.unscaledDeltaTime * 3f);
         if (alfaGui <= 0.01f || jugador == null) return;
         var cam = Camera.main;

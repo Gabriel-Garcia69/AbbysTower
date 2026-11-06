@@ -40,9 +40,9 @@ GDD: `Downloads/GDD_Abbys_Tower_detallado.docx` (v0.6.0). Detalle de lo que ya s
 
 ## Rediseños del 6 de noviembre
 - **Piso 4 (Acantilado):** rehecho desde cero en cubos, como el piso 1: prado, escalinata a la playa con aldea y esqueleto de barco, isla del naufragio, puente largo, promontorio con el faro; cascada, laguna, arcos y farallones.
-- **Piso 5 (Gruta):** ya no es un círculo: galería que avanza hacia adelante con estanque, río con puente, escalinata y el Corazón de Geoda. Es una mina: rieles, postes con faroles y carritos.
+- **Piso 5 (Gruta):** caverna inundada, cerrada por los cuatro lados: lago turquesa con cuatro islas de bloques y puentes. Pueblo minero, bosque de cristal, torre del pozo y Corazón de Geoda; techo de bloques con cristales colgando.
 - **Pisos 2 y 3:** Puerto con tejas menos rojas; Cascadas más clara y con bancales anchos en lugar de murallas.
-- **Entrada a cada mundo (`VueloApertura`):** toma de 4 segundos cerca de Abby que termina exacta en la cámara del juego; se salta con cualquier tecla.
+- **Entrada a cada mundo:** volvió la toma aérea del piso 1, que baja hasta Abby. Los demás pisos usan ese mismo tipo de toma, desde más arriba; sus valores están en `ZonasCamara.Aperturas`. La gruta la hace bajo el techo.
 - **Cámara:** Abby va más arriba en pantalla. F5 es la normal y F6 la misma con 5° más de inclinación; se recuerda. `ZonasCamara` gira la vista unos grados en ciertas zonas, también peleando; la tabla está en ese archivo para ajustarla.
 - **Final:** Dante tendido nuevo (`DanteHumano/Tendido`) sobre un descanso plano de la escalinata. La Cima y el final ya no tienen franja negra en el horizonte.
 - **Créditos y menú:** degradados en una sola textura (`Degradado`), sin líneas.

@@ -52,7 +52,7 @@ public class CameraShot : MonoBehaviour
 
     public bool Contains(Vector3 world)
     {
-        if (introSeconds > 0f) return false;   // la entrada al mundo ahora es VueloApertura
+        if (introSeconds > 0f) return Time.timeSinceLevelLoad < IntroDuracion;
         Vector3 p = transform.InverseTransformPoint(world);
         return Mathf.Abs(p.x) <= size.x / 2f && Mathf.Abs(p.z) <= size.y / 2f && p.y >= yMin && p.y <= yMax;
     }

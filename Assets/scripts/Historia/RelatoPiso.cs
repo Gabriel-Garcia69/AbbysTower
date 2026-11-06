@@ -53,14 +53,14 @@ public class RelatoPiso : MonoBehaviour
     static bool Ocupado()
     {
         foreach (var i in FindObjectsByType<ExteriorIntro>()) if (i.enabled) return true;
-        return DanteFinal.Activo || VueloApertura.Activo;
+        return DanteFinal.Activo;
     }
 
     void Agregar(string[] l) { if (l != null) foreach (var s in l) cola.Enqueue(s); }
 
     void Update()
     {
-        bool oculto = DanteFinal.Activo || VueloApertura.Activo || PauseMenu.IsPaused || LoreNote.Open != null;
+        bool oculto = DanteFinal.Activo || PauseMenu.IsPaused || LoreNote.Open != null;
         alfa = Mathf.MoveTowards(alfa, !oculto && texto != null ? 1f : 0f, Time.unscaledDeltaTime * 4f);
         if (oculto) return;
         if (texto == null)

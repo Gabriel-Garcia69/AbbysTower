@@ -309,7 +309,7 @@ public class FloorDirector : MonoBehaviour
 
     void OnGUI()
     {
-        if (DanteFinal.Activo || VueloApertura.Activo) return;   // la escena final usa toda la pantalla
+        if (DanteFinal.Activo) return;   // la escena final usa toda la pantalla
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         var tex = Texture2D.whiteTexture;
         Color prev = GUI.color;

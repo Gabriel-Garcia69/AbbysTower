@@ -125,7 +125,15 @@ public partial class DioramaBuilder
     /// <summary>Racimo de cristales que brillan (con una luz si 'light').</summary>
     void Crystals(Transform parent, Vector3 pos, float s, bool violet, bool light)
     {
-        if (layout == Layout.Cueva) { CristalesFacetados(parent, pos, violet, light); return; }
+        if (layout == Layout.Cueva)
+        {
+            // en la gruta también cuenta el tamaño: antes todos salían iguales de chicos
+            var grande = Group("CristalesGrandes", parent);
+            grande.localPosition = pos;
+            grande.localScale = Vector3.one * (s / 1.5f);
+            CristalesFacetados(grande, Vector3.zero, violet, light);
+            return;
+        }
         var c = Group("Cristales", parent);
         c.localPosition = pos;
         var mat = violet ? mCrystalB : mCrystalA;

@@ -67,7 +67,7 @@ public class EscenaFinal : MonoBehaviour
         if (p != null) p.transform.position = inicio;
         Vector3 Yo() => p != null ? p.transform.position : ante;
         Vector3 cara = Vector3.up * 1f;
-        if (abby != null) abby.caminarHacia = (ante - inicio).normalized;
+        if (abby != null) { abby.enEscena = true; abby.caminando = true; abby.caminarHacia = (ante - inicio).normalized; }
         float durCamino = 21f;
         StartCoroutine(Caminar(p, inicio, ante, durCamino, Suelo));
         Sonido.Tocar(Sonido.Efecto.Latido, 0.7f);
@@ -88,7 +88,7 @@ public class EscenaFinal : MonoBehaviour
         yield return Corte(0.25f);
         var llegada = Plano(cuerpo + new Vector3(2.4f, 2.1f, 3.6f), cuerpo + new Vector3(1.6f, 2.5f, 4.6f), () => Vector3.Lerp(cuerpo, Yo(), 0.6f) + Vector3.up * 0.6f, 42f, 4.5f);
         yield return llegada;
-        if (abby != null) abby.caminarHacia = (cuerpo - ante).normalized;   // ya quieta, mirando hacia él
+        if (abby != null) { abby.caminando = false; abby.caminarHacia = (cuerpo - ante).normalized; }   // ya quieta, mirando hacia él
         yield return Decir(Historia.Protagonista, "¿Quién... eres?", 2.4f);
 
         // 6) el colgante en el escalón, muy cerca
@@ -188,15 +188,15 @@ public class EscenaFinal : MonoBehaviour
     SpriteRenderer CrearDante(Vector3 pos, AbbySpriteAnimator abby)
     {
         var go = new GameObject("DanteTendido");
-        go.transform.position = pos;
+        go.transform.position = pos + Vector3.up * 0.3f;   // de lado: medio cuerpo quedaba bajo el escalón
         var sr = go.AddComponent<SpriteRenderer>();
         var abbySr = abby != null ? abby.GetComponent<SpriteRenderer>() : null;
         if (abbySr != null) sr.sharedMaterial = abbySr.sharedMaterial;
-        var tendido = Resources.Load<Sprite>("DanteHumano/Tendido/south");
-        sr.sprite = tendido != null ? tendido : Resources.Load<Sprite>("DanteHumano/Quieto/south");
-        if (tendido == null) go.transform.rotation = Quaternion.Euler(0f, 0f, 82f);
+        // el mismo Dante chibi del resto del juego, acostado de lado, con el brazo hacia la puerta
+        sr.sprite = Resources.Load<Sprite>("DanteHumano/Quieto/east");
+        go.transform.rotation = Quaternion.Euler(0f, 0f, 82f);
         sr.color = new Color(0.13f, 0.08f, 0.2f);
-        go.AddComponent<MirarCamara>().girado = tendido == null;
+        go.AddComponent<MirarCamara>().girado = true;
         return sr;
     }
 

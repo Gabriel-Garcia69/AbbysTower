@@ -28,6 +28,8 @@ public class AbbySpriteAnimator : MonoBehaviour
     /// <summary>Lo manda el final: Abby camina hacia ahí aunque el jugador ya no la controle, o se queda de rodillas.</summary>
     [System.NonSerialized] public Vector3 caminarHacia;
     [System.NonSerialized] public bool deRodillas;
+    /// <summary>En una escena (sin control ni motor): Abby está en el suelo y camina solo cuando caminando es true.</summary>
+    [System.NonSerialized] public bool enEscena, caminando;
 
     [Header("Referencias (vacío = se buscan solas)")]
     public PlayerMotor motor;
@@ -229,15 +231,13 @@ public class AbbySpriteAnimator : MonoBehaviour
         else muerteTime = 0f;
         espejo = false;
         if (s == null && deRodillas && rodilla != null && rodilla.Length > dir && rodilla[dir] != null) s = rodilla[dir];
-        if (s == null && caminarHacia.sqrMagnitude > 0.01f && walk[dir] != null && walk[dir].Has)
-        {
-            walkTime += dt * walkFps * 0.7f;   // pasos lentos
-            s = walk[dir].frames[Mathf.FloorToInt(walkTime) % walk[dir].frames.Length];
-        }
+        // en una escena el motor está apagado: el suelo y el caminar los dice la escena (si no, parecía ir en el aire y no caminaba)
+        bool enSuelo = enEscena || motor.IsGrounded, seMueve = enEscena ? caminando : motor.IsMoving;
+        float rapidez = enEscena ? (caminando ? walkRefSpeed * 0.8f : 0f) : motor.HorizontalSpeed;
         if (s == null && conjunto != null && conjunto.soloPropios)
         {
             // de pie tiene las 8 direcciones; caminar y atacar, las del oeste se voltean
-            var pose = attacking ? slash : (dashing || motor.IsMoving || !motor.IsGrounded) ? walk : null;
+            var pose = attacking ? slash : (dashing || seMueve || !enSuelo) ? walk : null;
             if (pose != null)
             {
                 int d = Has(pose, dir) ? dir : EspejoDir[dir];
@@ -253,7 +253,7 @@ public class AbbySpriteAnimator : MonoBehaviour
                     }
                     else
                     {
-                        walkTime += dt * walkFps * Mathf.Clamp(motor.HorizontalSpeed / Mathf.Max(0.1f, walkRefSpeed), 0.4f, 1.8f);
+                        walkTime += dt * walkFps * Mathf.Clamp(rapidez / Mathf.Max(0.1f, walkRefSpeed), 0.4f, 1.8f);
                         s = fr[Mathf.FloorToInt(walkTime) % fr.Length];
                     }
                 }
@@ -336,15 +336,15 @@ public class AbbySpriteAnimator : MonoBehaviour
             s = fr[Mathf.Clamp(Mathf.FloorToInt((1f - hurtLeft / hurtTime) * fr.Length), 0, fr.Length - 1)];
         }
 
-        if (s == null && !motor.IsGrounded)
+        if (s == null && !enSuelo)
         {
             var f = walk[dir];
             if (f != null && f.Has) s = f.frames[Mathf.Min(1, f.frames.Length - 1)];   // zancada fija en el aire
         }
 
-        if (s == null && motor.IsMoving)
+        if (s == null && seMueve)
         {
-            float vel = motor.HorizontalSpeed;
+            float vel = rapidez;
             correndo = vel > (correndo ? runExit : runEnter);
             bool corre = correndo && Has(run, dir);
             var f = corre ? run[dir] : walk[dir];
@@ -355,7 +355,7 @@ public class AbbySpriteAnimator : MonoBehaviour
                 s = f.frames[Mathf.FloorToInt(walkTime) % f.frames.Length];
             }
         }
-        else if (!motor.IsMoving) { walkTime = 0f; correndo = false; }
+        else if (!seMueve) { walkTime = 0f; correndo = false; }
 
         if (s == null)
         {

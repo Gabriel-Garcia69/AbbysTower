@@ -69,74 +69,74 @@ public class EscenaFinal : MonoBehaviour
         Vector3 cara = Vector3.up * 1f;
         if (abby != null) { abby.enEscena = true; abby.caminando = true; abby.caminarHacia = (ante - inicio).normalized; }
         float durCamino = 21f;
-        StartCoroutine(Caminar(p, inicio, ante, durCamino, Suelo));
-        Sonido.Tocar(Sonido.Efecto.Latido, 0.7f);
+        bool llego = false;
+        StartCoroutine(Caminar(p, inicio, ante, durCamino, Suelo, abby, cuerpo, () => llego = true));
+        // una melodía suave mientras camina sola; se apaga cuando lo reconoce
+        Musica.Cinematica(false);
+        Musica.Poner(Musica.Pista.Final);   // "Despedida": piano solo; el violín entra cuando lo encuentra
 
-        // 1) muy lejos: el pedazo de torre en el vacío, la puerta encendida, Abby casi un punto
-        StartCoroutine(Fundir(0f, 2.5f));
-        yield return Plano(new Vector3(-70f, 16f, -62f), new Vector3(-58f, 12f, -52f), () => new Vector3(0f, 8f, 8f), 34f, 5.5f);
-        // 2) detrás de ella, a ras del suelo: la escalinata y la luz al fondo
-        yield return Corte(0.25f);
-        yield return Plano(() => Yo() + new Vector3(1.2f, 0.9f, -5f), () => Yo() + new Vector3(0.6f, 1.2f, -4f), () => puerta, 50f, 5f);
-        // 3) de frente: se le ve la cara, con el vacío detrás
-        yield return Corte(0.25f);
-        yield return Plano(() => Yo() + new Vector3(-0.8f, 0.8f, 5.2f), () => Yo() + new Vector3(0.6f, 0.9f, 4.4f), () => Yo() + cara, 40f, 4.5f);
-        // 4) de lado, siguiéndola, ya cerca de los escalones
-        yield return Corte(0.25f);
-        yield return Plano(() => Yo() + new Vector3(8f, 1.5f, 1f), () => Yo() + new Vector3(8f, 1.7f, -0.5f), () => Yo() + cara + Vector3.forward * 1.5f, 36f, 4f);
-        // 5) desde lo alto de la escalinata, con la sombra en primer plano: ella se detiene
-        yield return Corte(0.25f);
-        var llegada = Plano(cuerpo + new Vector3(2.4f, 2.1f, 3.6f), cuerpo + new Vector3(1.6f, 2.5f, 4.6f), () => Vector3.Lerp(cuerpo, Yo(), 0.6f) + Vector3.up * 0.6f, 42f, 4.5f);
-        yield return llegada;
-        if (abby != null) { abby.caminando = false; abby.caminarHacia = (cuerpo - ante).normalized; }   // ya quieta, mirando hacia él
-        yield return Decir(Historia.Protagonista, "¿Quién... eres?", 2.4f);
+        // pocas tomas, largas y lentas: que se sienta el silencio de ese lugar
+        // 1) muy lejos: el pedazo de torre en el vacío, la puerta encendida y Abby, un punto que camina
+        StartCoroutine(Fundir(0f, 3.5f));
+        yield return Plano(new Vector3(-46f, 14f, -52f), new Vector3(-41f, 12.5f, -46f), () => new Vector3(0f, 8f, 20f), 34f, 8f);
+        // 2) detrás de ella: la escalinata, la luz al fondo, y algo tendido a media subida
+        yield return Pasar();
+        yield return Plano(() => Yo() + new Vector3(1f, 2.4f, -7.5f), () => Yo() + new Vector3(0.5f, 3f, -6f), () => Yo() + new Vector3(0f, 2.2f, 12f), 44f, 9f);
+        // 3) de lado, quieta la cámara: ella sube los últimos escalones y se detiene frente a él
+        yield return Pasar();
+        int idLlegada = planoId + 1;
+        StartCoroutine(Plano(cuerpo + new Vector3(10f, 2.6f, -2.5f), cuerpo + new Vector3(9.4f, 2.6f, -2f), () => Vector3.Lerp(cuerpo, Yo(), 0.5f) + Vector3.up * 0.8f, 36f, 30f));
+        while (!llego) yield return null;
+        yield return new WaitForSeconds(1.6f);
+        yield return Decir(Historia.Protagonista, "¿Quién... eres?", 3f);
+        yield return new WaitForSeconds(0.8f);
 
-        // 6) el colgante en el escalón, muy cerca
-        yield return Corte(0.3f);
+        // 4) el colgante en el escalón, muy cerca; ella se arrodilla
+        yield return Pasar();
         Sonido.Tocar(Sonido.Efecto.Fuente, 0.8f, 0.7f);
         var calida = StartCoroutine(LuzCalida(colgante));
-        StartCoroutine(Plano(pos + new Vector3(-0.9f, 0.55f, -1.3f), pos + new Vector3(-0.5f, 0.5f, -0.9f), () => pos + Vector3.up * 0.1f, 30f, 3.4f));
-        yield return new WaitForSeconds(1.2f);
+        StartCoroutine(Plano(pos + new Vector3(-1.7f, 0.75f, 0.1f), pos + new Vector3(-1.3f, 0.6f, 0.05f), () => pos + Vector3.up * 0.1f, 30f, 6f));   // de lado: de frente, la espada de él tapaba el cuadro
+        yield return new WaitForSeconds(1.8f);
         if (abby != null) abby.deRodillas = true;
-        yield return Decir(Historia.Protagonista, "Este colgante...", 2.2f);
-
-        // 7) su cara, de rodillas, desde abajo
-        yield return Corte(0.2f);
-        StartCoroutine(Plano(Yo() + new Vector3(-3.1f, 0.85f, 0.9f), Yo() + new Vector3(-2.5f, 0.8f, 0.7f), () => Yo() + Vector3.up * 0.7f, 30f, 3.4f));
-        yield return Decir(Historia.Protagonista, "Era de papá. Yo te lo di.", 3f);
+        yield return Decir(Historia.Protagonista, "Este colgante...", 2.6f);
+        // 5) su cara, de rodillas
+        yield return Pasar();
+        StartCoroutine(Plano(Yo() + new Vector3(-3.1f, 0.85f, 0.9f), Yo() + new Vector3(-2.8f, 0.82f, 0.8f), () => Yo() + Vector3.up * 0.7f, 30f, 6f));
+        yield return Decir(Historia.Protagonista, "Era de papá. Yo te lo di.", 3.4f);
 
         // los recuerdos
-        yield return Recuerdo("Intro/12_despedida", Historia.Hermano, "Con él al frente estaremos bien. Volveré...", 4.4f);
-        yield return Recuerdo("Intro/13_colgante", Historia.Hermano, "Te lo devuelvo en persona. Te lo prometo.", 4.4f);
-        yield return Recuerdo("Intro/14_regreso", Historia.Hermano, "Voy de regreso, Abby. Te dije que volvería.", 5f);
+        yield return Recuerdo("Intro/12_despedida", Historia.Hermano, "Con él al frente estaremos bien. Volveré...", 4.6f);
+        yield return Recuerdo("Intro/13_colgante", Historia.Hermano, "Te lo devuelvo en persona. Te lo prometo.", 4.6f);
+        yield return Recuerdo("Intro/14_regreso", Historia.Hermano, "Voy de regreso, Abby. Te dije que volvería.", 5.2f);
 
-        // 8) lejos y de lado: los dos, tan chiquitos, y la puerta tan cerca
-        StartCoroutine(Plano(new Vector3(4f, 15f, 35f), new Vector3(1.5f, 13.5f, 33f), () => Vector3.Lerp(cuerpo, ante, 0.5f) + Vector3.up * 0.4f, 38f, 9.5f));
-        yield return Decir(Historia.Protagonista, "Las huellas. Las hojas.", 2.6f);
-        yield return Decir(Historia.Protagonista, "Venías de regreso... todo este tiempo.", 3.2f);
-        yield return Decir(Historia.Protagonista, "Estabas a unos escalones.", 3f);
-        // 9) la puerta se abre sola: entra la luz, desde abajo y de frente
-        yield return Corte(0.2f);
-        StartCoroutine(Plano(new Vector3(0f, 2f, 8f), new Vector3(0f, 2.4f, 11f), () => puerta, 46f, 4.4f));
+        // 6) desde lo alto, por detrás: los dos, tan chiquitos, y la puerta a unos pasos
+        StartCoroutine(Plano(new Vector3(4f, 15f, 35f), new Vector3(2.5f, 14f, 33.5f), () => Vector3.Lerp(cuerpo, ante, 0.5f) + Vector3.up * 0.4f, 38f, 11f));
+        yield return Decir(Historia.Protagonista, "Las huellas. Las hojas.", 3f);
+        yield return Decir(Historia.Protagonista, "Venías de regreso... todo este tiempo.", 3.6f);
+        yield return Decir(Historia.Protagonista, "Estabas a unos escalones.", 3.4f);
+        // 7) detrás de ella, abajo: la puerta se abre sola y la luz los cubre; a él se le deshace la sombra. Una sola toma
+        yield return Pasar();
+        StartCoroutine(Plano(() => Yo() + new Vector3(1.6f, 1.1f, -4.2f), () => Yo() + new Vector3(1.2f, 1.4f, -3.2f), () => Vector3.Lerp(cuerpo, puerta, 0.35f), 44f, 13f));
         yield return AbrirPuerta();
-
-        // 10) se le deshace la sombra: debajo está su abrigo
-        yield return Corte(0.25f);
         StopCoroutine(sombra);
         CombatFx.Burst(cuerpo + Vector3.up * 0.5f, new Color(0.35f, 0.2f, 0.5f), 60, 3f, 0.3f, 2.2f, -0.8f);
-        StartCoroutine(Plano(cuerpo + new Vector3(-2.2f, 1.3f, -3f), cuerpo + new Vector3(-1.6f, 1.1f, -2.4f), () => cuerpo + Vector3.up * 0.3f, 32f, 6f));
         if (dante != null)
         {
-            Color c0 = dante.color, c1 = new Color(0.72f, 0.68f, 0.68f);
-            for (float t = 0f; t < 3f; t += Time.deltaTime) { dante.color = Color.Lerp(c0, c1, t / 3f); yield return null; }
+            Color c0 = dante.color, c1 = new Color(0.78f, 0.74f, 0.74f);
+            for (float t = 0f; t < 3.5f; t += Time.deltaTime) { dante.color = Color.Lerp(c0, c1, t / 3.5f); yield return null; }
         }
-        yield return new WaitForSeconds(1.2f);
+        yield return new WaitForSeconds(1.4f);
         Sonido.Tocar(Sonido.Efecto.Latido, 1f);
-        // 11) desde él, mirándola: ella levanta la vista
-        yield return Corte(0.2f);
-        StartCoroutine(Plano(cuerpo + new Vector3(0.3f, 0.5f, -0.6f), cuerpo + new Vector3(0.2f, 0.5f, -0.9f), () => Yo() + Vector3.up * 0.75f, 34f, 5f));
-        yield return new WaitForSeconds(1f);
+        // 8) desde él, mirándola
+        yield return Pasar();
+        StartCoroutine(Plano(cuerpo + new Vector3(0.3f, 0.5f, -0.6f), cuerpo + new Vector3(0.25f, 0.5f, -0.8f), () => Yo() + Vector3.up * 0.75f, 34f, 7f));
+        yield return new WaitForSeconds(1.6f);
 
+        // la música se apaga antes de su voz
+        Musica.Cruce = 3f;
+        Musica.Poner(Musica.Pista.Ninguna);
+        yield return new WaitForSeconds(1.4f);
+        Musica.Cruce = 2.5f;
         // "Abby…": corte a negro
         yield return Decir("???", "Abby…", 3.6f);
         negro = 1f;
@@ -187,29 +187,38 @@ public class EscenaFinal : MonoBehaviour
 
     SpriteRenderer CrearDante(Vector3 pos, AbbySpriteAnimator abby)
     {
+        // Dante chibi tendido (PixelLab, el mismo personaje), con la cabeza hacia la puerta; se ve del lado que toque según la cámara
         var go = new GameObject("DanteTendido");
-        go.transform.position = pos + Vector3.up * 0.3f;   // de lado: medio cuerpo quedaba bajo el escalón
+        go.transform.position = pos;
         var sr = go.AddComponent<SpriteRenderer>();
         var abbySr = abby != null ? abby.GetComponent<SpriteRenderer>() : null;
         if (abbySr != null) sr.sharedMaterial = abbySr.sharedMaterial;
-        // el mismo Dante chibi del resto del juego, acostado de lado, con el brazo hacia la puerta
-        sr.sprite = Resources.Load<Sprite>("DanteHumano/Quieto/east");
-        go.transform.rotation = Quaternion.Euler(0f, 0f, 82f);
+        var vista = go.AddComponent<MirarCamara>();
+        string[] dirs = { "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west" };
+        for (int i = 0; i < 8; i++) vista.poses[i] = Resources.Load<Sprite>("DanteHumano/Tendido/" + dirs[i]);
+        vista.rumbo = Vector3.forward;   // hacia la puerta
+        vista.sr = sr;
+        sr.sprite = vista.poses[0];
         sr.color = new Color(0.13f, 0.08f, 0.2f);
-        go.AddComponent<MirarCamara>().girado = true;
         return sr;
     }
 
     class MirarCamara : MonoBehaviour
     {
-        public bool girado;
+        public Sprite[] poses = new Sprite[8];
+        public Vector3 rumbo;
+        public SpriteRenderer sr;
         void LateUpdate()
         {
             var c = Camera.main;
             if (c == null) return;
             Vector3 f = c.transform.forward; f.y = 0f;
             if (f.sqrMagnitude < 0.001f) return;
-            transform.rotation = Quaternion.LookRotation(f, Vector3.up) * (girado ? Quaternion.Euler(0f, 0f, 82f) : Quaternion.identity);
+            transform.rotation = Quaternion.LookRotation(f, Vector3.up);
+            // hacia dónde apunta su cuerpo visto desde la cámara: 0 = de espaldas a ella (norte), luego en el sentido del reloj
+            float ang = Vector3.SignedAngle(f, rumbo, Vector3.up);
+            int k = Mathf.RoundToInt(Mathf.Repeat(ang, 360f) / 45f) % 8;
+            if (sr != null && poses[k] != null) sr.sprite = poses[k];
         }
     }
 
@@ -252,6 +261,15 @@ public class EscenaFinal : MonoBehaviour
     int planoId;
 
     /// <summary>Un parpadeo a negro entre planos.</summary>
+    /// <summary>Paso entre tomas: se oscurece despacio y vuelve, sin parpadeo.</summary>
+    IEnumerator Pasar()
+    {
+        yield return Fundir(1f, 0.55f);
+        planoId++;
+        yield return new WaitForSeconds(0.25f);
+        StartCoroutine(Fundir(0f, 0.7f));
+    }
+
     IEnumerator Corte(float dur)
     {
         planoId++;
@@ -261,17 +279,27 @@ public class EscenaFinal : MonoBehaviour
         negro = de;
     }
 
-    IEnumerator Caminar(GameObject p, Vector3 de, Vector3 a, float dur, System.Func<float, float, float, float> suelo)
+    IEnumerator Caminar(GameObject p, Vector3 de, Vector3 a, float dur, System.Func<float, float, float, float> suelo, AbbySpriteAnimator abby, Vector3 mira, System.Action alLlegar)
     {
         if (p == null) yield break;
         for (float t = 0f; t < dur; t += Time.deltaTime)
         {
-            Vector3 q = Vector3.Lerp(de, a, t / dur);
-            q.y = suelo(q.x, q.z, Mathf.Lerp(de.y, a.y, t / dur));
+            // frena en el último par de segundos
+            float k = t / dur, e = k < 0.85f ? k : Mathf.Lerp(0.85f, 1f, Mathf.Sin((k - 0.85f) / 0.15f * Mathf.PI * 0.5f));
+            Vector3 q = Vector3.Lerp(de, a, e);
+            q.y = suelo(q.x, q.z, Mathf.Lerp(de.y, a.y, e));
             p.transform.position = q;
             yield return null;
         }
         p.transform.position = a;
+        if (abby != null)
+        {
+            abby.caminando = false;   // ya no camina en su lugar
+            yield return new WaitForSeconds(0.9f);
+            Vector3 d = mira - a; d.y = 0f;
+            if (d.sqrMagnitude > 0.01f) abby.caminarHacia = d.normalized;   // y luego voltea hacia él
+        }
+        alLlegar?.Invoke();
     }
 
     /// <summary>Los pedazos de la torre flotan muy despacio.</summary>

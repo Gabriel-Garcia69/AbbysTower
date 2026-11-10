@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class Musica : MonoBehaviour
 {
-    public enum Pista { Ninguna, Menu, Combate, Jefe, Paisaje }
+    public enum Pista { Ninguna, Menu, Combate, Jefe, Paisaje, Final }
 
     const int Hz = 22050;
     static Musica instancia;
@@ -177,6 +177,7 @@ public class Musica : MonoBehaviour
     /// <summary>Piano (bajo, acordes y arpegio) y una línea de violín sobre una progresión menor que se repite.</summary>
     static float[] Muestras(Pista p)
     {
+        if (p == Pista.Final) return MuestrasFinal();
         // progresiones (raíz MIDI y si es menor) y tempo de cada pista
         int[][] acordes; float bpm; int compasPorAcorde = 1;
         switch (p)
@@ -272,6 +273,100 @@ public class Musica : MonoBehaviour
         }
         // sin chasquido al dar la vuelta
         int borde = Hz / 20;
+        for (int i = 0; i < borde; i++) { float k = i / (float)borde; d[i] *= k; d[n - 1 - i] *= k; }
+        return d;
+    }
+
+    /// <summary>
+    /// "Despedida", la música del final: Re menor, lenta. Ocho compases de piano solo, como caja de música (Abby camina sola);
+    /// la misma melodía con violín (lo encuentra); una parte que sube (los recuerdos); y vuelve al piano para acabar en Re mayor.
+    /// Con eco de sala, para que suene a lugar grande y vacío.
+    /// </summary>
+    static float[] MuestrasFinal()
+    {
+        const float bpm = 58f;
+        float tiempo = 60f / bpm, compas = tiempo * 4f;
+        // un acorde por compás: raíz MIDI y si es mayor (1) o menor (0)
+        int[][] A = { new[] { 50, 0 }, new[] { 46, 1 }, new[] { 41, 1 }, new[] { 48, 1 }, new[] { 43, 0 }, new[] { 46, 1 }, new[] { 45, 1 }, new[] { 45, 1 } };   // Rem Sib Fa Do Solm Sib La La
+        int[][] B = { new[] { 46, 1 }, new[] { 41, 1 }, new[] { 48, 1 }, new[] { 45, 0 }, new[] { 43, 0 }, new[] { 50, 0 }, new[] { 46, 1 }, new[] { 45, 1 } };   // Sib Fa Do Lam Solm Rem Sib La
+        int[][] Fin = { new[] { 50, 0 }, new[] { 46, 1 }, new[] { 41, 1 }, new[] { 48, 1 }, new[] { 43, 0 }, new[] { 46, 1 }, new[] { 45, 1 }, new[] { 50, 1 } };   // ... y Re mayor
+        // la melodía: dos blancas por compás (0 = nota ligada a la anterior)
+        int[] melA = { 69, 65, 74, 72, 69, 72, 67, 64, 70, 69, 67, 65, 64, 73, 69, 0 };
+        int[] melB = { 77, 74, 72, 69, 76, 79, 76, 72, 74, 70, 69, 65, 77, 74, 73, 0 };
+        int[] melFin = { 69, 65, 74, 72, 69, 72, 67, 64, 70, 69, 67, 65, 64, 73, 74, 0 };
+        var acordes = new List<int[]>(); var mel = new List<int>(); var seccion = new List<int>();
+        void Agregar(int[][] ac, int[] m, int sec) { acordes.AddRange(ac); mel.AddRange(m); for (int k = 0; k < ac.Length; k++) seccion.Add(sec); }
+        Agregar(A, melA, 0); Agregar(A, melA, 1); Agregar(B, melB, 2); Agregar(Fin, melFin, 3);
+        float dur = compas * acordes.Count + 4f;   // y unos segundos para que se apague
+        int n = Mathf.CeilToInt(dur * Hz);
+        var d = new float[n];
+        var cuerdas = new Violin[] { new Violin(-0.0025f, 11), new Violin(0.0025f, 12) };
+        var segunda = new Violin(0.001f, 13);
+        float blanca = tiempo * 2f;
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Hz;
+            int c = Mathf.Min(acordes.Count - 1, Mathf.FloorToInt(t / compas));
+            float tc = t - c * compas;
+            if (t > compas * acordes.Count) tc = t - c * compas;   // el último acorde se queda sonando
+            int raiz = acordes[c][0], tercera = acordes[c][1] == 0 ? 3 : 4, sec = seccion[c];
+            bool ultimo = c == acordes.Count - 1;
+            float s = 0f;
+            // piano: el bajo y el acorde al empezar el compás, el acorde otra vez suave a la mitad
+            s += Piano(Nota(raiz), tc, ultimo ? 0.35f : 0.9f) * 0.17f;
+            foreach (int iv in new[] { 0, tercera, 7 })
+            {
+                s += Piano(Nota(raiz + 12 + iv), tc, ultimo ? 0.45f : 1f) * 0.06f;
+                float med = tc - compas * 0.5f;
+                if (med >= 0f && !ultimo) s += Piano(Nota(raiz + 12 + iv), med, 1.2f) * 0.035f;
+            }
+            // arpegio lento a negras, más quieto al principio y al final
+            if (!ultimo)
+            {
+                int[] arp = { 12, 19, 24, 12 + tercera + 12 };
+                int ia = Mathf.FloorToInt(tc / tiempo);
+                float ta = tc - ia * tiempo;
+                s += Piano(Nota(raiz + 12 + arp[ia % arp.Length]), ta, 1.8f) * (sec == 0 || sec == 3 ? 0.07f : 0.09f);
+            }
+            // la melodía: buscar la nota que suena (las ligadas siguen a la anterior)
+            int im = Mathf.Min(mel.Count - 1, Mathf.FloorToInt(t / blanca)), inicio = im;
+            while (inicio > 0 && mel[inicio] == 0) inicio--;
+            float tm = t - inicio * blanca;
+            float f0 = Nota(mel[inicio]);
+            if (sec == 0 || sec == 3)
+            {
+                // piano agudo, con un brillo de caja de música
+                float k = Mathf.Min(1f, tm * 400f) * Mathf.Exp(-tm * (ultimo ? 0.5f : 0.9f));
+                s += Piano(Nota(mel[inicio] + 12), tm, ultimo ? 0.5f : 0.9f) * 0.17f;
+                s += Mathf.Sin(2f * Mathf.PI * Nota(mel[inicio] + 24) * t) * k * 0.035f;
+            }
+            else
+            {
+                // violín: legato de una nota a la otra, con arcada que crece y baja
+                int ant = inicio;
+                do { ant--; } while (ant > 0 && mel[ant] == 0);
+                float fAnt = ant >= 0 ? Nota(mel[ant]) : f0;
+                float fv = Mathf.Lerp(fAnt, f0, Mathf.SmoothStep(0f, 1f, tm / 0.12f));
+                float largo = blanca * (inicio + 1 < mel.Count && mel[inicio + 1] == 0 ? 2f : 1f);
+                float env = (0.5f + 0.5f * Mathf.SmoothStep(0f, 1f, tm / 0.45f)) * (1f - 0.3f * Mathf.SmoothStep(0f, 1f, (tm - largo * 0.7f) / (largo * 0.3f)));
+                // al empezar la sección, el violín entra poco a poco
+                float entra = Mathf.SmoothStep(0f, 1f, (t - compas * (sec == 1 ? 8f : 16f)) / (compas * 1.5f));
+                foreach (var v in cuerdas) s += v.Muestra(fv, tm) * env * 0.075f * (sec == 1 ? entra : 1f);
+                if (sec == 2) s += segunda.Muestra(Nota(mel[inicio] - (raiz % 12 == 9 || raiz % 12 == 4 ? 3 : 4)), tm) * env * 0.04f;   // una segunda voz, más abajo
+            }
+            d[i] = s;
+        }
+        // eco de sala: dos reflexiones que se van apagando
+        int r1 = (int)(0.17f * Hz), r2 = (int)(0.41f * Hz), r3 = (int)(0.83f * Hz);
+        for (int i = 0; i < n; i++)
+        {
+            float e = 0f;
+            if (i >= r1) e += d[i - r1] * 0.28f;
+            if (i >= r2) e += d[i - r2] * 0.18f;
+            if (i >= r3) e += d[i - r3] * 0.1f;
+            d[i] = Mathf.Clamp((d[i] + e) * 1.05f, -1f, 1f);
+        }
+        int borde = Hz / 10;
         for (int i = 0; i < borde; i++) { float k = i / (float)borde; d[i] *= k; d[n - 1 - i] *= k; }
         return d;
     }

@@ -368,12 +368,13 @@ public class EscenaFinal : MonoBehaviour
         float i0 = luz != null ? luz.intensity : 0f;
         Quaternion a = iz != null ? iz.localRotation : Quaternion.identity, b = de != null ? de.localRotation : Quaternion.identity;
         Sonido.Tocar(Sonido.Efecto.Temblor, 0.5f, 0.6f);
-        for (float t = 0f; t < 3f; t += Time.deltaTime)
+        // se abre de verdad, hasta dejar el paso libre: la luz del pueblo entra por completo
+        for (float t = 0f; t < 5f; t += Time.deltaTime)
         {
-            float k = Mathf.SmoothStep(0f, 1f, t / 3f);
-            if (iz != null) iz.localRotation = a * Quaternion.Euler(0f, k * 26f, 0f);
-            if (de != null) de.localRotation = b * Quaternion.Euler(0f, -k * 26f, 0f);
-            if (luz != null) luz.intensity = Mathf.Lerp(i0, i0 * 3f, k);
+            float k = Mathf.SmoothStep(0f, 1f, t / 5f);
+            if (iz != null) iz.localRotation = a * Quaternion.Euler(0f, k * 84f, 0f);
+            if (de != null) de.localRotation = b * Quaternion.Euler(0f, -k * 84f, 0f);
+            if (luz != null) luz.intensity = Mathf.Lerp(i0, i0 * 4f, k);
             yield return null;
         }
     }

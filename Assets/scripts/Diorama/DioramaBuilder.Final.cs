@@ -106,11 +106,38 @@ public partial class DioramaBuilder
         var luzPuerta = AddLight(puerta, new Vector3(0f, 12f, -7f), new Color(1f, 0.72f, 0.46f), 48f, 220f);
         luzPuerta.name = "LuzPuerta";
 
+        // las huellas: un solo par de botas que sube por la escalinata y se acaba en el descanso, donde está él
+        var botas = Plain("Dio_HuellaFinal", new Color(0.08f, 0.06f, 0.1f), 0.05f);
+        float AlturaEn(float z) => z < FinalEscalonZ0 ? 0f : z < FinalDescansoZ0 ? Mathf.Lerp(0f, FinalDescanso, (z - FinalEscalonZ0) / (FinalDescansoZ0 - FinalEscalonZ0)) : FinalDescanso;
+        int paso = 0;
+        for (float z = -40f; z < 23f; z += 0.85f, paso++)
+        {
+            if (z > FinalEscalonZ0 - 0.4f && z < FinalDescansoZ0 + 0.4f && (paso % 2 == 1)) continue;   // en los escalones, un pie sí y otro no
+            float x = 0.4f + Mathf.Sin(z * 0.07f) * 0.8f + (paso % 2 == 0 ? -0.22f : 0.22f);
+            var h = Box(lvl, "Huella", new Vector3(x, AlturaEn(z) + 0.02f, z), new Vector3(0.18f, 0.02f, 0.32f), botas, false);
+            h.transform.localRotation = Quaternion.Euler(0f, R(-8f, 8f), 0f);
+            h.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        // las hojas del diario, regadas por el camino
+        var papel = Plain("Dio_HojaDiario", new Color(0.86f, 0.8f, 0.66f), 0.05f);
+        foreach (var q in new[] { new Vector2(-1.4f, -12f), new Vector2(1.6f, -2f), new Vector2(-0.8f, 4f), new Vector2(2.4f, 10f), new Vector2(-2f, 16f), new Vector2(3.2f, 19f), new Vector2(-1.2f, 26.5f) })
+        {
+            var hoja2 = Box(lvl, "HojaDiario", new Vector3(q.x, AlturaEn(q.y) + 0.03f, q.y), new Vector3(0.42f, 0.015f, 0.56f), papel, false);
+            hoja2.transform.localRotation = Quaternion.Euler(R(-4f, 4f), R(0f, 360f), R(-4f, 4f));
+        }
+        // su farol, apagado y volcado en el descanso
+        MaterialesFuego();
+        var farol = Group("FarolCaido", lvl);
+        farol.localPosition = new Vector3(2.6f, FinalDescanso + 0.25f, 25.5f);
+        farol.localRotation = Quaternion.Euler(0f, 35f, 80f);
+        Box(farol, "Base", Vector3.zero, new Vector3(0.4f, 0.08f, 0.4f), mHierro, false);
+        Box(farol, "Vidrio", new Vector3(0f, 0.26f, 0f), new Vector3(0.32f, 0.44f, 0.32f), Plain("Dio_VidrioApagado", new Color(0.2f, 0.18f, 0.16f), 0.6f), false);
+        Box(farol, "Tapa", new Vector3(0f, 0.52f, 0f), new Vector3(0.42f, 0.08f, 0.42f), mHierro, false);
         // el haz de luz que baja por las escaleras
         var haz = MatDecal("Dio_HazFinal", "haz", true, new Color(1f, 0.72f, 0.44f) * 0.2f);
-        for (int k = 0; k < 3; k++)
+        for (int k = 0; k < 5; k++)
         {
-            var q = Prim(puerta, PrimitiveType.Quad, "Haz", new Vector3((k - 1) * 3.4f, 4f, -16f), new Vector3(9f, 38f, 1f), haz);
+            var q = Prim(puerta, PrimitiveType.Quad, "Haz", new Vector3((k - 2) * 2.8f, 4f, -18f), new Vector3(8f, 44f, 1f), haz);
             q.transform.localRotation = Quaternion.Euler(62f, 180f, 0f);
             q.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }

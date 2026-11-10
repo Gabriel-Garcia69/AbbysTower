@@ -281,72 +281,76 @@ public class Musica : MonoBehaviour
     }
 
     /// <summary>
-    /// "Ventanas encendidas", la música de la aldea vacía: una caja de música que da vueltas sola. Un arpegio agudo que se
-    /// repite casi igual, con una nota que no termina de encajar (la segunda menor y el tritono), un bajo grave muy quieto y
-    /// campanas sueltas. Pieza original, con la inquietud de las canciones de pueblos fantasma de los RPG.
+    /// "Ventanas encendidas", la música de la aldea vacía: chiptune de consola portátil (ondas cuadradas delgadas y un bajo de
+    /// triángulo). Un arpegio agudo y rápido que da vueltas con un tritono que no encaja, una melodía que baja de medio en medio
+    /// tono y un bajo quieto. Pieza original, con la inquietud de los pueblos fantasma de los RPG de los 90.
     /// </summary>
     static float[] MuestrasVacia()
     {
-        const float bpm = 76f;
-        float tiempo = 60f / bpm, compas = tiempo * 4f, corchea = tiempo * 0.5f;
-        // dos compases por acorde: Mi menor, Do (con la séptima mayor), La menor con la sexta, Si con la novena menor
-        int[] raices = { 40, 36, 45, 47 };
-        int[][] arpegios =
+        const float bpm = 116f;
+        float tiempo = 60f / bpm, corchea = tiempo * 0.5f, compas = tiempo * 4f;
+        // dos compases por acorde: La, Fa, Re, Mi (raíz del bajo)
+        int[] bajos = { 45, 41, 38, 40 };
+        // el arpegio agudo: cuatro notas que se repiten; la tercera choca (tritono / séptima mayor)
+        int[][] arps =
         {
-            new[] { 76, 83, 79, 82, 76, 83, 79, 84 },   // Mi Si Sol La# ... la La# es la que no encaja
-            new[] { 76, 83, 79, 83, 72, 79, 76, 83 },
-            new[] { 76, 81, 78, 84, 76, 81, 78, 75 },
-            new[] { 75, 83, 78, 84, 75, 83, 78, 81 },
+            new[] { 81, 88, 87, 84 },   // La Mi Re# Do
+            new[] { 77, 84, 83, 81 },   // Fa Do Si La
+            new[] { 74, 81, 80, 77 },   // Re La Sol# Fa
+            new[] { 76, 83, 80, 82 },   // Mi Si Sol# La#
         };
-        int compases = raices.Length * 2;
+        // la melodía: baja de medio en medio tono, a blancas (0 = sigue la anterior)
+        int[] mel = { 69, 0, 68, 0, 67, 0, 66, 0, 65, 0, 64, 0, 62, 0, 64, 0 };
+        int compases = 16;   // dos vueltas: la segunda con la melodía una octava arriba y el viento
         float dur = compas * compases;
         int n = Mathf.CeilToInt(dur * Hz);
         var d = new float[n];
-        float Caja(float f, float tt)
-        {
-            if (tt < 0f) return 0f;
-            float env = Mathf.Min(1f, tt * 900f) * Mathf.Exp(-tt * 4.2f);
-            float w = 2f * Mathf.PI * f * tt;
-            // campanita de caja de música: fundamental y parciales inarmónicos que se apagan antes
-            return (Mathf.Sin(w) + Mathf.Sin(w * 2.76f) * 0.35f * Mathf.Exp(-tt * 9f) + Mathf.Sin(w * 5.4f) * 0.12f * Mathf.Exp(-tt * 16f)) * env;
-        }
+        double fArp = 0, fMel = 0, fBaj = 0;
+        float lp = 0f, ruido = 0f;
+        var rng = new System.Random(77);
+        float Cuadrada(double fase, float ciclo) => (float)(fase % 1.0) < ciclo ? 1f : -1f;
+        float Triangulo(double fase) { float x = (float)(fase % 1.0); return x < 0.5f ? x * 4f - 1f : 3f - x * 4f; }
         for (int i = 0; i < n; i++)
         {
             float t = i / (float)Hz;
-            int c = Mathf.Min(compases - 1, Mathf.FloorToInt(t / compas)), a = c / 2;
-            float tc = t - c * compas;
+            int c = Mathf.FloorToInt(t / compas), vuelta = c / 8, ac = (c % 8) / 2;
             float s = 0f;
-            // el bajo: una sola nota larga cada dos compases, grave y casi sin ataque
-            float tb = t - a * compas * 2f;
-            s += Mathf.Sin(2f * Mathf.PI * Nota(raices[a]) * t) * Mathf.Min(1f, tb * 2f) * Mathf.Exp(-tb * 0.35f) * 0.12f;
-            s += Mathf.Sin(2f * Mathf.PI * Nota(raices[a] + 7) * t) * Mathf.Min(1f, tb * 2f) * Mathf.Exp(-tb * 0.5f) * 0.04f;
-            // la caja de música: el arpegio a corcheas; en la segunda vuelta de cada acorde se desafina apenas, como el muelle cansado
-            int ic = Mathf.FloorToInt(tc / corchea);
-            float tn = tc - ic * corchea;
-            int nota = arpegios[a][ic % 8];
-            float desaf = (c % 2 == 1) ? 1f - 0.004f * Mathf.Sin(t * 0.7f) : 1f;
-            s += Caja(Nota(nota) * desaf, tn) * 0.16f;
-            // un eco tenue de la nota anterior, una octava abajo
-            if (ic > 0) s += Caja(Nota(arpegios[a][(ic - 1) % 8] - 12), tn + corchea) * 0.05f;
-            // campanas sueltas muy agudas al empezar ciertos compases
-            if (c % 4 == 3)
+            // arpegio a corcheas, cuadrada de pulso muy delgado, con la caída de volumen de las consolas
+            int ic = Mathf.FloorToInt(t / corchea);
+            float tn = t - ic * corchea;
+            int nota = arps[ac][ic % 4];
+            fArp += Nota(nota) / Hz;
+            float envA = Mathf.Max(0.25f, 1f - tn / corchea * 0.75f);
+            s += Cuadrada(fArp, 0.125f) * envA * 0.05f;
+            // melodía: pulso de un cuarto, con vibrato que entra tarde
+            float blanca = tiempo * 2f;
+            int im = Mathf.FloorToInt((t % (compas * 8f)) / blanca), ini = Mathf.Min(im, mel.Length - 1);
+            while (ini > 0 && mel[ini] == 0) ini--;
+            float tm = (t % (compas * 8f)) - ini * blanca;
+            float fm = Nota(mel[ini] + (vuelta == 1 ? 12 : 0)) * (1f + 0.006f * Mathf.Sin(2f * Mathf.PI * 5.5f * tm) * Mathf.Clamp01((tm - 0.3f) / 0.3f));
+            fMel += fm / Hz;
+            float largo = blanca * 2f;
+            float envM = Mathf.Min(1f, tm * 60f) * (1f - 0.5f * Mathf.Clamp01(tm / largo));
+            s += Cuadrada(fMel, 0.25f) * envM * 0.045f;
+            // bajo: triángulo a negras, raíz y octava
+            int iq = Mathf.FloorToInt(t / tiempo);
+            float tq = t - iq * tiempo;
+            fBaj += Nota(bajos[ac] - 12 + (iq % 2 == 1 ? 12 : 0)) / Hz;
+            s += Triangulo(fBaj) * Mathf.Min(1f, tq * 80f) * Mathf.Exp(-tq * 1.5f) * 0.16f;
+            // en la segunda vuelta, viento: ruido muy suave que sube y baja
+            if (vuelta == 1)
             {
-                float tg = tc - tiempo * 2.5f;
-                s += Caja(Nota(raices[a] + 48 + 6), tg) * 0.06f;   // el tritono, arriba de todo
+                ruido += (((float)rng.NextDouble() * 2f - 1f) - ruido) * 0.02f;
+                s += ruido * 0.5f * (0.5f + 0.5f * Mathf.Sin(t * 0.6f));
             }
-            d[i] = s;
+            // un filtro suave: la cuadrada de consola sin que chille
+            lp += (s - lp) * 0.55f;
+            d[i] = lp;
         }
-        // eco largo, de cuarto vacío
-        int r1 = (int)(0.23f * Hz), r2 = (int)(0.51f * Hz), r3 = (int)(1.07f * Hz);
+        // un eco corto, como un cuarto de piedra
+        int r1 = (int)(0.19f * Hz);
         var o = new float[n];
-        for (int i = 0; i < n; i++)
-        {
-            float e = d[i];
-            if (i >= r1) e += o[i - r1] * 0.32f;
-            if (i >= r2) e += d[i - r2] * 0.16f;
-            if (i >= r3) e += d[i - r3] * 0.1f;
-            o[i] = Mathf.Clamp(e, -1f, 1f);
-        }
+        for (int i = 0; i < n; i++) o[i] = Mathf.Clamp(d[i] + (i >= r1 ? o[i - r1] * 0.22f : 0f), -1f, 1f);
         int borde = Hz / 20;
         for (int i = 0; i < borde; i++) { float k = i / (float)borde; o[i] *= k; o[n - 1 - i] *= k; }
         return o;

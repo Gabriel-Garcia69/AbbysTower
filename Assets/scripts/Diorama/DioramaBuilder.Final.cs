@@ -11,7 +11,7 @@ public partial class DioramaBuilder
     public static readonly Vector3 FinalSpawn = new Vector3(0f, 0.1f, -26f);
     public static readonly Rect FinalWalk = new Rect(-30f, -40f, 60f, 90f);
     static readonly Rect FinalArea = new Rect(-90f, -80f, 180f, 180f);
-    public const float FinalEscalonZ0 = 12f, FinalEscalonZ1 = 32f, FinalRellano = 6f, FinalDescanso = 3f, FinalPuertaZ = 46f;
+    public const float FinalEscalonZ0 = 6f, FinalDescansoZ0 = 13f, FinalDescansoZ1 = 31f, FinalEscalonZ1 = 37f, FinalRellano = 6f, FinalDescanso = 3f, FinalPuertaZ = 52f;
     /// <summary>Donde está la casa de los créditos, lejos de la sala.</summary>
     public static readonly Vector3 FinalCasa = new Vector3(600f, 0f, 0f);
 
@@ -57,10 +57,23 @@ public partial class DioramaBuilder
 
         // la escalinata y el rellano
         var lvl = Group("Nivel", root);
-        // la escalinata tiene un descanso plano a media subida: ahí se quedó él
-        Stairs(lvl, "EscalinataBaja", new Vector3(0f, 0f, FinalEscalonZ0), new Vector3(0f, FinalDescanso, 19f), 18f, mCaveBrick);
-        Box(lvl, "Descanso", new Vector3(0f, FinalDescanso / 2f, 22f), new Vector3(18f, FinalDescanso, 6f), mCaveBrick, true, 0.25f);
-        Stairs(lvl, "EscalinataAlta", new Vector3(0f, FinalDescanso, 25f), new Vector3(0f, FinalRellano, FinalEscalonZ1), 18f, mCaveBrick);
+        // un tramo corto, un descanso grande (ahí se quedó él) y otro tramo a la explanada de la puerta
+        Stairs(lvl, "EscalinataBaja", new Vector3(0f, 0f, FinalEscalonZ0), new Vector3(0f, FinalDescanso, FinalDescansoZ0), 22f, mCaveBrick);
+        Box(lvl, "Descanso", new Vector3(0f, FinalDescanso / 2f, (FinalDescansoZ0 + FinalDescansoZ1) / 2f), new Vector3(26f, FinalDescanso, FinalDescansoZ1 - FinalDescansoZ0), mCaveBrick, true, 0.25f);
+        Stairs(lvl, "EscalinataAlta", new Vector3(0f, FinalDescanso, FinalDescansoZ1), new Vector3(0f, FinalRellano, FinalEscalonZ1), 18f, mCaveBrick);
+        foreach (float sx in new[] { -1f, 1f })
+        {
+            Brazier(lvl, new Vector3(sx * 11.5f, FinalDescanso, FinalDescansoZ0 + 2f));
+            Brazier(lvl, new Vector3(sx * 11.5f, FinalDescanso, FinalDescansoZ1 - 2f));
+            Brazier(lvl, new Vector3(sx * 11f, FinalRellano, FinalEscalonZ1 + 4f));
+            // columnas rotas en las orillas del descanso
+            for (int k = 0; k < 3; k++)
+            {
+                var col = MeshObject(lvl, "ColumnaDescanso", RocaIrregular(R(0.9f, 1.2f), R(2f, 7f), q => 1f - q * 0.2f, 10, 6), mExpParedAlt, true);
+                col.transform.localPosition = new Vector3(sx * R(10.5f, 12f), FinalDescanso - 0.1f, FinalDescansoZ0 + 4f + k * 5.5f);
+                col.transform.localRotation = Quaternion.Euler(R(-6f, 6f), R(0f, 360f), R(-6f, 6f));
+            }
+        }
         Box(lvl, "Rellano", new Vector3(0f, FinalRellano / 2f, (FinalEscalonZ1 + FinalPuertaZ) / 2f), new Vector3(26f, FinalRellano, FinalPuertaZ - FinalEscalonZ1), mCaveBrick, true, 0.25f);
 
         // la puerta enorme, entreabierta; atrás de ella, el amanecer
@@ -69,8 +82,20 @@ public partial class DioramaBuilder
         foreach (float sx in new[] { -1f, 1f })
             Box(puerta, "Jamba", new Vector3(sx * 8.5f, 11f, 0f), new Vector3(3f, 22f, 3.4f), mCaveBrick, true, 0.25f);
         Box(puerta, "Dintel", new Vector3(0f, 23f, 0f), new Vector3(20f, 3f, 3.4f), mCaveBrick, true, 0.25f);
-        var aire = Glow("Dio_Amanecer", new Color(1f, 0.72f, 0.42f), 2.2f);
-        Box(puerta, "Luz", new Vector3(0f, 11f, 1.4f), new Vector3(14.2f, 22f, 0.2f), aire, false);
+        // atrás de la puerta: su pueblo al amanecer, la casa a la que él volvía
+        var aire = Saved("Dio_PuebloTrasPuerta", () => new Material(Shader.Find("Universal Render Pipeline/Unlit")));
+        var pueblo = Resources.Load<Texture2D>("Intro/01_pueblo");
+        if (pueblo != null)
+        {
+            aire.SetTexture("_BaseMap", pueblo);
+            aire.SetTextureScale("_BaseMap", new Vector2(0.36f, 1f));   // solo el pedazo que cabe en el hueco de la puerta
+            aire.SetTextureOffset("_BaseMap", new Vector2(0.34f, 0f));
+            aire.SetColor("_BaseColor", new Color(1.5f, 1.25f, 1.05f));
+        }
+        else aire = Glow("Dio_Amanecer", new Color(1f, 0.72f, 0.42f), 2.2f);
+        var luz = Prim(puerta, PrimitiveType.Quad, "Luz", new Vector3(0f, 11f, 1.4f), new Vector3(14.2f, 22f, 1f), aire);
+        luz.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        luz.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         foreach (float sx in new[] { -1f, 1f })
         {
             var hoja = Group("Hoja" + (sx < 0f ? "Izq" : "Der"), puerta);
@@ -92,7 +117,7 @@ public partial class DioramaBuilder
 
         // ruinas: columnas rotas a los lados del camino, rocas y cristales en las orillas
         for (int side = -1; side <= 1; side += 2)
-            for (int k = 0; k < 5; k++)
+            for (int k = 0; k < 4; k++)
             {
                 float z = -34f + k * 10f + R(-2f, 2f);
                 var col = MeshObject(g, "ColumnaRota", RocaIrregular(R(1.3f, 1.9f), R(3f, 15f), q => 1f - q * 0.25f, 11, 6), mExpParedAlt, true);
@@ -110,7 +135,7 @@ public partial class DioramaBuilder
             AddLight(g, new Vector3(0f, 18f, z), new Color(0.72f, 0.6f, 0.9f), 46f, 340f).name = "LuzFria";
         foreach (float sx in new[] { -1f, 1f })
         {
-            Brazier(lvl, new Vector3(sx * 9f, 0f, 7f));
+            Brazier(lvl, new Vector3(sx * 13f, 0f, 2f));
             Brazier(lvl, new Vector3(sx * 8f, 0f, -18f));
         }
         VolumenExpedicion();

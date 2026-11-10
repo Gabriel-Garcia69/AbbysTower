@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class Musica : MonoBehaviour
 {
-    public enum Pista { Ninguna, Menu, Combate, Jefe, Paisaje, Final }
+    public enum Pista { Ninguna, Menu, Combate, Jefe, Paisaje, Final, Vacia }
 
     const int Hz = 22050;
     static Musica instancia;
@@ -55,6 +55,7 @@ public class Musica : MonoBehaviour
     public static void Pelea(bool empieza)
     {
         string n = SceneManager.GetActiveScene().name;
+        if (n == "Nevado") { Poner(empieza ? Pista.Combate : Pista.Vacia); return; }
         if (!ConAgua(n)) return;
         Poner(empieza ? Pista.Combate : Pista.Paisaje);
     }
@@ -62,6 +63,7 @@ public class Musica : MonoBehaviour
     static void PorEscena(string n)
     {
         if (n == "Menu" || n == "Intro") Poner(Pista.Menu);
+        else if (n == "Nevado") Poner(Pista.Vacia);   // el pueblo vacío: caja de música inquietante
         else if (ConAgua(n)) Poner(Pista.Paisaje);
         else if (n == "Cima" || n == "Expedicion" || n.StartsWith("Cuartos")) Poner(Pista.Combate);   // las zonas de cuartos usan la pista de combate
         Cinematica(n == "Intro");
@@ -178,6 +180,7 @@ public class Musica : MonoBehaviour
     static float[] Muestras(Pista p)
     {
         if (p == Pista.Final) return MuestrasFinal();
+        if (p == Pista.Vacia) return MuestrasVacia();
         // progresiones (raíz MIDI y si es menor) y tempo de cada pista
         int[][] acordes; float bpm; int compasPorAcorde = 1;
         switch (p)
@@ -275,6 +278,78 @@ public class Musica : MonoBehaviour
         int borde = Hz / 20;
         for (int i = 0; i < borde; i++) { float k = i / (float)borde; d[i] *= k; d[n - 1 - i] *= k; }
         return d;
+    }
+
+    /// <summary>
+    /// "Ventanas encendidas", la música de la aldea vacía: una caja de música que da vueltas sola. Un arpegio agudo que se
+    /// repite casi igual, con una nota que no termina de encajar (la segunda menor y el tritono), un bajo grave muy quieto y
+    /// campanas sueltas. Pieza original, con la inquietud de las canciones de pueblos fantasma de los RPG.
+    /// </summary>
+    static float[] MuestrasVacia()
+    {
+        const float bpm = 76f;
+        float tiempo = 60f / bpm, compas = tiempo * 4f, corchea = tiempo * 0.5f;
+        // dos compases por acorde: Mi menor, Do (con la séptima mayor), La menor con la sexta, Si con la novena menor
+        int[] raices = { 40, 36, 45, 47 };
+        int[][] arpegios =
+        {
+            new[] { 76, 83, 79, 82, 76, 83, 79, 84 },   // Mi Si Sol La# ... la La# es la que no encaja
+            new[] { 76, 83, 79, 83, 72, 79, 76, 83 },
+            new[] { 76, 81, 78, 84, 76, 81, 78, 75 },
+            new[] { 75, 83, 78, 84, 75, 83, 78, 81 },
+        };
+        int compases = raices.Length * 2;
+        float dur = compas * compases;
+        int n = Mathf.CeilToInt(dur * Hz);
+        var d = new float[n];
+        float Caja(float f, float tt)
+        {
+            if (tt < 0f) return 0f;
+            float env = Mathf.Min(1f, tt * 900f) * Mathf.Exp(-tt * 4.2f);
+            float w = 2f * Mathf.PI * f * tt;
+            // campanita de caja de música: fundamental y parciales inarmónicos que se apagan antes
+            return (Mathf.Sin(w) + Mathf.Sin(w * 2.76f) * 0.35f * Mathf.Exp(-tt * 9f) + Mathf.Sin(w * 5.4f) * 0.12f * Mathf.Exp(-tt * 16f)) * env;
+        }
+        for (int i = 0; i < n; i++)
+        {
+            float t = i / (float)Hz;
+            int c = Mathf.Min(compases - 1, Mathf.FloorToInt(t / compas)), a = c / 2;
+            float tc = t - c * compas;
+            float s = 0f;
+            // el bajo: una sola nota larga cada dos compases, grave y casi sin ataque
+            float tb = t - a * compas * 2f;
+            s += Mathf.Sin(2f * Mathf.PI * Nota(raices[a]) * t) * Mathf.Min(1f, tb * 2f) * Mathf.Exp(-tb * 0.35f) * 0.12f;
+            s += Mathf.Sin(2f * Mathf.PI * Nota(raices[a] + 7) * t) * Mathf.Min(1f, tb * 2f) * Mathf.Exp(-tb * 0.5f) * 0.04f;
+            // la caja de música: el arpegio a corcheas; en la segunda vuelta de cada acorde se desafina apenas, como el muelle cansado
+            int ic = Mathf.FloorToInt(tc / corchea);
+            float tn = tc - ic * corchea;
+            int nota = arpegios[a][ic % 8];
+            float desaf = (c % 2 == 1) ? 1f - 0.004f * Mathf.Sin(t * 0.7f) : 1f;
+            s += Caja(Nota(nota) * desaf, tn) * 0.16f;
+            // un eco tenue de la nota anterior, una octava abajo
+            if (ic > 0) s += Caja(Nota(arpegios[a][(ic - 1) % 8] - 12), tn + corchea) * 0.05f;
+            // campanas sueltas muy agudas al empezar ciertos compases
+            if (c % 4 == 3)
+            {
+                float tg = tc - tiempo * 2.5f;
+                s += Caja(Nota(raices[a] + 48 + 6), tg) * 0.06f;   // el tritono, arriba de todo
+            }
+            d[i] = s;
+        }
+        // eco largo, de cuarto vacío
+        int r1 = (int)(0.23f * Hz), r2 = (int)(0.51f * Hz), r3 = (int)(1.07f * Hz);
+        var o = new float[n];
+        for (int i = 0; i < n; i++)
+        {
+            float e = d[i];
+            if (i >= r1) e += o[i - r1] * 0.32f;
+            if (i >= r2) e += d[i - r2] * 0.16f;
+            if (i >= r3) e += d[i - r3] * 0.1f;
+            o[i] = Mathf.Clamp(e, -1f, 1f);
+        }
+        int borde = Hz / 20;
+        for (int i = 0; i < borde; i++) { float k = i / (float)borde; o[i] *= k; o[n - 1 - i] *= k; }
+        return o;
     }
 
     /// <summary>

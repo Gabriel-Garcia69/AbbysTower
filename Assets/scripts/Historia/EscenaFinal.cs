@@ -54,9 +54,9 @@ public class EscenaFinal : MonoBehaviour
         {
             return Physics.Raycast(new Vector3(x, y0 + 12f, z), Vector3.down, out var h0, 30f, ~0, QueryTriggerInteraction.Ignore) ? h0.point.y + 0.05f : y0;
         }
-        Vector3 cuerpo = new Vector3(0.5f, DioramaBuilder.FinalDescanso + 0.02f, 23f);
-        Vector3 pos = new Vector3(-0.3f, DioramaBuilder.FinalDescanso + 0.02f, 20.8f);
-        Vector3 ante = new Vector3(-0.4f, DioramaBuilder.FinalDescanso + 0.05f, 19.6f);
+        Vector3 cuerpo = new Vector3(0.5f, DioramaBuilder.FinalDescanso + 0.02f, 24.5f);
+        Vector3 pos = new Vector3(-0.3f, DioramaBuilder.FinalDescanso + 0.02f, 21.8f);
+        Vector3 ante = new Vector3(-0.4f, DioramaBuilder.FinalDescanso + 0.05f, 20.4f);
         dante = CrearDante(cuerpo, abby);
         var colgante = DanteFinal.CrearColgante(pos);
         var sombra = StartCoroutine(SombraSube());
@@ -85,7 +85,7 @@ public class EscenaFinal : MonoBehaviour
         // 3) de lado, quieta la cámara: ella sube los últimos escalones y se detiene frente a él
         yield return Pasar();
         int idLlegada = planoId + 1;
-        StartCoroutine(Plano(cuerpo + new Vector3(10f, 2.6f, -2.5f), cuerpo + new Vector3(9.4f, 2.6f, -2f), () => Vector3.Lerp(cuerpo, Yo(), 0.5f) + Vector3.up * 0.8f, 36f, 30f));
+        StartCoroutine(Plano(cuerpo + new Vector3(7f, 4f, -3.5f), cuerpo + new Vector3(6.5f, 3.8f, -3.1f), () => Vector3.Lerp(cuerpo, Yo(), 0.5f) + Vector3.up * 0.8f, 36f, 30f));
         while (!llego) yield return null;
         yield return new WaitForSeconds(1.6f);
         yield return Decir(Historia.Protagonista, "¿Quién... eres?", 3f);
@@ -93,15 +93,15 @@ public class EscenaFinal : MonoBehaviour
 
         // 4) el colgante en el escalón, muy cerca; ella se arrodilla
         yield return Pasar();
-        Sonido.Tocar(Sonido.Efecto.Fuente, 0.8f, 0.7f);
+        Sonido.Tocar(Sonido.Efecto.Colgante, 0.75f);
         var calida = StartCoroutine(LuzCalida(colgante));
-        StartCoroutine(Plano(pos + new Vector3(-1.7f, 0.75f, 0.1f), pos + new Vector3(-1.3f, 0.6f, 0.05f), () => pos + Vector3.up * 0.1f, 30f, 6f));   // de lado: de frente, la espada de él tapaba el cuadro
+        StartCoroutine(Plano(pos + new Vector3(-2.2f, 1f, 0.2f), pos + new Vector3(-1.8f, 0.85f, 0.1f), () => pos + Vector3.up * 0.1f, 32f, 6f));   // de lado: de frente, la espada de él tapaba el cuadro
         yield return new WaitForSeconds(1.8f);
         if (abby != null) abby.deRodillas = true;
         yield return Decir(Historia.Protagonista, "Este colgante...", 2.6f);
         // 5) su cara, de rodillas
         yield return Pasar();
-        StartCoroutine(Plano(Yo() + new Vector3(-3.1f, 0.85f, 0.9f), Yo() + new Vector3(-2.8f, 0.82f, 0.8f), () => Yo() + Vector3.up * 0.7f, 30f, 6f));
+        StartCoroutine(Plano(Yo() + new Vector3(-4.6f, 1.2f, 1.4f), Yo() + new Vector3(-4.2f, 1.15f, 1.3f), () => Yo() + Vector3.up * 0.6f, 34f, 6f));
         yield return Decir(Historia.Protagonista, "Era de papá. Yo te lo di.", 3.4f);
 
         // los recuerdos
@@ -110,13 +110,14 @@ public class EscenaFinal : MonoBehaviour
         yield return Recuerdo("Intro/14_regreso", Historia.Hermano, "Voy de regreso, Abby. Te dije que volvería.", 5.2f);
 
         // 6) desde lo alto, por detrás: los dos, tan chiquitos, y la puerta a unos pasos
-        StartCoroutine(Plano(new Vector3(4f, 15f, 35f), new Vector3(2.5f, 14f, 33.5f), () => Vector3.Lerp(cuerpo, ante, 0.5f) + Vector3.up * 0.4f, 38f, 11f));
+        Vector3 medio = Vector3.Lerp(cuerpo, ante, 0.5f);
+        StartCoroutine(Plano(medio + new Vector3(-8.5f, 5f, 1.5f), medio + new Vector3(-7.8f, 4.6f, 2.2f), () => medio + Vector3.up * 0.5f, 38f, 11f));   // de lado y un poco arriba: los dos, juntos
         yield return Decir(Historia.Protagonista, "Las huellas. Las hojas.", 3f);
         yield return Decir(Historia.Protagonista, "Venías de regreso... todo este tiempo.", 3.6f);
         yield return Decir(Historia.Protagonista, "Estabas a unos escalones.", 3.4f);
         // 7) detrás de ella, abajo: la puerta se abre sola y la luz los cubre; a él se le deshace la sombra. Una sola toma
         yield return Pasar();
-        StartCoroutine(Plano(() => Yo() + new Vector3(1.6f, 1.1f, -4.2f), () => Yo() + new Vector3(1.2f, 1.4f, -3.2f), () => Vector3.Lerp(cuerpo, puerta, 0.35f), 44f, 13f));
+        StartCoroutine(Plano(medio + new Vector3(-3.6f, 2.8f, -6.5f), medio + new Vector3(-3.1f, 2.6f, -5.6f), () => medio + new Vector3(0f, 1.9f, 5f), 54f, 13f));   // los dos abajo y la puerta abriéndose arriba
         yield return AbrirPuerta();
         StopCoroutine(sombra);
         CombatFx.Burst(cuerpo + Vector3.up * 0.5f, new Color(0.35f, 0.2f, 0.5f), 60, 3f, 0.3f, 2.2f, -0.8f);
@@ -129,7 +130,7 @@ public class EscenaFinal : MonoBehaviour
         Sonido.Tocar(Sonido.Efecto.Latido, 1f);
         // 8) desde él, mirándola
         yield return Pasar();
-        StartCoroutine(Plano(cuerpo + new Vector3(0.3f, 0.5f, -0.6f), cuerpo + new Vector3(0.25f, 0.5f, -0.8f), () => Yo() + Vector3.up * 0.75f, 34f, 7f));
+        StartCoroutine(Plano(cuerpo + new Vector3(1.4f, 0.9f, 0.6f), cuerpo + new Vector3(1.2f, 0.9f, 0.3f), () => Yo() + Vector3.up * 0.7f, 36f, 7f));
         yield return new WaitForSeconds(1.6f);
 
         // la música se apaga antes de su voz
@@ -173,7 +174,7 @@ public class EscenaFinal : MonoBehaviour
         yield return new WaitForSeconds(1.5f);
         // la otra ventana se enciende
         EncenderVentana();
-        Sonido.Tocar(Sonido.Efecto.Fuente, 0.9f, 0.85f);
+        Sonido.Tocar(Sonido.Efecto.Ventana, 0.7f);
         yield return new WaitForSeconds(3.2f);
         tarjeta = "Continuará…"; subtarjeta = Historia.Titulo;
         for (float t = 0f; t < 4f; t += Time.deltaTime) { tarjetaA = Mathf.Clamp01(Mathf.Min(t / 0.8f, (4f - t) / 0.8f)); yield return null; }
@@ -187,26 +188,26 @@ public class EscenaFinal : MonoBehaviour
 
     SpriteRenderer CrearDante(Vector3 pos, AbbySpriteAnimator abby)
     {
-        // Dante chibi tendido (PixelLab, el mismo personaje), con la cabeza hacia la puerta; se ve del lado que toque según la cámara
+        // Dante chibi tendido, visto de lado (PixelLab, con su sprite de referencia): siempre de frente a la cámara, como los demás
+        // sprites, con la cabeza hacia el lado de la puerta
         var go = new GameObject("DanteTendido");
-        go.transform.position = pos;
+        go.transform.position = pos + Vector3.up * 0.02f;
         var sr = go.AddComponent<SpriteRenderer>();
         var abbySr = abby != null ? abby.GetComponent<SpriteRenderer>() : null;
         if (abbySr != null) sr.sharedMaterial = abbySr.sharedMaterial;
-        var vista = go.AddComponent<MirarCamara>();
-        string[] dirs = { "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west" };
-        for (int i = 0; i < 8; i++) vista.poses[i] = Resources.Load<Sprite>("DanteHumano/Tendido/" + dirs[i]);
-        vista.rumbo = Vector3.forward;   // hacia la puerta
+        var vista = go.AddComponent<DeLado>();
+        vista.este = Resources.Load<Sprite>("DanteHumano/Tendido/lado_este");
+        vista.oeste = Resources.Load<Sprite>("DanteHumano/Tendido/lado_oeste");
         vista.sr = sr;
-        sr.sprite = vista.poses[0];
-        sr.color = new Color(0.13f, 0.08f, 0.2f);
+        sr.sprite = vista.este;
+        sr.color = new Color(0.42f, 0.3f, 0.6f);   // sombra morada, pero que se lea sobre el piso oscuro
         return sr;
     }
 
-    class MirarCamara : MonoBehaviour
+    /// <summary>Mira a la cámara y elige el lado: la cabeza siempre queda del lado donde está la puerta en pantalla.</summary>
+    class DeLado : MonoBehaviour
     {
-        public Sprite[] poses = new Sprite[8];
-        public Vector3 rumbo;
+        public Sprite este, oeste;
         public SpriteRenderer sr;
         void LateUpdate()
         {
@@ -215,10 +216,10 @@ public class EscenaFinal : MonoBehaviour
             Vector3 f = c.transform.forward; f.y = 0f;
             if (f.sqrMagnitude < 0.001f) return;
             transform.rotation = Quaternion.LookRotation(f, Vector3.up);
-            // hacia dónde apunta su cuerpo visto desde la cámara: 0 = de espaldas a ella (norte), luego en el sentido del reloj
-            float ang = Vector3.SignedAngle(f, rumbo, Vector3.up);
-            int k = Mathf.RoundToInt(Mathf.Repeat(ang, 360f) / 45f) % 8;
-            if (sr != null && poses[k] != null) sr.sprite = poses[k];
+            // la puerta (+z) cae a la derecha o a la izquierda de la pantalla
+            bool derecha = Vector3.Dot(c.transform.right, Vector3.forward) >= 0f;
+            var s = derecha ? este : oeste;
+            if (sr != null && s != null && sr.sprite != s) sr.sprite = s;
         }
     }
 

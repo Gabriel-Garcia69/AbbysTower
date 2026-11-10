@@ -9,7 +9,7 @@ using UnityEngine;
 /// </summary>
 public static class Sonido
 {
-    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello, Impulso, Rugido, Temblor, Impacto, Latido }
+    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello, Impulso, Rugido, Temblor, Impacto, Latido, Colgante, Ventana }
 
     const int Hz = 22050;
     static readonly Dictionary<Efecto, AudioClip> clips = new Dictionary<Efecto, AudioClip>();
@@ -62,7 +62,7 @@ public static class Sonido
 
     static AudioClip Sintetizar(Efecto e)
     {
-        float dur = e == Efecto.Fuente ? 1.8f : e == Efecto.Muerte ? 1.1f : e == Efecto.Alerta ? 0.45f : e == Efecto.Bloqueo ? 0.35f
+        float dur = e == Efecto.Colgante ? 4.2f : e == Efecto.Ventana ? 2.6f : e == Efecto.Fuente ? 1.8f : e == Efecto.Muerte ? 1.1f : e == Efecto.Alerta ? 0.45f : e == Efecto.Bloqueo ? 0.35f
                   : e == Efecto.Paso ? 0.08f : e == Efecto.Clic ? 0.05f : e == Efecto.Destello ? 1.6f : e == Efecto.Impulso ? 0.46f : e == Efecto.Rugido ? 2.6f : e == Efecto.Temblor ? 1.8f : e == Efecto.Impacto ? 1.5f : e == Efecto.Latido ? 0.9f : 0.22f;
         int n = Mathf.CeilToInt(dur * Hz);
         var d = new float[n];
@@ -99,6 +99,27 @@ public static class Sonido
                     float env = Mathf.Min(1f, t * 80f) * Mathf.Exp(-t * 2.4f);
                     s = (Mathf.Sin(2f * Mathf.PI * 880f * t) * 0.45f + Mathf.Sin(2f * Mathf.PI * 1318.5f * t) * 0.22f + Mathf.Sin(2f * Mathf.PI * 2217f * t) * 0.1f
                          + Mathf.Sin(2f * Mathf.PI * 660f * t) * 0.18f) * env;
+                    break;
+                }
+                case Efecto.Colgante:   // el colgante: tres notas de caja de música, lentas y lejanas, que se quedan sonando
+                {
+                    float[] at = { 0f, 0.55f, 1.25f };
+                    float[] fr = { 1046.5f, 783.99f, 659.26f };   // Do, Sol, Mi: bajando, como un recuerdo
+                    for (int q = 0; q < 3; q++)
+                    {
+                        float tq = t - at[q];
+                        if (tq < 0f) continue;
+                        float env = Mathf.Min(1f, tq * 500f) * Mathf.Exp(-tq * 1.6f);
+                        float w = 2f * Mathf.PI * fr[q] * tq;
+                        s += (Mathf.Sin(w) + Mathf.Sin(w * 2.76f) * 0.25f * Mathf.Exp(-tq * 6f) + Mathf.Sin(w * 0.5f) * 0.15f) * env * 0.33f;
+                    }
+                    break;
+                }
+                case Efecto.Ventana:   // la luz que se prende en la casa: un acorde tibio y suave que se abre, sin golpe
+                {
+                    float env = Mathf.SmoothStep(0f, 1f, t / 0.5f) * Mathf.Exp(-Mathf.Max(0f, t - 0.5f) * 1.4f);
+                    foreach (float f in new[] { 261.63f, 329.63f, 392f, 523.25f })
+                        s += Mathf.Sin(2f * Mathf.PI * f * t + Mathf.Sin(t * 5f) * 0.02f) * 0.13f * env;
                     break;
                 }
                 case Efecto.Alerta:   // pulso grave: avisa que viene un ataque

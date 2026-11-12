@@ -126,6 +126,7 @@ public class FloorDirector : MonoBehaviour
 
         runStart = Time.time;
         guia = gameObject.AddComponent<GuiaHordas>();   // baliza y flecha hacia la siguiente pelea
+        RanurasEscaleras.Revisar();                     // sin zanjas junto a las escaleras donde Abby se atoraba
         Banner(floorTitle, floorSubtitle, new Color(0.75f, 0.85f, 1f), 4f);
     }
 

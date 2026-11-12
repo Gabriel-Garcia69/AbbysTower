@@ -194,8 +194,9 @@ public class RoomEncounter : MonoBehaviour
     /// Dónde sale un enemigo de la horda: alrededor de Abby (5.5 a 8 m), en suelo firme a su altura y sin nada en medio
     /// (cerca, casa, río, orilla). Así ninguna horda queda imposible por salir detrás de algo. Si no hay hueco, su punto.
     /// </summary>
-    Vector3 PuntoCercaDeAbby(Vector3 respaldo, int index)
+    public Vector3 PuntoCercaDeAbby(Vector3 respaldo, int index)
     {
+        if (player == null) return respaldo;
         Vector3 c = player.position;
         for (int intento = 0; intento < 12; intento++)
         {

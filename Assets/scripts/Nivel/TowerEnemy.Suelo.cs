@@ -135,4 +135,54 @@ public partial class TowerEnemy
         float from = Mathf.Max(transform.position.y, target != null ? target.position.y : p.y) + 2f;
         return GroundAt(p, from, out float y) ? y : transform.position.y;
     }
+
+    // ------------------------------------------------------------------ rescate
+
+    Vector3 marcaAtasco;
+    float sinAvanzar;
+
+    /// <summary>
+    /// Un enemigo que ya no puede llegar a Abby (debajo de un puente, en el cauce, en un hueco o en otro nivel del mapa)
+    /// vuelve a salir de una grieta junto a ella. Antes la horda nunca terminaba: quedaba "Enemigos: 1" sin verse a nadie
+    /// y la guía no marcaba la siguiente horda.
+    /// </summary>
+    void VigilarAtasco(float dist)
+    {
+        if (!FollowsGround || target == null || asleep || state == State.Spawning || state == State.Dying || state == State.Leap || state == State.Blink)
+        {
+            marcaAtasco = transform.position; sinAvanzar = 0f;
+            return;
+        }
+        // cayó muy por debajo de su arena (al agua, al vacío): de vuelta de inmediato
+        if (transform.position.y < room.transform.position.y - 6f) { Reaparecer(); return; }
+
+        bool otroNivel = Mathf.Abs(transform.position.y - target.position.y) > 2.2f;   // Abby salta 1.2 m: más es otro nivel
+        bool quiereLlegar = otroNivel || (state == State.Chase && dist > attackRange + 1.5f);
+        Vector3 d = transform.position - marcaAtasco;
+        if (!quiereLlegar || d.sqrMagnitude > 1f) { marcaAtasco = transform.position; sinAvanzar = 0f; return; }
+        sinAvanzar += Time.deltaTime;
+        if (sinAvanzar > (otroNivel ? 3f : 4.5f)) Reaparecer();
+    }
+
+    /// <summary>Sale otra vez de una grieta en suelo firme junto a Abby (o en el centro de su arena si no hay hueco).</summary>
+    void Reaparecer()
+    {
+        sinAvanzar = 0f;
+        Vector3 respaldo = room.transform.position + Vector3.up * 0.05f;
+        Vector3 p = room.PuntoCercaDeAbby(respaldo, Random.Range(0, 8));
+        if (GroundAt(p, p.y + 1.5f, out float gy)) p.y = gy;
+        if (hitbox != null) hitbox.End();
+        if (telegraphFx != null) { Destroy(telegraphFx); telegraphFx = null; }
+        knock = Vector3.zero;
+        CombatFx.Burst(transform.position + Vector3.up, eyeColor, 18, 4f, 0.15f, 0.4f, 0f);
+        transform.position = p;
+        marcaAtasco = p;
+        emergio = false;
+        if (visual != null) { visual.localScale = Vector3.one * 0.001f; visual.localPosition = Vector3.zero; }
+        CombatFx.Grieta(p, Mathf.Max(0.8f, radius * 1.5f) * Mathf.Max(1f, Scale), GrietaAbre, GrietaAbre + GrietaSube + 0.25f);
+        Go(State.Spawning);
+    }
+
+    /// <summary>¿Ese punto de caída está al nivel de Abby? (un salto o un parpadeo no la deja debajo de un puente ni en el cauce)</summary>
+    bool MismoNivel(Vector3 p) => !FollowsGround || target == null || Mathf.Abs(p.y - target.position.y) < 1.6f;
 }

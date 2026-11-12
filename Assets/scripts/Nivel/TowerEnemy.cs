@@ -456,6 +456,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
         if (flash > 0f) { flash -= dt; SetColor(body, flash > 0f ? Color.white * 2f : bodyColor); }
         if (glow != null) glow.intensity = (Enraged ? 10f : 6f) * glowEscala * (0.85f + Mathf.PerlinNoise(bob * 3f, 0f) * 0.3f);
 
+        VigilarAtasco(dist);
         KeepInRoom();
         FollowGround(start);
     }

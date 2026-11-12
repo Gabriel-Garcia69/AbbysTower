@@ -267,7 +267,7 @@ public partial class TowerEnemy
         leapFrom = transform.position;
         leapTo = target != null ? target.position : transform.position + facing * 4f;
         leapTo.y = LandY(leapTo);
-        if (!GoodLanding(leapTo)) leapTo = leapFrom;   // no salta al río ni dentro de un muro
+        if (!GoodLanding(leapTo) || !MismoNivel(leapTo)) leapTo = leapFrom;   // no salta al río, dentro de un muro ni debajo de un puente
         Vector3 hacia = (target != null ? target.position : leapTo) - transform.position; hacia.y = 0f;
         if (hacia.sqrMagnitude > 0.01f) facing = hacia.normalized;   // mira a donde va a caer
         Go(State.Leap);
@@ -392,7 +392,7 @@ public partial class TowerEnemy
                     float a = Random.Range(0f, Mathf.PI * 2f);
                     Vector3 p = target.position + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * Random.Range(5f, 7f);
                     p.y = LandY(p);
-                    if (!GoodLanding(p)) p = transform.position;   // no reaparece dentro de un muro
+                    if (!GoodLanding(p) || !MismoNivel(p)) p = transform.position;   // no reaparece dentro de un muro ni bajo un puente
                     CombatFx.Burst(transform.position + Vector3.up, eyeColor, 18, 4f, 0.15f, 0.4f, 0f);
                     transform.position = p;
                     KeepInRoom();

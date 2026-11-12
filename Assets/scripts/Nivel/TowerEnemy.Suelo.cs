@@ -139,7 +139,7 @@ public partial class TowerEnemy
     // ------------------------------------------------------------------ rescate
 
     Vector3 marcaAtasco;
-    float sinAvanzar;
+    float sinAvanzar, enOtroNivel, brechaMarca = float.MaxValue;
 
     /// <summary>
     /// Un enemigo que ya no puede llegar a Abby (debajo de un puente, en el cauce, en un hueco o en otro nivel del mapa)
@@ -151,12 +151,23 @@ public partial class TowerEnemy
         if (!FollowsGround || target == null || asleep || state == State.Spawning || state == State.Dying || state == State.Leap || state == State.Blink)
         {
             marcaAtasco = transform.position; sinAvanzar = 0f;
+            enOtroNivel = 0f; brechaMarca = float.MaxValue;
             return;
         }
         // cayó muy por debajo de su arena (al agua, al vacío): de vuelta de inmediato
         if (transform.position.y < room.transform.position.y - 6f) { Reaparecer(); return; }
 
-        bool otroNivel = Mathf.Abs(transform.position.y - target.position.y) > 2.2f;   // Abby salta 1.2 m: más es otro nivel
+        bool otroNivel = Mathf.Abs(transform.position.y - target.position.y) > 1.6f;   // Abby salta 1.2 m: más es otro nivel (igual que MismoNivel; con 2.2 uno quedaba en el cauce bajo el puente)
+        // en otro nivel aunque camine (va y viene por el cauce bajo el puente buscándola): si en 5 s no se acerca en
+        // altura (no sube por una escalera o rampa), sale junto a ella
+        if (otroNivel)
+        {
+            float brecha = Mathf.Abs(transform.position.y - target.position.y);
+            if (brecha < brechaMarca - 0.5f) { brechaMarca = brecha; enOtroNivel = 0f; }
+            enOtroNivel += Time.deltaTime;
+            if (enOtroNivel > 5f) { Reaparecer(); return; }
+        }
+        else { enOtroNivel = 0f; brechaMarca = float.MaxValue; }
         bool quiereLlegar = otroNivel || (state == State.Chase && dist > attackRange + 1.5f);
         Vector3 d = transform.position - marcaAtasco;
         if (!quiereLlegar || d.sqrMagnitude > 1f) { marcaAtasco = transform.position; sinAvanzar = 0f; return; }

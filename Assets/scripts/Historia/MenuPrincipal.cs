@@ -36,9 +36,11 @@ public class MenuPrincipal : MonoBehaviour
     float t, entrada;
     Camera cam;
     FondoMenu fondo;
+    static Texture2D logo;   // el logo de la torre (Resources/Logo/logo_torre)
 
     void Awake()
     {
+        if (logo == null) logo = Resources.Load<Texture2D>("Logo/logo_torre");
         // antes de que la cinemática empiece (su Start corre después de todos los Awake)
         foreach (var c in FindObjectsByType<Cinematica>()) Destroy(c);
         ReintentoJefe.Escena = null;   // empezar de nuevo desde el menú
@@ -194,9 +196,17 @@ public class MenuPrincipal : MonoBehaviour
         GUI.DrawTexture(new Rect(0f, sh * 0.4f, sw, sh * 0.6f), Degradado.Vertical);
         GUI.color = Color.white;
         var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 11f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        Sombra(new Rect(0, sh * 0.09f, sw, u * 15f), "ABBY'S TOWER", FuentePixel.Logo(titulo, u * 12.5f), new Color(1f, 0.92f, 0.75f));
+        // el logo de la torre arriba y el nombre debajo (sin logo, el nombre solo y más grande, como antes)
+        float yTitulo = sh * 0.09f, altoTitulo = u * 15f, letra = u * 12.5f;
+        if (logo != null)
+        {
+            float lh = u * 24f, lw = lh * logo.width / logo.height;
+            GUI.DrawTexture(new Rect((sw - lw) / 2f, u * 2f, lw, lh), logo, ScaleMode.ScaleToFit, true);
+            yTitulo = u * 25.5f; altoTitulo = u * 10.5f; letra = u * 9f;
+        }
+        Sombra(new Rect(0, yTitulo, sw, altoTitulo), "ABBY'S TOWER", FuentePixel.Logo(titulo, letra), new Color(1f, 0.92f, 0.75f));
         var sub = new GUIStyle(titulo) { font = null, fontSize = FuentePixel.Tam(u * 3.1f), fontStyle = FontStyle.Italic };
-        float ySub = sh * 0.09f + u * 15f;
+        float ySub = yTitulo + altoTitulo;
         Sombra(new Rect(0, ySub, sw, u * 5f), "La torre del abismo", sub, new Color(0.88f, 0.82f, 1f));
         float tiraW = u * 26f, tiraH = Mathf.Max(1f, u * 0.2f);
         GUI.color = new Color(0.92f, 0.78f, 0.45f, 0.8f);

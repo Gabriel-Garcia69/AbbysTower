@@ -129,7 +129,7 @@ public partial class DioramaBuilder
         {
             // en la gruta también cuenta el tamaño: antes todos salían iguales de chicos
             var grande = Group("CristalesGrandes", parent);
-            grande.localPosition = pos;
+            grande.localPosition = AsentarCristal(parent, pos, s);
             grande.localScale = Vector3.one * (s / 1.5f);
             CristalesFacetados(grande, Vector3.zero, violet, light);
             return;
@@ -146,6 +146,28 @@ public partial class DioramaBuilder
             k.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
         if (light) AddLight(c, new Vector3(0f, 1.5f * s, 0f), violet ? new Color(0.7f, 0.45f, 1f) : new Color(0.35f, 0.8f, 1f), 9f * s, 3.5f);
+    }
+
+    /// <summary>
+    /// La gruta es de bloques: la altura del centro no basta, porque en la orilla de una isla o de un escalón media
+    /// piña quedaba en el aire. Se baja hasta el bloque más bajo que cubre (o hasta el agua). No toca los del techo
+    /// (cuelgan, el grupo va de cabeza) ni los del carrito.
+    /// </summary>
+    Vector3 AsentarCristal(Transform parent, Vector3 pos, float s)
+    {
+        if (parent.up.y < 0.5f || parent.name == "Carrito") return pos;
+        Vector3 w = parent.TransformPoint(pos);
+        float suelo = CaveHeight(w.x, w.z);
+        if (w.y < suelo - 0.5f) return pos;   // los gigantes del lago salen del agua a propósito
+        float r = s * 0.45f, min = suelo;
+        for (int i = 0; i < 8; i++)
+        {
+            float a = i * Mathf.PI / 4f;
+            min = Mathf.Min(min, CaveHeight(w.x + Mathf.Cos(a) * r, w.z + Mathf.Sin(a) * r));
+        }
+        min = Mathf.Max(min, CaveLakeY - 0.3f);
+        float baja = Mathf.Min(w.y - min, 3f) + 0.08f * s;
+        return pos + Vector3.down * Mathf.Max(0f, baja);
     }
 
     /// <summary>Estalagmita (cono de roca).</summary>

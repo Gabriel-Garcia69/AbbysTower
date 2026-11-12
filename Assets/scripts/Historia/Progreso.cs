@@ -8,7 +8,8 @@ using UnityEngine.SceneManagement;
 public static class Progreso
 {
     const string Clave = "progreso_escena";
-    static readonly string[] Ruta = { "Exterior", "Diorama", "CuartosA", "Puerto", "Cascadas", "Acantilado", "Cima" };
+    // toda la ruta: antes faltaban Cueva, Lago y Nevado y "Continuar" regresaba al Acantilado
+    static readonly string[] Ruta = { "Exterior", "Diorama", "CuartosA", "Puerto", "Cascadas", "Acantilado", "Cueva", "Lago", "Nevado", "Cima" };
 
     public static bool Hay => !string.IsNullOrEmpty(Escena);
     public static string Escena => PlayerPrefs.GetString(Clave, "");

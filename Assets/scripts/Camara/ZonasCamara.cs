@@ -33,7 +33,7 @@ public static class ZonasCamara
     static readonly Dictionary<string, (Vector4 v, Vector3 corre)> Aperturas = new Dictionary<string, (Vector4, Vector3)>
     {
         { "Puerto", (new Vector4(20f, 34f, 100f, 5f), new Vector3(8f, 0f, 30f)) },
-        { "Cascadas", (new Vector4(-20f, 36f, 120f, 6f), new Vector3(-6f, 6f, 70f)) },
+        { "Cascadas", (new Vector4(-20f, 36f, 95f, 6f), new Vector3(-6f, 6f, 55f)) },   // antes 120 m: la vuelta a Abby se hacía eterna
         { "Acantilado", (new Vector4(30f, 34f, 105f, 5f), new Vector3(40f, 0f, 45f)) },
         { "Cueva", (new Vector4(12f, 25f, 54f, 3f), new Vector3(0f, 0f, 20f)) },   // por debajo del techo
         { "Lago", (new Vector4(20f, 34f, 130f, 6f), new Vector3(4f, 4f, 70f)) },
@@ -56,6 +56,7 @@ public static class ZonasCamara
                 if (c.introSeconds > 0f)
                 {
                     c.yaw = ap.v.x; c.pitch = ap.v.y; c.distance = ap.v.z; c.lookUp = ap.v.w; c.offset = ap.corre; c.fov = s.name == "Cueva" ? 42f : 30f; c.blendTime = 2.6f;
+                    if (s.name == "Cascadas") c.introSeconds = Mathf.Min(c.introSeconds, 3.5f);   // 5.6 s en vez de 8: se hacía larga
                 }
         if (!Tabla.TryGetValue(s.name, out var zonas)) return;
         var padre = new GameObject("ZonasCamara");

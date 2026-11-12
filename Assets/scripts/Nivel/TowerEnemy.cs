@@ -464,7 +464,7 @@ public partial class TowerEnemy : MonoBehaviour, IHittable
     void Go(State s)
     {
         // alerta de sombra (GDD): cada ataque suena con un pulso grave cuando su sombra aparece en el suelo
-        if (s == State.Telegraph && state != State.Lunge || s == State.Slam) Sonido.Tocar(Sonido.Efecto.Alerta, IsBoss ? 0.9f : 0.55f, IsBoss ? 0.8f : 1f);
+        if (s == State.Telegraph && state != State.Lunge || s == State.Slam) Sonido.Tocar(Sonido.Efecto.Alerta, IsBoss ? 0.8f : 0.3f, IsBoss ? 0.8f : 1f);
         float fase = FaseAtaque();
         colaAtaque = s == State.Recover && state != State.Recover ? fase : -1f;   // al recuperarse termina la animación del golpe
         state = s; timer = 0f;

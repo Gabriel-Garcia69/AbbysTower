@@ -47,12 +47,15 @@ public class CameraShot : MonoBehaviour
     /// <summary>La apertura dura más que antes: da tiempo a que el barrido luzca el paisaje.</summary>
     public float IntroDuracion => introSeconds * 1.6f;
 
+    /// <summary>La apertura se corta antes si el jugador ya quiere moverse (la pone MouseOrbitCamera).</summary>
+    [System.NonSerialized] public bool Terminada;
+
     void OnEnable() => All.Add(this);
     void OnDisable() => All.Remove(this);
 
     public bool Contains(Vector3 world)
     {
-        if (introSeconds > 0f) return Time.timeSinceLevelLoad < IntroDuracion;
+        if (introSeconds > 0f) return !Terminada && Time.timeSinceLevelLoad < IntroDuracion;
         Vector3 p = transform.InverseTransformPoint(world);
         return Mathf.Abs(p.x) <= size.x / 2f && Mathf.Abs(p.z) <= size.y / 2f && p.y >= yMin && p.y <= yMax;
     }

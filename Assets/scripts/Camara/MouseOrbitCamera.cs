@@ -531,8 +531,15 @@ public class MouseOrbitCamera : MonoBehaviour
     void UpdateShot(float dt)
     {
         // candidata: la toma del lugar; ninguna mientras hay pelea (que no estorbe al combatir)
+        // la apertura del mapa: si el jugador ya quiere moverse (pasado 1.5 s), se corta y la cámara va con Abby
+        bool enApertura = shot != null && shot.introSeconds > 0f && !leaving;
+        if (enApertura && Time.timeSinceLevelLoad > 1.5f && QuiereJugar()) shot.Terminada = true;
         var cand = active.allowShots && !peeking && player != null ? CameraShot.At(player.position, RoomEncounter.ActiveCombats > 0) : null;
-        stillTime = playerVel.sqrMagnitude < 0.09f ? stillTime + dt : 0f;
+        // mientras dura la apertura (y al regresar de ella) Abby está quieta, pero eso no cuenta para el panorama:
+        // antes, al llegar la cámara con Abby, el panorama la volvía a alejar
+        if (shot != null && shot.introSeconds > 0f) stillTime = 0f;
+        // con tiempo del juego: leyendo una nota, en pausa o cargando no cuenta como "quieta" (si no, al cerrar la nota se abría el panorama)
+        else stillTime = playerVel.sqrMagnitude < 0.09f ? stillTime + (LoreNote.Open != null ? 0f : Time.deltaTime) : 0f;
         // Abby quieta un rato: la cámara se abre y recorre el paisaje despacio, hasta que vuelva a moverse
         if (cand == null && active.allowShots && !peeking && player != null && RoomEncounter.ActiveCombats == 0
             && stillTime >= PanoramaDelay && PanoramaPermitido()) cand = Panorama();
@@ -566,6 +573,7 @@ public class MouseOrbitCamera : MonoBehaviour
         }
         leaving = next == null;   // al salir, se queda la última toma mientras se desvanece
         float blend = shot != null ? Mathf.Max(0.2f, shot.blendTime) : 1f;
+        if (shot != null && shot.introSeconds > 0f && leaving) blend = Mathf.Min(blend, 1.5f);   // de la apertura a Abby, sin hacerse esperar
         float targetW = shot != null && !leaving ? 1f : 0f;
         shotW = Mathf.SmoothDamp(shotW, targetW, ref shotWVel, blend * 0.45f, Mathf.Infinity, dt);
         if (shotW < 0.002f && leaving) { shot = null; leaving = false; shotW = 0f; }
@@ -582,6 +590,16 @@ public class MouseOrbitCamera : MonoBehaviour
         sFov = Mathf.SmoothDamp(sFov, FovDe(shot), ref sFovVel, t, Mathf.Infinity, dt);
         sLookUp = Mathf.SmoothDamp(sLookUp, LookDe(shot), ref sLookVel, t, Mathf.Infinity, dt);
         sOffset = Vector3.SmoothDamp(sOffset, shot.offset, ref sOffsetVel, t, Mathf.Infinity, dt);
+    }
+
+    /// <summary>¿El jugador toca algo para jugar? (moverse, atacar, impulso; teclado, mouse o mando)</summary>
+    static bool QuiereJugar()
+    {
+        var kb = Keyboard.current; var ms = Mouse.current; var gp = Gamepad.current;
+        if (kb != null && (kb.wKey.isPressed || kb.aKey.isPressed || kb.sKey.isPressed || kb.dKey.isPressed || kb.upArrowKey.isPressed || kb.downArrowKey.isPressed
+                           || kb.leftArrowKey.isPressed || kb.rightArrowKey.isPressed || kb.spaceKey.isPressed || kb.jKey.isPressed)) return true;
+        if (ms != null && ms.leftButton.isPressed) return true;
+        return gp != null && (gp.leftStick.ReadValue().sqrMagnitude > 0.2f || gp.buttonSouth.isPressed || gp.buttonWest.isPressed);
     }
 
     float PitchDe(CameraShot s) => s.relativa ? pitch + s.pitch : s.pitch;

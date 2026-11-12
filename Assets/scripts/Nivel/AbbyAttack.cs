@@ -59,10 +59,10 @@ public class AbbyAttack : MonoBehaviour
     void AlConectar(IHittable objetivo, int cuantos)
     {
         if (cuantos == 1)
-            Sonido.Tocar(Sonido.Efecto.Golpe, 0.95f, golpeFuerte ? Random.Range(0.8f, 0.86f) : Random.Range(0.95f, 1.08f));
+            Sonido.Tocar(Sonido.Efecto.Golpe, 0.75f, golpeFuerte ? Random.Range(0.8f, 0.86f) : Random.Range(0.95f, 1.08f));
         else if (cuantos == 2)
         {
-            Sonido.Tocar(Sonido.Efecto.GolpeMulti, 1f, golpeFuerte ? 0.9f : 1f);
+            Sonido.Tocar(Sonido.Efecto.GolpeMulti, 0.85f, golpeFuerte ? 0.9f : 1f);
             CameraShake.Shake(0.14f, 0.15f);
         }
         if (cuantos >= 2)
@@ -143,7 +143,7 @@ public class AbbyAttack : MonoBehaviour
                         sourcePosition = transform.position, attacker = self,
                     }, Facing);
                     Color col = crit ? new Color(1f, 0.4f, 0.9f) : dashStrike ? new Color(0.5f, 1f, 1f) : last ? new Color(1f, 0.85f, 0.5f) : slashColor;
-                    Sonido.Tocar(Sonido.Efecto.Espada, 0.7f, (1f + i * 0.07f) * Random.Range(0.95f, 1.05f) * (golpeFuerte ? 0.9f : 1f));
+                    Sonido.Tocar(Sonido.Efecto.Espada, 0.32f, (1f + i * 0.07f) * Random.Range(0.95f, 1.05f) * (golpeFuerte ? 0.9f : 1f));
                     CombatFx.Slash(transform.position + Vector3.up * 0.75f + Facing * 0.55f, Facing, last || dashStrike || crit ? 2f : 1.5f, col, combo % 2 == 1);
                     if (dashStrike) FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "¡Tajo de impulso!", new Color(0.6f, 1f, 1f));
                     if (crit) FloorDirector.Popup(transform.position + Vector3.up * 2.5f, "¡CRÍTICO!", new Color(1f, 0.5f, 0.95f));

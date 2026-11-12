@@ -23,7 +23,7 @@ public class Musica : MonoBehaviour
     public static void Poner(Pista p)
     {
         Asegurar();
-        instancia.Cambiar(p);
+        instancia.Cambiar(p, Cruce, Cruce, 0f, false);
     }
 
     /// <summary>Durante la cinemática la música va más baja (GDD).</summary>
@@ -55,61 +55,96 @@ public class Musica : MonoBehaviour
     public static void Pelea(bool empieza)
     {
         string n = SceneManager.GetActiveScene().name;
-        if (n == "Nevado") { Poner(empieza ? Pista.Combate : Pista.Vacia); return; }
-        if (!ConAgua(n)) return;
-        Poner(empieza ? Pista.Combate : Pista.Paisaje);
+        Pista p;
+        if (n == "Nevado" || n == "Cueva") p = empieza ? Pista.Combate : Pista.Vacia;
+        else if (ConAgua(n)) p = empieza ? Pista.Combate : Pista.Paisaje;
+        else return;
+        Asegurar();
+        // al empezar: el combate entra rápido. Al terminar: un respiro, el combate se apaga despacio y la pista del lugar
+        // vuelve suave desde donde se había quedado (antes arrancaba de cero en 2.5 s y se sentía forzado)
+        if (empieza) instancia.Cambiar(p, 1.4f, 1.6f, 0f, false);
+        else instancia.Cambiar(p, 4f, 6f, 1.8f, true);
     }
 
     static void PorEscena(string n)
     {
         if (n == "Menu" || n == "Intro") Poner(Pista.Menu);
-        else if (n == "Nevado") Poner(Pista.Vacia);   // el pueblo vacío: caja de música inquietante
+        else if (n == "Nevado" || n == "Cueva") Poner(Pista.Vacia);   // el pueblo vacío y la gruta: caja de música inquietante (la Cueva antes heredaba la del mapa anterior)
         else if (ConAgua(n)) Poner(Pista.Paisaje);
         else if (n == "Cima" || n == "Expedicion" || n.StartsWith("Cuartos")) Poner(Pista.Combate);   // las zonas de cuartos usan la pista de combate
         Cinematica(n == "Intro");
     }
 
-    void Cambiar(Pista p)
+    void Cambiar(Pista p, float durSale, float durEntra, float retraso, bool reanudar)
     {
         if (p == actual) return;
         actual = p;
         StopAllCoroutines();
-        StartCoroutine(Cruzar(p));
+        cruzando = false;
+        StartCoroutine(Cruzar(p, durSale, durEntra, retraso, reanudar));
     }
+
+    Pista enA, enB;   // qué pista tiene cada fuente
+    readonly Dictionary<Pista, float> posicion = new Dictionary<Pista, float>();   // dónde se quedó cada pista al salir
 
     /// <summary>Segundos del cruce entre pistas: la que sale se apaga despacio mientras la nueva sube, nunca de golpe.</summary>
     public static float Cruce = 2.5f;
 
-    IEnumerator Cruzar(Pista p)
+    IEnumerator Cruzar(Pista p, float durSale, float durEntra, float retraso, bool reanudar)
     {
         // entra por la fuente más baja; si un cruce anterior quedó a medias, la otra sigue bajando desde donde iba
         var entra = a.volume <= b.volume ? a : b;
         var sale = entra == a ? b : a;
-        float v0 = sale.isPlaying ? sale.volume : 0f, e0 = 0f;
+        Pista pistaSale = sale == a ? enA : enB;
+        if (entra.isPlaying) { Recordar(entra == a ? enA : enB, entra); entra.Stop(); }
+        float v0 = sale.isPlaying ? sale.volume : 0f;
+        entra.volume = 0f;
         if (p != Pista.Ninguna)
         {
             entra.clip = Clip(p);
-            entra.volume = 0f;
-            entra.Play();
+            if (entra == a) enA = p; else enB = p;
         }
-        else { entra.Stop(); entra.volume = 0f; }
-        float dur = Mathf.Max(0.1f, Cruce);
-        for (float t = 0f; t < dur; t += Time.unscaledDeltaTime)
+        durSale = Mathf.Max(0.1f, durSale); durEntra = Mathf.Max(0.1f, durEntra);
+        float total = Mathf.Max(durSale, retraso + durEntra);
+        cruzando = true;
+        for (float t = 0f; t < total; t += Time.unscaledDeltaTime)
         {
-            float k = Mathf.SmoothStep(0f, 1f, t / dur);
-            sale.volume = v0 * (1f - k);
-            if (p != Pista.Ninguna) entra.volume = Mathf.Lerp(e0, Volumen(), k);
+            // la que sale: curva de igual potencia (no hay hueco ni subidón a la mitad)
+            float ks = Mathf.Clamp01(t / durSale);
+            sale.volume = v0 * Mathf.Cos(ks * Mathf.PI * 0.5f);
+            if (p != Pista.Ninguna && t >= retraso)
+            {
+                if (!entra.isPlaying)
+                {
+                    float pos = 0f;
+                    if (reanudar && posicion.TryGetValue(p, out pos) && entra.clip != null && entra.clip.length > 1f) entra.time = pos % entra.clip.length;
+                    else entra.time = 0f;
+                    entra.Play();
+                }
+                // la que entra: empieza muy suave y va tomando cuerpo
+                float ke = Mathf.Clamp01((t - retraso) / durEntra);
+                entra.volume = Volumen() * (1f - Mathf.Cos(ke * Mathf.PI * 0.5f));
+            }
             yield return null;
         }
+        Recordar(pistaSale, sale);
         sale.volume = 0f;
         sale.Stop();
+        cruzando = false;
+    }
+
+    bool cruzando;
+
+    void Recordar(Pista p, AudioSource s)
+    {
+        if (p != Pista.Ninguna && s.clip != null && s.isPlaying) posicion[p] = s.time;
     }
 
     float Volumen() => 0.32f * Ajustes.General * Ajustes.Musica * baja;
 
     void Update()
     {
-        if (a.isPlaying && b.isPlaying) return;   // en pleno cruce manda Cruzar
+        if (cruzando || (a.isPlaying && b.isPlaying)) return;   // en pleno cruce manda Cruzar
         var s = a.isPlaying ? a : b;
         if (s.isPlaying) s.volume = Mathf.MoveTowards(s.volume, Volumen(), Time.unscaledDeltaTime * 0.5f);
     }

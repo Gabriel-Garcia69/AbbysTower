@@ -92,7 +92,7 @@ public class AbbyDash : MonoBehaviour
         PhaseVeil.SetPassable(cc, true);
         CombatFx.Burst(transform.position + Vector3.up * 0.3f, trailColor, 10, 3f, 0.12f, 0.3f, 0f);
         CameraShake.Shake(0.05f, 0.1f);
-        Sonido.Tocar(Sonido.Efecto.Impulso, 0.95f, Random.Range(0.96f, 1.05f));
+        Sonido.Tocar(Sonido.Efecto.Impulso, 0.42f, Random.Range(0.95f, 1.05f));
     }
 
     void End()

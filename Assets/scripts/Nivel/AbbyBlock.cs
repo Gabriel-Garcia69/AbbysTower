@@ -65,7 +65,7 @@ public class AbbyBlock : MonoBehaviour
             // levanta el escudo: aquí empieza la ventana del bloqueo perfecto
             inicio = Time.time;
             escudoGolpe = 0.5f;
-            Sonido.Tocar(Sonido.Efecto.Espada, 0.3f, 1.5f);
+            Sonido.Tocar(Sonido.Efecto.Espada, 0.15f, 1.5f);
             CombatFx.Ring(transform.position, 1.3f, new Color(0.5f, 0.75f, 1f, 0.8f), 0.18f);
         }
         antes = Blocking;
@@ -127,7 +127,7 @@ public class AbbyBlock : MonoBehaviour
             hit.damage *= DanoRecibido;
             hit.knockback *= 0.35f;
             BlockFlash = 1f; escudoGolpe = 1f;
-            Sonido.Tocar(Sonido.Efecto.Bloqueo, 0.95f, Random.Range(0.95f, 1.05f));
+            Sonido.Tocar(Sonido.Efecto.Bloqueo, 0.75f, Random.Range(0.95f, 1.05f));
             CombatFx.Burst(pecho, new Color(0.55f, 0.75f, 1f), 18, 4f, 0.12f, 0.3f);
             CombatFx.Ring(transform.position, 1.6f, new Color(0.5f, 0.75f, 1f, 0.9f), 0.25f);
             FloorDirector.Popup(transform.position + Vector3.up * 2.1f, "BLOQUEO", new Color(0.6f, 0.8f, 1f), 0.6f);

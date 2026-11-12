@@ -15,6 +15,6 @@ public class Pasos : MonoBehaviour
         t -= Time.deltaTime * motor.SpeedScale;
         if (t > 0f) return;
         t = cadencia;
-        Sonido.Tocar(Sonido.Efecto.Paso, 0.35f, Random.Range(0.85f, 1.15f));
+        Sonido.Tocar(Sonido.Efecto.Paso, 0.13f, Random.Range(0.9f, 1.1f));   // apenas se oyen: acompañan, no cansan
     }
 }

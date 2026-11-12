@@ -18,6 +18,9 @@ public static class Sonido
     static int siguiente;
     static System.Random rng = new System.Random(7);
 
+    /// <summary>Todos los efectos un poco más abajo: con los pasos, tajos y avisos juntos, la mezcla cansaba.</summary>
+    const float Mezcla = 0.8f;
+
     public static void Tocar(Efecto e, float volumen = 1f, float tono = 1f)
     {
         // el mismo efecto muchas veces en el mismo instante (hordas) suena a ruido: se espacia
@@ -29,7 +32,7 @@ public static class Sonido
         var v = voces[siguiente];
         siguiente = (siguiente + 1) % voces.Length;
         v.pitch = tono;
-        v.PlayOneShot(Clip(e), Mathf.Clamp01(volumen) * Ajustes.General * Ajustes.Efectos);
+        v.PlayOneShot(Clip(e), Mathf.Clamp01(volumen) * Ajustes.General * Ajustes.Efectos * Mezcla);
     }
 
     static void Preparar()
@@ -70,10 +73,10 @@ public static class Sonido
             case Efecto.Muerte: return 1.1f;
             case Efecto.Alerta: return 0.45f;
             case Efecto.Bloqueo: return 0.38f;
-            case Efecto.Paso: return 0.08f;
+            case Efecto.Paso: return 0.09f;
             case Efecto.Clic: return 0.05f;
             case Efecto.Destello: return 1.6f;
-            case Efecto.Impulso: return 0.36f;
+            case Efecto.Impulso: return 0.32f;
             case Efecto.Rugido: return 2.6f;
             case Efecto.Temblor: return 1.8f;
             case Efecto.Impacto: return 1.5f;
@@ -164,10 +167,10 @@ public static class Sonido
                     s = (Mathf.Sin(2f * Mathf.PI * 62f * t) * 0.8f + Mathf.Sin(2f * Mathf.PI * 124f * t) * 0.25f) * env * 0.9f;
                     break;
                 }
-                case Efecto.Paso:   // pisada en piedra: un chasquido corto y grave
+                case Efecto.Paso:   // pisada: un toque sordo y corto, sin chasquido
                 {
-                    lp += (Ruido() - lp) * 0.25f;
-                    s = lp * 1.6f * Mathf.Exp(-t * 70f) + Mathf.Sin(2f * Mathf.PI * 140f * t) * 0.3f * Mathf.Exp(-t * 60f);
+                    lp += (Ruido() - lp) * 0.1f;
+                    s = lp * 1.4f * Mathf.Exp(-t * 55f) * Mathf.Min(1f, t * 600f) + Mathf.Sin(2f * Mathf.PI * 95f * t) * 0.25f * Mathf.Exp(-t * 50f);
                     break;
                 }
                 case Efecto.Muerte:   // caída: un tono que baja y un golpe al final
@@ -177,16 +180,15 @@ public static class Sonido
                     if (k > 0.55f) { lp += (Ruido() - lp) * 0.06f; s += lp * 1.6f * Mathf.Exp(-(t - dur * 0.55f) * 12f); }
                     break;
                 }
-                case Efecto.Impulso:   // impulso: un "fwoosh" de aire que pasa rápido, con aleteo de ropa y un empujón grave suave
+                case Efecto.Impulso:   // impulso: un soplo de aire suave y oscuro que pasa, sin silbido ni golpe
                 {
-                    float fc = 450f + 2300f * Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.7f));
+                    float fc = 260f + 900f * Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.8f));
                     float g = 2f * Mathf.Sin(Mathf.PI * fc / Hz);
                     lp2 += g * banda;
-                    banda += g * (Ruido() - lp2 - 0.5f * banda);
-                    float env = Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.45f)); env *= env;
-                    float tela = 1f + 0.25f * Mathf.Sin(2f * Mathf.PI * 34f * t);
-                    float empuje = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(95f, 55f, k) * t) * Mathf.Exp(-t * 9f) * Mathf.Min(1f, t * 60f);
-                    s = banda * env * tela + empuje * 0.35f;
+                    banda += g * (Ruido() - lp2 - 1.1f * banda);   // banda ancha y sin resonar: aire, no pitido
+                    lp += (banda - lp) * 0.35f;                     // y le quita lo áspero de arriba
+                    float env = Mathf.Pow(Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.6f)), 1.6f);
+                    s = lp * env;
                     break;
                 }
                 case Efecto.Rugido:   // garganta enorme: grave áspero que sube, se sostiene y se apaga, con un rasposo encima

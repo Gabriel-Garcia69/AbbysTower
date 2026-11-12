@@ -11,6 +11,7 @@ public class FakeWall : MonoBehaviour
     public Vector2 nicheSize = new Vector2(2f, 2.8f);
 
     Renderer rend;
+    bool visto;
 
     void Awake() => rend = GetComponent<Renderer>();
 
@@ -19,7 +20,16 @@ public class FakeWall : MonoBehaviour
         if (rend == null || Hazards.Player == null || transform.parent == null) return;
         Vector3 lp = transform.parent.InverseTransformPoint(Hazards.Player.position) - nicheCenter;
         bool inside = Mathf.Abs(lp.x) < nicheSize.x / 2f && Mathf.Abs(lp.z) < nicheSize.y / 2f + 0.4f && lp.y > -1f && lp.y < 3f;
+        // la cámara del juego es fija (mira al norte) y no se puede girar para ver detrás del muro: al acercarse al
+        // tramo falso, este se desvanece y deja ver el escondite (antes nadie encontraba la nota)
+        float frente = lp.z + nicheSize.y / 2f;   // distancia hacia la sala desde la cara del muro (negativa: en la sala)
+        bool cerca = Mathf.Abs(lp.x) < nicheSize.x / 2f + 1.2f && frente > -2.6f && frente < 0.5f && lp.y > -1f && lp.y < 3f;
+        if (cerca && !visto)
+        {
+            visto = true;
+            CombatFx.Burst(transform.position, new Color(0.85f, 0.85f, 0.95f), 26, 2.5f, 0.12f, 0.6f, -0.2f);
+        }
         // ojo: AreaReveal usa forceRenderingOff; aquí usamos enabled para no pelearnos con la sala
-        rend.enabled = !inside;
+        rend.enabled = !inside && !cerca;
     }
 }

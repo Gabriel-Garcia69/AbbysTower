@@ -97,15 +97,15 @@ public partial class FloorLayout
     {
         switch (floor)
         {
-            case 1: return "Si encontraste esto es porque giraste la cámara. Bien.\n\nLa torre del abismo esconde más de lo que muestra. Los muros del norte mienten a veces.";
+            case 1: return "Si encontraste esto es porque te acercaste a ver. Bien.\n\nLa torre del abismo esconde más de lo que muestra. Los muros del norte mienten a veces.";
             case 2: return "Dejé esto aquí por si alguien de la expedición vuelve a pasar. Por si él vuelve a pasar.";
             case 3: return "Hay figuras flotando en algunos pisos. Si las miras desde el lugar correcto, se acomodan. No me preguntes cómo lo sé.";
             case 4: return "No todo lo que se come alimenta. Guardé estos minerales en lugar de gastarlos en comida.";
-            case 5: return "Este cofre no muerde. Lo revisé tres veces.";
+            case 5: return "Aquí no muerde nada. Lo revisé tres veces.";
             case 6: return "Aquí no me encuentra La Otra. Detrás de los muros no hay reflejo.";
             case 7: return "Aquí no jala nada. Por fin un lugar donde descansar del deseo de seguir.";
             case 8: return "Me escondí aquí a respirar. El fuego no entra. El enojo sí, pero más bajito.";
-            default: return "Último escondite. Lo que hay en el cofre es para pagar las deudas cuando salgamos. Los dos.";
+            default: return "Último escondite. Lo que junté aquí es para pagar las deudas cuando salgamos. Los dos.";
         }
     }
 

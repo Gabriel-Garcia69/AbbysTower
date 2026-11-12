@@ -290801,7 +290801,7 @@ MonoBehaviour:
   id: p0_escondite
   kind: 3
   title: "Detr\xE1s del muro"
-  text: "\xDAltimo escondite. Lo que hay en el cofre es para pagar las deudas cuando salgamos. Los dos."
+  text: "\xDAltimo escondite. Lo que junt\xE9 aqu\xED es para pagar las deudas cuando salgamos. Los dos."
   signature: "\u2014 A."
   radius: 1.6
   sparkle: {fileID: 51181437}

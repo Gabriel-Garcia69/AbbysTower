@@ -20847,7 +20847,7 @@ Transform:
   m_GameObject: {fileID: 44818162}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.648645, y: 0, z: 234.87968}
+  m_LocalPosition: {x: 8.648645, y: -0.22450516, z: 234.87968}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -197740,7 +197740,7 @@ Transform:
   m_GameObject: {fileID: 454888940}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 22.6, y: 0, z: 214}
+  m_LocalPosition: {x: 22.6, y: -0.20932762, z: 214}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -319575,6 +319575,8 @@ MonoBehaviour:
   whenStill: 1
   blendTime: 2
   priority: 2
+  relativa: 0
+  enCombate: 0
   introSeconds: 0
   title: LA GARGANTA HELADA
   subtitle: 
@@ -341385,6 +341387,8 @@ MonoBehaviour:
   whenStill: 0
   blendTime: 2.6
   priority: 10
+  relativa: 0
+  enCombate: 0
   introSeconds: 4.5
   title: 
   subtitle: 
@@ -414187,7 +414191,7 @@ Transform:
   m_GameObject: {fileID: 953865514}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -22.6, y: 0, z: 214}
+  m_LocalPosition: {x: -22.6, y: -0.22342007, z: 214}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -459611,7 +459615,7 @@ Transform:
   m_GameObject: {fileID: 1064723644}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.648647, y: 0, z: 234.87968}
+  m_LocalPosition: {x: -8.648647, y: -0.21672824, z: 234.87968}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -684203,6 +684207,8 @@ MonoBehaviour:
   whenStill: 1
   blendTime: 2
   priority: 2
+  relativa: 0
+  enCombate: 0
   introSeconds: 0
   title: LA CAPILLA DE LA NIEVE
   subtitle: 
@@ -777822,6 +777828,8 @@ MonoBehaviour:
   whenStill: 1
   blendTime: 2
   priority: 2
+  relativa: 0
+  enCombate: 0
   introSeconds: 0
   title: EL LAGO DORMIDO
   subtitle: "Aqu\xED duerme Escarcha"

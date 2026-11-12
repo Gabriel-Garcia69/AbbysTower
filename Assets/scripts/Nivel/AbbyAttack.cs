@@ -50,7 +50,27 @@ public class AbbyAttack : MonoBehaviour
         self = GetComponent<IHittable>();
         dash = GetComponent<AbbyDash>();
         block = GetComponent<AbbyBlock>();
+        hitbox.Conecto += AlConectar;
     }
+
+    bool golpeFuerte;   // el tajo en curso es el tercero, de impulso o crítico (suena más grave)
+
+    /// <summary>El tajo le pegó a alguien: suena el golpe (distinto si agarra a varios) y, con varios, un aviso "x2".</summary>
+    void AlConectar(IHittable objetivo, int cuantos)
+    {
+        if (cuantos == 1)
+            Sonido.Tocar(Sonido.Efecto.Golpe, 0.95f, golpeFuerte ? Random.Range(0.8f, 0.86f) : Random.Range(0.95f, 1.08f));
+        else if (cuantos == 2)
+        {
+            Sonido.Tocar(Sonido.Efecto.GolpeMulti, 1f, golpeFuerte ? 0.9f : 1f);
+            CameraShake.Shake(0.14f, 0.15f);
+        }
+        if (cuantos >= 2)
+            FloorDirector.Popup(transform.position + Vector3.up * 2.6f, "x" + cuantos, new Color(1f, 0.8f, 0.35f), 0.7f);
+    }
+
+    /// <summary>El siguiente golpe es crítico (esquiva o bloqueo perfecto).</summary>
+    public void DarCritico(float segundos = 1.6f) => critUntil = Time.time + segundos;
 
     void Start()
     {
@@ -62,6 +82,7 @@ public class AbbyAttack : MonoBehaviour
 
     void OnDestroy()
     {
+        if (hitbox != null) hitbox.Conecto -= AlConectar;
         var health = GetComponent<PlayerHealth>();
         if (health != null) health.PerfectDodge -= OnPerfectDodge;
     }
@@ -114,6 +135,7 @@ public class AbbyAttack : MonoBehaviour
                     bool crit = Time.time < critUntil;
                     float mult = RunState.DamageMultiplier * (dashStrike ? 1.6f : 1f) * (crit ? 2f : 1f);
                     if (crit) critUntil = 0f;
+                    golpeFuerte = last || dashStrike || crit;
                     hitbox.Begin(new HitInfo
                     {
                         damage = damage[i] * mult, knockback = dashStrike ? 12f : knockback[i],
@@ -121,7 +143,7 @@ public class AbbyAttack : MonoBehaviour
                         sourcePosition = transform.position, attacker = self,
                     }, Facing);
                     Color col = crit ? new Color(1f, 0.4f, 0.9f) : dashStrike ? new Color(0.5f, 1f, 1f) : last ? new Color(1f, 0.85f, 0.5f) : slashColor;
-                    Sonido.Tocar(Sonido.Efecto.Espada, 0.75f, 1f + i * 0.07f);
+                    Sonido.Tocar(Sonido.Efecto.Espada, 0.7f, (1f + i * 0.07f) * Random.Range(0.95f, 1.05f) * (golpeFuerte ? 0.9f : 1f));
                     CombatFx.Slash(transform.position + Vector3.up * 0.75f + Facing * 0.55f, Facing, last || dashStrike || crit ? 2f : 1.5f, col, combo % 2 == 1);
                     if (dashStrike) FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "¡Tajo de impulso!", new Color(0.6f, 1f, 1f));
                     if (crit) FloorDirector.Popup(transform.position + Vector3.up * 2.5f, "¡CRÍTICO!", new Color(1f, 0.5f, 0.95f));

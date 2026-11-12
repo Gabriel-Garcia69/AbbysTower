@@ -81,6 +81,7 @@ public class PlayerHealth : MonoBehaviour, IHittable
         hit.damage = Mathf.Clamp(hit.damage, 8f, 15f);
         var block = GetComponent<AbbyBlock>();
         bool bloqueado = block != null && block.TryBlock(ref hit);
+        if (bloqueado && hit.damage <= 0f) { invuln = 0.3f; return true; }   // bloqueo perfecto: ni un rasguño
         Health = Mathf.Max(noMorir ? 1f : 0f, Health - hit.damage);
         Vector3 away = transform.position - hit.sourcePosition; away.y = 0f;
         knock = (away.sqrMagnitude > 0.001f ? away.normalized : -transform.forward) * hit.knockback;

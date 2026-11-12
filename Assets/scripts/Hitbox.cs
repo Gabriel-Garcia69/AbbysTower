@@ -26,8 +26,14 @@ public class Hitbox : MonoBehaviour
         info = hitInfo;
         facing = facingDir.sqrMagnitude > 0.001f ? facingDir.normalized : Vector3.forward;
         alreadyHit.Clear();
+        Conectados = 0;
         active = true;
     }
+
+    /// <summary>A cuántos les ha pegado el golpe en curso.</summary>
+    public int Conectados { get; private set; }
+    /// <summary>Cada vez que el golpe conecta: a quién y cuántos van en este golpe (para el sonido de uno o varios).</summary>
+    public event System.Action<IHittable, int> Conecto;
 
     public void End() { active = false; }
 
@@ -48,7 +54,12 @@ public class Hitbox : MonoBehaviour
             if (target == null || alreadyHit.Contains(target)) continue;
 
             alreadyHit.Add(target);
-            if (target.ReceiveHit(info)) HitStop.Do(info.hitStop);
+            if (target.ReceiveHit(info))
+            {
+                HitStop.Do(info.hitStop);
+                Conectados++;
+                Conecto?.Invoke(target, Conectados);
+            }
         }
     }
 

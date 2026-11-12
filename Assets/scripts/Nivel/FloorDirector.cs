@@ -311,6 +311,7 @@ public class FloorDirector : MonoBehaviour
     void OnGUI()
     {
         if (DanteFinal.Activo) return;   // la escena final usa toda la pantalla
+        if (PauseMenu.IsPaused) return;   // en pausa, la pausa ocupa la pantalla (el emblema va donde está el retrato)
         float sw = Screen.width, sh = Screen.height, u = sh / 100f;
         var tex = Texture2D.whiteTexture;
         Color prev = GUI.color;

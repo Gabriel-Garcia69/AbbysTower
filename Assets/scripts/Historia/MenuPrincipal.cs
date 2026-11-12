@@ -36,11 +36,9 @@ public class MenuPrincipal : MonoBehaviour
     float t, entrada;
     Camera cam;
     FondoMenu fondo;
-    static Texture2D logo;   // el logo de la torre (Resources/Logo/logo_torre)
 
     void Awake()
     {
-        if (logo == null) logo = Resources.Load<Texture2D>("Logo/logo_torre");
         // antes de que la cinemática empiece (su Start corre después de todos los Awake)
         foreach (var c in FindObjectsByType<Cinematica>()) Destroy(c);
         ReintentoJefe.Escena = null;   // empezar de nuevo desde el menú
@@ -102,10 +100,10 @@ public class MenuPrincipal : MonoBehaviour
         int n = Opciones().Length;
         if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) { sel = (sel + 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
         if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) { sel = (sel + n - 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
-        if (pagina == Pagina.Configuracion && sel <= 2)
+        if (pagina == Pagina.Configuracion && MenuConfiguracion.Ajustable(sel))
         {
-            float paso = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame ? 0.1f : kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame ? -0.1f : 0f;
-            if (paso != 0f) Ajustar(sel, paso);
+            int paso = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame ? 1 : kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame ? -1 : 0;
+            if (paso != 0) MenuConfiguracion.Ajustar(sel, paso);
         }
         if (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) Elegir(sel);
         if (kb.escapeKey.wasPressedThisFrame) { if (pagina != Pagina.Principal) Ir(Pagina.Principal); else Ir(Pagina.Salir); }
@@ -115,10 +113,7 @@ public class MenuPrincipal : MonoBehaviour
     {
         switch (pagina)
         {
-            case Pagina.Configuracion:
-                return new[] { $"Volumen general   < {Mathf.RoundToInt(Ajustes.General * 100f)} % >", $"Volumen de música   < {Mathf.RoundToInt(Ajustes.Musica * 100f)} % >",
-                               $"Volumen de efectos   < {Mathf.RoundToInt(Ajustes.Efectos * 100f)} % >",
-                               "Pantalla completa: " + (Screen.fullScreen ? "Sí" : "No"), "Restablecer", "Volver" };
+            case Pagina.Configuracion: return MenuConfiguracion.Opciones();   // la misma que en la pausa
             case Pagina.Salir: return new[] { "No, quedarme", "Sí, salir del juego" };
             case Pagina.Creditos: return new[] { "Volver" };
             default: return Progreso.Hay
@@ -128,12 +123,6 @@ public class MenuPrincipal : MonoBehaviour
     }
 
     void Ir(Pagina p) { pagina = p; sel = 0; entrada = 0f; }
-
-    void Ajustar(int i, float paso)
-    {
-        if (i == 0) Ajustes.General += paso; else if (i == 1) Ajustes.Musica += paso; else Ajustes.Efectos += paso;
-        Sonido.Tocar(i == 2 ? Sonido.Efecto.Espada : Sonido.Efecto.Clic, 0.7f);   // se oye cómo queda
-    }
 
     void Elegir(int i)
     {
@@ -156,9 +145,7 @@ public class MenuPrincipal : MonoBehaviour
                 Ir(Pagina.Principal);
                 break;
             case Pagina.Configuracion:
-                if (i == 3) Screen.fullScreen = !Screen.fullScreen;
-                else if (i == 4) Ajustes.Restablecer();
-                else if (i == 5) Ir(Pagina.Principal);
+                if (MenuConfiguracion.Elegir(i)) Ir(Pagina.Principal);
                 break;
             case Pagina.Salir:
                 if (i == 0) Ir(Pagina.Principal);
@@ -196,14 +183,9 @@ public class MenuPrincipal : MonoBehaviour
         GUI.DrawTexture(new Rect(0f, sh * 0.4f, sw, sh * 0.6f), Degradado.Vertical);
         GUI.color = Color.white;
         var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 11f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        // el logo de la torre arriba y el nombre debajo (sin logo, el nombre solo y más grande, como antes)
+        // el logo de la torre como emblema en la esquina (en medio tapaba el paisaje y apretaba el título)
+        EmblemaTorre.Dibujar(u * 3f, u * 3f, u * 22f, Mathf.Clamp01(t / 0.8f), t);
         float yTitulo = sh * 0.09f, altoTitulo = u * 15f, letra = u * 12.5f;
-        if (logo != null)
-        {
-            float lh = u * 24f, lw = lh * logo.width / logo.height;
-            GUI.DrawTexture(new Rect((sw - lw) / 2f, u * 2f, lw, lh), logo, ScaleMode.ScaleToFit, true);
-            yTitulo = u * 25.5f; altoTitulo = u * 10.5f; letra = u * 9f;
-        }
         Sombra(new Rect(0, yTitulo, sw, altoTitulo), "ABBY'S TOWER", FuentePixel.Logo(titulo, letra), new Color(1f, 0.92f, 0.75f));
         var sub = new GUIStyle(titulo) { font = null, fontSize = FuentePixel.Tam(u * 3.1f), fontStyle = FontStyle.Italic };
         float ySub = yTitulo + altoTitulo;
@@ -215,8 +197,8 @@ public class MenuPrincipal : MonoBehaviour
         GUI.color = Color.white;
 
         var ops = Opciones();
-        float w = Mathf.Min(sw * 0.8f, u * 92f), h = u * 7f;   // panel ancho: nada se aprieta
-        var caja = new Rect((sw - w) / 2f, sh * 0.45f, w, h * ops.Length + u * 4f);
+        float w = Mathf.Min(sw * 0.8f, u * 92f), h = ops.Length > 5 ? u * 6f : u * 7f;   // panel ancho: nada se aprieta
+        var caja = new Rect((sw - w) / 2f, ops.Length > 5 ? sh * 0.4f : sh * 0.45f, w, h * ops.Length + u * 4f);
         float a = Mathf.Clamp01(entrada / 0.25f);
         CuadroNarracion.Marco(caja, 0.92f * a);
         if (pagina == Pagina.Salir)
@@ -233,7 +215,7 @@ public class MenuPrincipal : MonoBehaviour
             if (ev.type == EventType.MouseDown && ev.button == 0 && r.Contains(ev.mousePosition))
             {
                 sel = i;
-                if (pagina == Pagina.Configuracion && i <= 2) Ajustar(i, ev.mousePosition.x > r.center.x ? 0.1f : -0.1f);
+                if (pagina == Pagina.Configuracion && MenuConfiguracion.Ajustable(i)) MenuConfiguracion.Ajustar(i, ev.mousePosition.x > r.center.x ? 1 : -1);
                 else Elegir(i);
                 ev.Use();
             }
@@ -251,6 +233,10 @@ public class MenuPrincipal : MonoBehaviour
             Sombra(r, (on ? "◆   " : "") + ops[i] + (on ? "   ◆" : ""), st, on ? new Color(1f, 0.87f, 0.55f, a) : new Color(1f, 1f, 1f, 0.82f * a));
         }
         var ayuda = new GUIStyle(sub) { fontSize = FuentePixel.Tam(u * 1.8f), fontStyle = FontStyle.Normal };
+        string nota = pagina == Pagina.Configuracion ? MenuConfiguracion.Ayuda(sel) : null;
+        if (nota != null)
+            Sombra(new Rect(caja.x, caja.yMax + u * 1.2f, caja.width, u * 4f), nota, new GUIStyle(ayuda) { fontSize = FuentePixel.Tam(u * 2.2f) },
+                   sel == MenuConfiguracion.Dificultad ? MenuConfiguracion.ColorDificultad : new Color(1f, 1f, 1f, 0.8f));
         Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), "↑ ↓  elegir     Enter  aceptar     ← →  ajustar volumen     Esc  regresar", ayuda, new Color(1f, 1f, 1f, 0.7f));
         GUI.color = Color.white;
     }

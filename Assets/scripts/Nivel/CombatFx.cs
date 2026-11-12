@@ -30,6 +30,14 @@ public static class CombatFx
         }
     }
 
+    /// <summary>Un material aditivo propio (con la textura dada) para efectos que viven más tiempo, como el escudo de Abby.</summary>
+    public static Material MaterialAditivo(Texture2D tex)
+    {
+        var m = new Material(Additive) { name = "FX_Aditivo_" + (tex != null ? tex.name : "plano") };
+        if (tex != null) m.SetTexture("_BaseMap", tex);
+        return m;
+    }
+
     static Texture2D dot;
     static Texture2D SoftDot()
     {

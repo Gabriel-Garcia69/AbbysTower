@@ -14,13 +14,16 @@ public static class Progreso
     public static string Escena => PlayerPrefs.GetString(Clave, "");
 
     /// <summary>Nombre para el menú: "Piso 2 · Puerto", etc.</summary>
-    public static string Nombre
+    public static string Nombre => NombreDe(Escena);
+
+    /// <summary>Nombre del piso de cualquier escena de la ruta (la pausa lo muestra arriba).</summary>
+    public static string NombreDe(string escena)
     {
-        get
         {
-            switch (Escena)
+            switch (escena)
             {
                 case "Exterior": return "Cala Sombría";
+                case "Expedicion": return "La expedición";
                 case "Diorama": return "Piso 1";
                 case "CuartosA": return "Piso 1 · Biblioteca";
                 case "Puerto": return "Piso 2";
@@ -30,7 +33,7 @@ public static class Progreso
                 case "Lago": return "Piso 6";
                 case "Nevado": return "Piso 7";
                 case "Cima": return "Piso 8";
-                default: return Escena;
+                default: return escena;
             }
         }
     }

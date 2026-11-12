@@ -3,13 +3,13 @@ using UnityEngine;
 
 /// <summary>
 /// Efectos de sonido del GDD (05 · Audio): golpe de espada (corte), bloqueo (metal apagado), daño recibido (golpe
-/// sordo), fuente de curación (campana suave), alerta de sombra (pulso grave), pasos en piedra, muerte (caída) e impulso (ráfaga con filo).
+/// sordo), fuente de curación (campana suave), alerta de sombra (pulso grave), pasos en piedra, muerte (caída) e impulso (ráfaga de aire), golpe que conecta (uno o varios), bloqueo perfecto y guardia rota.
 /// Estéreo simple, sin audio espacial. Si existe Resources/Audio/&lt;Nombre&gt; (wav/ogg de Francisco) se usa ese; si no,
 /// suena uno provisional sintetizado aquí. Volumen = general × efectos (Ajustes).
 /// </summary>
 public static class Sonido
 {
-    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello, Impulso, Rugido, Temblor, Impacto, Latido, Colgante, Ventana }
+    public enum Efecto { Espada, Bloqueo, Dano, Fuente, Alerta, Paso, Muerte, Clic, Destello, Impulso, Rugido, Temblor, Impacto, Latido, Colgante, Ventana, Golpe, GolpeMulti, Parada, GuardiaRota }
 
     const int Hz = 22050;
     static readonly Dictionary<Efecto, AudioClip> clips = new Dictionary<Efecto, AudioClip>();
@@ -60,31 +60,67 @@ public static class Sonido
 
     static float Ruido() => (float)(rng.NextDouble() * 2.0 - 1.0);
 
+    static float Duracion(Efecto e)
+    {
+        switch (e)
+        {
+            case Efecto.Colgante: return 4.2f;
+            case Efecto.Ventana: return 2.6f;
+            case Efecto.Fuente: return 1.8f;
+            case Efecto.Muerte: return 1.1f;
+            case Efecto.Alerta: return 0.45f;
+            case Efecto.Bloqueo: return 0.38f;
+            case Efecto.Paso: return 0.08f;
+            case Efecto.Clic: return 0.05f;
+            case Efecto.Destello: return 1.6f;
+            case Efecto.Impulso: return 0.36f;
+            case Efecto.Rugido: return 2.6f;
+            case Efecto.Temblor: return 1.8f;
+            case Efecto.Impacto: return 1.5f;
+            case Efecto.Latido: return 0.9f;
+            case Efecto.Espada: return 0.19f;
+            case Efecto.Golpe: return 0.26f;
+            case Efecto.GolpeMulti: return 0.5f;
+            case Efecto.Parada: return 0.9f;
+            case Efecto.GuardiaRota: return 0.7f;
+            default: return 0.22f;
+        }
+    }
+
+    /// <summary>Los que pasan por filtros resonantes o van en capas: se normalizan para que nunca saturen ni queden bajitos.</summary>
+    static bool Normaliza(Efecto e) => e == Efecto.Rugido || e == Efecto.Temblor || e == Efecto.Impacto || e == Efecto.Impulso || e == Efecto.Espada
+                                     || e == Efecto.Bloqueo || e == Efecto.Golpe || e == Efecto.GolpeMulti || e == Efecto.Parada || e == Efecto.GuardiaRota;
+
     static AudioClip Sintetizar(Efecto e)
     {
-        float dur = e == Efecto.Colgante ? 4.2f : e == Efecto.Ventana ? 2.6f : e == Efecto.Fuente ? 1.8f : e == Efecto.Muerte ? 1.1f : e == Efecto.Alerta ? 0.45f : e == Efecto.Bloqueo ? 0.35f
-                  : e == Efecto.Paso ? 0.08f : e == Efecto.Clic ? 0.05f : e == Efecto.Destello ? 1.6f : e == Efecto.Impulso ? 0.46f : e == Efecto.Rugido ? 2.6f : e == Efecto.Temblor ? 1.8f : e == Efecto.Impacto ? 1.5f : e == Efecto.Latido ? 0.9f : 0.22f;
+        float dur = Duracion(e);
         int n = Mathf.CeilToInt(dur * Hz);
         var d = new float[n];
-        float lp = 0f, lp2 = 0f, banda = 0f, fase = 0f;
+        float lp = 0f, lp2 = 0f, banda = 0f, fase = 0f, lp3 = 0f;
         for (int i = 0; i < n; i++)
         {
             float t = i / (float)Hz, k = t / dur, s = 0f;
             switch (e)
             {
-                case Efecto.Espada:   // corte: ruido que barre de agudo a grave, con un silbido
+                case Efecto.Espada:   // tajo al aire: un "fsht" de aire cortado que baja de agudo a medio, sin pitido
                 {
-                    float corte = Mathf.Lerp(0.85f, 0.15f, k);
-                    lp += (Ruido() - lp) * corte;
-                    s = (Ruido() - lp) * 0.6f * Mathf.Pow(1f - k, 2f) * Mathf.Min(1f, t * 200f);
-                    s += Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(2400f, 900f, k) * t) * 0.12f * (1f - k);
+                    float fc = Mathf.Lerp(4200f, 850f, Mathf.Pow(k, 0.6f));
+                    float g = 2f * Mathf.Sin(Mathf.PI * fc / Hz);
+                    lp2 += g * banda;
+                    banda += g * (Ruido() - lp2 - 0.4f * banda);
+                    float env = Mathf.Min(1f, t * 260f) * Mathf.Pow(1f - k, 1.6f);
+                    lp += (Ruido() - lp) * 0.5f;
+                    s = banda * env + (Ruido() - lp) * 0.1f * env;
                     break;
                 }
-                case Efecto.Bloqueo:   // metal apagado: parciales inarmónicos que se apagan rápido
+                case Efecto.Bloqueo:   // la espada para el golpe: choque de metal con cuerpo, un golpe grave y el metal vibrando poco
                 {
-                    float env = Mathf.Exp(-t * 14f);
-                    s = (Mathf.Sin(2f * Mathf.PI * 523f * t) * 0.5f + Mathf.Sin(2f * Mathf.PI * 1231f * t) * 0.3f + Mathf.Sin(2f * Mathf.PI * 1789f * t) * 0.2f) * env;
-                    s += Ruido() * 0.25f * Mathf.Exp(-t * 60f);
+                    float env = Mathf.Exp(-t * 13f);
+                    s = (Mathf.Sin(2f * Mathf.PI * 410f * t) * 0.45f + Mathf.Sin(2f * Mathf.PI * 965f * t) * 0.3f
+                         + Mathf.Sin(2f * Mathf.PI * 1540f * t) * 0.22f * Mathf.Exp(-t * 8f) + Mathf.Sin(2f * Mathf.PI * 2310f * t) * 0.15f * Mathf.Exp(-t * 14f)) * env;
+                    lp += (Ruido() - lp) * 0.3f;
+                    s += lp * Mathf.Exp(-t * 45f) * 1.4f;
+                    s += Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(120f, 70f, k) * t) * Mathf.Exp(-t * 20f) * 0.5f;
                     break;
                 }
                 case Efecto.Dano:   // golpe sordo: un bombo grave con ruido apagado
@@ -141,17 +177,16 @@ public static class Sonido
                     if (k > 0.55f) { lp += (Ruido() - lp) * 0.06f; s += lp * 1.6f * Mathf.Exp(-(t - dur * 0.55f) * 12f); }
                     break;
                 }
-                case Efecto.Impulso:   // ráfaga: viento que sube y baja, golpe grave al arrancar y un filo metálico que se apaga
+                case Efecto.Impulso:   // impulso: un "fwoosh" de aire que pasa rápido, con aleteo de ropa y un empujón grave suave
                 {
-                    float fc = 320f + 3600f * Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.55f));
-                    float f = 2f * Mathf.Sin(Mathf.PI * Mathf.Min(fc, 7000f) / Hz);
-                    lp2 += f * banda;
-                    banda += f * (Ruido() - lp2 - 0.6f * banda);
-                    float viento = Mathf.Min(1f, t * 40f) * Mathf.Pow(1f - k, 2.2f);
-                    float golpe = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(115f, 48f, Mathf.Min(1f, k * 3f)) * t) * Mathf.Exp(-t * 15f);
-                    float filo = (Mathf.Sin(2f * Mathf.PI * 3170f * t) * 0.55f + Mathf.Sin(2f * Mathf.PI * 4730f * t) * 0.3f + Mathf.Sin(2f * Mathf.PI * 6210f * t) * 0.15f)
-                                 * Mathf.Min(1f, t * 70f) * Mathf.Exp(-t * 11f);
-                    s = banda * viento * 1.1f + golpe * 0.6f + filo * 0.16f;
+                    float fc = 450f + 2300f * Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.7f));
+                    float g = 2f * Mathf.Sin(Mathf.PI * fc / Hz);
+                    lp2 += g * banda;
+                    banda += g * (Ruido() - lp2 - 0.5f * banda);
+                    float env = Mathf.Sin(Mathf.PI * Mathf.Pow(k, 0.45f)); env *= env;
+                    float tela = 1f + 0.25f * Mathf.Sin(2f * Mathf.PI * 34f * t);
+                    float empuje = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(95f, 55f, k) * t) * Mathf.Exp(-t * 9f) * Mathf.Min(1f, t * 60f);
+                    s = banda * env * tela + empuje * 0.35f;
                     break;
                 }
                 case Efecto.Rugido:   // garganta enorme: grave áspero que sube, se sostiene y se apaga, con un rasposo encima
@@ -191,6 +226,54 @@ public static class Sonido
                     s = (Mathf.Sin(2f * Mathf.PI * 52f * t) * g1 + Mathf.Sin(2f * Mathf.PI * 44f * Mathf.Max(0f, t2)) * g2) * 0.95f;
                     break;
                 }
+                case Efecto.Golpe:   // el tajo conecta: chasquido, crujido de sombra y un golpe con cuerpo
+                {
+                    fase += Mathf.Lerp(170f, 55f, Mathf.Min(1f, k * 2.2f)) / Hz;
+                    float cuerpo = Mathf.Sin(2f * Mathf.PI * fase) * Mathf.Exp(-t * 18f);
+                    float g = 2f * Mathf.Sin(Mathf.PI * 1400f / Hz);
+                    lp2 += g * banda;
+                    banda += g * (Ruido() - lp2 - 0.8f * banda);
+                    float crujido = banda * Mathf.Exp(-t * 38f) * 1.3f;
+                    float chasquido = Ruido() * Mathf.Exp(-t * 400f) * 0.8f;
+                    lp += (Ruido() - lp) * 0.12f;
+                    s = cuerpo + crujido + chasquido + lp * Mathf.Exp(-t * 16f) * 2.2f;
+                    break;
+                }
+                case Efecto.GolpeMulti:   // el tajo agarra a varios: más grave, más largo, dos chasquidos y una cola
+                {
+                    fase += Mathf.Lerp(130f, 40f, Mathf.Min(1f, k * 2f)) / Hz;
+                    float cuerpo = Mathf.Sin(2f * Mathf.PI * fase) * Mathf.Exp(-t * 9f) * 1.1f;
+                    float g = 2f * Mathf.Sin(Mathf.PI * 1000f / Hz);
+                    lp2 += g * banda;
+                    banda += g * (Ruido() - lp2 - 0.7f * banda);
+                    float crujido = banda * Mathf.Exp(-t * 20f) * 1.5f;
+                    lp3 += (Ruido() - lp3) * 0.35f;
+                    float t2 = t - 0.035f;
+                    float chasquidos = (Ruido() - lp3) * (Mathf.Exp(-t * 90f) + (t2 > 0f ? Mathf.Exp(-t2 * 90f) * 0.8f : 0f));
+                    lp += (Ruido() - lp) * 0.05f;
+                    s = cuerpo + crujido + chasquidos + lp * Mathf.Exp(-t * 5f) * 1.6f;
+                    break;
+                }
+                case Efecto.Parada:   // bloqueo perfecto: "ting" de metal brillante que queda sonando y un brillo que sube
+                {
+                    float env = Mathf.Exp(-t * 5f) * Mathf.Min(1f, t * 900f);
+                    s = (Mathf.Sin(2f * Mathf.PI * 1870f * t) * 0.5f + Mathf.Sin(2f * Mathf.PI * 2805f * t) * 0.35f * Mathf.Exp(-t * 3f)
+                         + Mathf.Sin(2f * Mathf.PI * 4120f * t) * 0.22f * Mathf.Exp(-t * 6f) + Mathf.Sin(2f * Mathf.PI * 5530f * t) * 0.15f * Mathf.Exp(-t * 9f)) * env;
+                    s += Ruido() * Mathf.Exp(-t * 250f) * 0.6f;
+                    fase += Mathf.Lerp(1300f, 2600f, k) / Hz;
+                    s += Mathf.Sin(2f * Mathf.PI * fase) * 0.08f * Mathf.Sin(Mathf.PI * k);
+                    break;
+                }
+                case Efecto.GuardiaRota:   // la guardia se rompe: crujido seco, un tono que se cae y un golpe grave
+                {
+                    lp += (Ruido() - lp) * 0.4f;
+                    float crack = (Ruido() - lp) * Mathf.Exp(-t * 35f);
+                    fase += Mathf.Lerp(620f, 140f, Mathf.Pow(k, 0.6f)) / Hz;
+                    float caida = (Mathf.Sin(2f * Mathf.PI * fase) + Mathf.Sin(4f * Mathf.PI * fase) * 0.35f) * Mathf.Exp(-t * 3f) * 0.4f;
+                    float golpe = Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(100f, 45f, k) * t) * Mathf.Exp(-t * 12f) * 0.7f;
+                    s = crack + caida + golpe;
+                    break;
+                }
                 case Efecto.Clic:
                     s = Mathf.Sin(2f * Mathf.PI * 1500f * t) * Mathf.Exp(-t * 120f) * 0.5f;
                     break;
@@ -202,9 +285,9 @@ public static class Sonido
                     break;
                 }
             }
-            d[i] = e == Efecto.Rugido || e == Efecto.Temblor || e == Efecto.Impacto || e == Efecto.Impulso ? s : Mathf.Clamp(s, -1f, 1f);
+            d[i] = Normaliza(e) ? s : Mathf.Clamp(s, -1f, 1f);
         }
-        if (e == Efecto.Rugido || e == Efecto.Temblor || e == Efecto.Impacto || e == Efecto.Impulso)
+        if (Normaliza(e))
         {
             // el filtro resuena: se normaliza para que nunca sature ni quede bajito
             float pico = 0.001f;

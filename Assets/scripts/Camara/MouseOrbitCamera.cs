@@ -326,7 +326,7 @@ public class MouseOrbitCamera : MonoBehaviour
         bool mouseActive = mouse != null && (!lockCursor || Cursor.lockState == CursorLockMode.Locked);
         if (mouseActive)
             look += mouse.delta.ReadValue() * mouseSensitivity;
-        Vector2 stick = pad != null ? pad.rightStick.ReadValue() : Vector2.zero;
+        Vector2 stick = Mando.StickDerecho;   // calibrado: un stick que en reposo no marca 0 no gira la cámara solo
         look += stick * stickSpeed * Time.deltaTime;
 
         bool wasPeeking = peeking;

@@ -13,6 +13,15 @@ public static class Mando
     static bool usando, ps;
     static int frame = -1, v, h;
     static int dirAntes; static float repetirEn;
+    static Gamepad padCal; static bool lsOk, rsOk, ltAntes, bloqueoPulsado;
+    static float gatI, gatD, gatDAntes, stIAntes, stDAntes, baseI, baseD; static Vector2 stI, stD;
+
+    /// <summary>Gatillo izquierdo (LT) sostenido para bloquear, ya calibrado y con histéresis.</summary>
+    public static bool BloqueoSostenido { get { Actualizar(); return ltAntes; } }
+    /// <summary>LT recién apretado (este cuadro).</summary>
+    public static bool BloqueoPulsado { get { Actualizar(); return bloqueoPulsado; } }
+    /// <summary>Stick derecho calibrado (cero si en reposo no marcaba cero).</summary>
+    public static Vector2 StickDerecho { get { Actualizar(); return stD; } }
 
     /// <summary>true si lo último que se tocó fue el control (los textos muestran sus botones).</summary>
     public static bool Usando { get { Actualizar(); return usando; } }
@@ -83,15 +92,46 @@ public static class Mando
         frame = Time.frameCount;
         var kb = Keyboard.current; var ms = Mouse.current; var gp = Gamepad.current;
 
-        // ¿qué se usó? (el teclado o el mouse regresan a las teclas; cualquier botón o stick del control, al control)
+        // gatillos y sticks "calibrados": solo cuentan después de verlos sueltos. Hay controles (o drivers) cuyo gatillo
+        // en reposo no marca 0: Abby se quedaba con el escudo puesto y el juego creía que siempre se usaba el control
+        if (gp != padCal)
+        {
+            padCal = gp; lsOk = rsOk = false; ltAntes = false;
+            baseI = gp != null ? gp.leftTrigger.ReadValue() : 0f; baseD = gp != null ? gp.rightTrigger.ReadValue() : 0f;
+        }
         if (gp != null)
         {
             ps = gp is DualShockGamepad;
-            if (gp.leftStick.ReadValue().sqrMagnitude > 0.25f || gp.rightStick.ReadValue().sqrMagnitude > 0.25f
-                || gp.leftTrigger.ReadValue() > 0.4f || gp.rightTrigger.ReadValue() > 0.4f) usando = true;
-            else
+            float lt = gp.leftTrigger.ReadValue(), rt = gp.rightTrigger.ReadValue();
+            Vector2 ls = gp.leftStick.ReadValue(), rs = gp.rightStick.ReadValue();
+            // el reposo de cada gatillo se aprende solo: baja de inmediato y sube despacio (si se queda a medias, en
+            // unos segundos ya no cuenta como apretado; mantener el bloqueo un rato normal no lo apaga)
+            float dtR = Time.unscaledDeltaTime;
+            baseI = lt < baseI ? lt : Mathf.MoveTowards(baseI, lt, 0.04f * dtR);
+            baseD = rt < baseD ? rt : Mathf.MoveTowards(baseD, rt, 0.04f * dtR);
+            if (ls.sqrMagnitude < 0.04f) lsOk = true;
+            if (rs.sqrMagnitude < 0.04f) rsOk = true;
+            gatI = Mathf.Max(0f, lt - baseI); gatD = Mathf.Max(0f, rt - baseD);
+            stI = lsOk ? ls : Vector2.zero; stD = rsOk ? rs : Vector2.zero;
+        }
+        else { gatI = gatD = 0f; stI = stD = Vector2.zero; }
+        // con histéresis (se aprieta arriba de 0.55 y se suelta abajo de 0.35) para que el ruido no lo prenda y apague
+        bool ltAhora = ltAntes ? gatI > 0.3f : gatI > 0.5f;
+        bloqueoPulsado = ltAhora && !ltAntes;
+        ltAntes = ltAhora;
+
+        // ¿qué se usó? Solo cambia cuando de verdad se aprieta algo (no por un valor que se quede quieto):
+        // el teclado o el mouse regresan a las teclas; un botón, un stick que se mueve o un gatillo, al control
+        if (gp != null)
+        {
+            bool tocado = bloqueoPulsado || (gatD > 0.5f && gatDAntes <= 0.5f)
+                       || (stI.sqrMagnitude > 0.3f && stIAntes <= 0.3f) || (stD.sqrMagnitude > 0.3f && stDAntes <= 0.3f);
+            if (!tocado)
                 foreach (var c in gp.allControls)
-                    if (c is ButtonControl b && !b.synthetic && b.wasPressedThisFrame) { usando = true; break; }
+                    if (c is ButtonControl b && !b.synthetic && !(b.parent is StickControl)
+                        && b != gp.leftTrigger && b != gp.rightTrigger && b.wasPressedThisFrame) { tocado = true; break; }
+            if (tocado) usando = true;
+            gatDAntes = gatD; stIAntes = stI.sqrMagnitude; stDAntes = stD.sqrMagnitude;
         }
         else usando = false;
         if ((kb != null && kb.anyKey.wasPressedThisFrame)
@@ -110,7 +150,7 @@ public static class Mando
         int dir = 0;   // 1 arriba, 2 abajo, 3 izquierda, 4 derecha (cruceta o stick)
         if (gp != null)
         {
-            Vector2 st = gp.leftStick.ReadValue();
+            Vector2 st = stI;
             if (gp.dpad.up.isPressed) dir = 1;
             else if (gp.dpad.down.isPressed) dir = 2;
             else if (gp.dpad.left.isPressed) dir = 3;
@@ -129,7 +169,7 @@ public static class Mando
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void Reiniciar() { usando = false; frame = -1; dirAntes = 0; }
+    static void Reiniciar() { usando = false; frame = -1; dirAntes = 0; padCal = null; ltAntes = false; }
 
     // se actualiza cada cuadro aunque nadie pregunte, para no perder la última tecla o botón
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

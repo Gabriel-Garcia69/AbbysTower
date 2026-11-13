@@ -42,14 +42,14 @@ public class AbbyBlock : MonoBehaviour
     {
         var kb = Keyboard.current; var ms = Mouse.current; var gp = Gamepad.current;
         return (ms != null && ms.rightButton.isPressed) || (kb != null && kb.kKey.isPressed)
-            || (gp != null && gp.leftTrigger.isPressed);
+            || Mando.BloqueoSostenido;   // LT calibrado: un gatillo que en reposo no marca 0 ya no deja el escudo puesto
     }
 
     static bool Pulsado()
     {
         var kb = Keyboard.current; var ms = Mouse.current; var gp = Gamepad.current;
         return (ms != null && ms.rightButton.wasPressedThisFrame) || (kb != null && kb.kKey.wasPressedThisFrame)
-            || (gp != null && gp.leftTrigger.wasPressedThisFrame);
+            || Mando.BloqueoPulsado;
     }
 
     void Update()

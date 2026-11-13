@@ -187,49 +187,25 @@ public class MenuPrincipal : MonoBehaviour
         Pintar(new Rect(0, 0, sw, sh), vineta, new Color(0.02f, 0.01f, 0.05f, 0.75f));
         Pintar(new Rect(0, sh - 70f * S, sw, 70f * S), Arriba, new Color(0.03f, 0.015f, 0.06f, 0.85f));
 
-        // derecha: la torre, nítida (sin suavizado), con un resplandor morado detrás y su sombra morada
-        var torre = EmblemaTorre.Logo;
-        if (torre != null)
+        // derecha: el logo completo (la torre con el nombre y "ascending"), nítido; su fondo oscuro se funde como nube con el paisaje
+        if (logoMenu == null) logoMenu = Resources.Load<Texture2D>("Logo/logo_menu");
+        if (logoMenu != null)
         {
-            // más chica que antes (tapaba medio paisaje) y nunca más de un tercio del ancho
-            float prop = (float)torre.width / torre.height;
-            float th = Mathf.Min(540f * S, sw * 0.32f / prop), tw = th * prop;
-            float tx = sw - 64f * S - tw, ty = (sh - th) / 2f - 6f * S + Mathf.Sin(t * 1.1f) * 3f * S;
-            float cx = tx + tw / 2f, cy = ty + th * 0.5f;
-            float pulso = 0.85f + 0.15f * Mathf.Sin(t * 1.6f);
-            // un nicho oscuro: el paisaje se apaga alrededor de la torre en vez de chocar con ella
-            float ancho = Mathf.Max(sw * 0.5f, tw * 2.2f);
-            Pintar(new Rect(sw - ancho, 0, ancho, sh), Degradado.Horizontal, new Color(0.043f, 0.024f, 0.094f, 0.75f * aT), espejo: true);
-            float nr = th * 1.75f;
-            Pintar(new Rect(cx - nr / 2f, cy - nr / 2f, nr, nr), Halo, new Color(0.043f, 0.024f, 0.094f, 0.95f * aT));
-            // el resplandor morado y la sombra en el piso, para que la torre quede asentada
-            float gr = th * 1.2f;
-            Pintar(new Rect(cx - gr / 2f, cy - gr / 2f, gr, gr), Halo, new Color(190f / 255f, 90f / 255f, 1f, 0.45f * pulso * aT));
-            Pintar(new Rect(cx - tw * 0.75f, ty + th * 0.9f, tw * 1.5f, th * 0.16f), Halo, new Color(0.02f, 0f, 0.05f, 0.8f * aT));
-            float sombra = 8f * S;
-            Pintar(new Rect(tx - sombra, ty - sombra * 0.4f, tw + sombra * 2f, th + sombra * 1.4f), torre, new Color(0.55f, 0.2f, 0.95f, 0.3f * aT), true);
-            Pintar(new Rect(tx, ty, tw, th), torre, new Color(1f, 1f, 1f, aT), true);
+            float L = Mathf.Min(620f * S, sw * 0.5f);
+            float lx = sw - 50f * S - L * 0.80f, ly = (sh - L) / 2f - 14f * S + Mathf.Sin(t * 1.1f) * 3f * S;   // el dibujo ocupa del 21 % al 80 % del ancho
+            float ancho = Mathf.Max(sw * 0.5f, L * 1.1f);
+            Pintar(new Rect(sw - ancho, 0, ancho, sh), Degradado.Horizontal, new Color(0.043f, 0.024f, 0.094f, 0.6f * aT), espejo: true);
+            float pulso = 0.85f + 0.15f * Mathf.Sin(t * 1.6f), gr = L * 0.75f;
+            Pintar(new Rect(lx + L * 0.5f - gr / 2f, ly + L * 0.33f - gr / 2f, gr, gr), Halo, new Color(190f / 255f, 90f / 255f, 1f, 0.22f * pulso * aT));
+            Pintar(new Rect(lx, ly, L, L), logoMenu, new Color(1f, 1f, 1f, aT), true);
         }
-
-        // izquierda: el título en dos líneas, con sombra escalonada de pixel y un brillo oscuro detrás
         float x0 = 84f * S;
-        Pintar(new Rect(x0 - 70f * S, 30f * S, 520f * S, 260f * S), Halo, new Color(0.02f, 0.0f, 0.05f, 0.55f));
-        tituloSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(56f * S));
-        foreach (var (linea, yl) in new[] { ("ABBY'S", 86f), ("TOWER", 168f) })
-        {
-            var r = new Rect(x0, yl * S, 700f * S, 72f * S);
-            Texto(new Rect(r.x + 6f * S, r.y + 6f * S, r.width, r.height), linea, tituloSt, new Color(0.29f, 0.11f, 0.227f, aT));   // #4A1C3A
-            Texto(new Rect(r.x + 3f * S, r.y + 3f * S, r.width, r.height), linea, tituloSt, new Color(0.706f, 0.337f, 0.11f, aT));   // #B4561C
-            Texto(r, linea, tituloSt, new Color(1f, 0.89f, 0.627f, aT));   // #FFE3A0
-        }
-        subSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(22f * S));
-        Espaciado(x0, 272f * S, "La torre del abismo", subSt, 2.2f * S, new Color(0.788f, 0.706f, 1f, aT), true);   // #C9B4FF
 
         // el menú: texto a la izquierda, sin panel; el elegido en dorado con barra y degradado
         var ops = Opciones();
         bool config = pagina == Pagina.Configuracion;
         float fila = config ? 40f : 52f, letra = config ? 22f : 30f, letraSel = config ? 25f : 34f;
-        float y0 = (config ? 348f : 362f) * S;
+        float y0 = (config ? 205f : 228f) * S;   // el título ya viene en el logo: la lista va centrada a la izquierda
         if (pagina == Pagina.Salir)
         {
             itemSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(22f * S));
@@ -297,7 +273,7 @@ public class MenuPrincipal : MonoBehaviour
 
     static GUIStyle tituloSt, subSt, itemSt, pisoSt, notaSt, capSt, capTextoSt, capBordeSt;
     static Font fuenteItem, fuenteSel;
-    static Texture2D vineta, halo, arriba, borde;
+    static Texture2D vineta, halo, arriba, borde, logoMenu;
     static Texture2D Halo => halo;
     static Texture2D Arriba => arriba;
 

@@ -394,7 +394,8 @@ public class ExpedicionPiso20 : MonoBehaviour
         {
             var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.3f), alignment = TextAnchor.MiddleCenter, wordWrap = true };
             float w = Mathf.Min(sw * 0.6f, st.CalcSize(new GUIContent(pista)).x + u * 8f);
-            var r = new Rect((sw - w) / 2f, u * 16f, w, u * 6f);   // debajo del marco del HUD (que llega a ~14u)
+            // abajo, justo sobre la barra de controles: arriba tapaba la guía de la horda (que suele quedar al frente)
+            var r = new Rect((sw - w) / 2f, Screen.height - u * 15f, w, u * 6f);
             CuadroNarracion.Marco(r, pistaAlpha * 0.95f);
             GUI.color = Color.white;
             st.normal.textColor = st.hover.textColor = new Color(1f, 0.93f, 0.75f, pistaAlpha);

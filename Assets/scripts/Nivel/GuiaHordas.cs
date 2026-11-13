@@ -80,7 +80,9 @@ public class GuiaHordas : MonoBehaviour
 
     void OnGUI()
     {
-        bool mostrar = hay && jugador != null && !DanteFinal.Activo && !PauseMenu.IsPaused && baliza != null && baliza.activeSelf;
+        // una cosa a la vez: no junto al letrero del piso ni mientras alguien habla
+        bool mostrar = hay && jugador != null && !DanteFinal.Activo && !PauseMenu.IsPaused && baliza != null && baliza.activeSelf
+                    && !FloorDirector.BannerVisible && CuadroNarracion.DialogoVisible < 0.1f;
         alfaGui = Mathf.MoveTowards(alfaGui, mostrar ? 1f : 0f, Time.unscaledDeltaTime * 3f);
         if (alfaGui <= 0.01f || jugador == null) return;
         var cam = Camera.main;

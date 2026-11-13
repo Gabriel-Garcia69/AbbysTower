@@ -222,6 +222,9 @@ public class FloorDirector : MonoBehaviour
         Instance.popups.Add(new PopupText { pos = worldPos, text = text, color = color, t = 0f, drift = life > 1.5f ? 0f : Random.Range(-0.4f, 0.4f), life = life });
     }
 
+    /// <summary>¿Está el letrero del centro a la vista? (la guía de hordas espera a que se vaya: una cosa a la vez)</summary>
+    public static bool BannerVisible => Instance != null && !string.IsNullOrEmpty(Instance.bannerTop) && Instance.bannerTime < Instance.bannerLength;
+
     public static void Banner(string top, string bottom, Color color, float seconds)
     {
         if (Instance == null) return;
@@ -270,6 +273,8 @@ public class FloorDirector : MonoBehaviour
         float dt = Time.unscaledDeltaTime;
         if (player != null) Shader.SetGlobalVector("_AbbyJugador", player.position);   // los límites del piso se encienden cerca de Abby
         bannerTime += dt;
+        // mientras alguien habla el letrero espera (se apaga y no avanza): sale completo cuando termina el diálogo
+        if (CuadroNarracion.DialogoVisible > 0.05f && bannerTime < bannerLength) bannerTime = Mathf.Max(0f, bannerTime - dt);
         if (hintTimer > 0f) hintTimer -= dt;
         hurtVignette = Mathf.MoveTowards(hurtVignette, 0f, dt * 2.5f);
         fragPulse = Mathf.MoveTowards(fragPulse, 0f, dt * 3f);
@@ -418,7 +423,7 @@ public class FloorDirector : MonoBehaviour
         // cartel central
         if (!string.IsNullOrEmpty(bannerTop) && bannerTime < bannerLength)
         {
-            float a = Mathf.Clamp01(Mathf.Min(bannerTime / 0.3f, (bannerLength - bannerTime) / 0.6f));
+            float a = Mathf.Clamp01(Mathf.Min(bannerTime / 0.3f, (bannerLength - bannerTime) / 0.6f)) * (1f - CuadroNarracion.DialogoVisible);
             float slide = (1f - Mathf.Clamp01(bannerTime / 0.35f)) * u * 3f;
             Box(new Rect(0, sh * 0.2f - u * 1.5f, sw, u * 14f), new Color(0f, 0f, 0f, 0.5f * a));
             Box(new Rect(sw * 0.2f, sh * 0.2f - u * 1.5f, sw * 0.6f, u * 0.25f), new Color(bannerColor.r, bannerColor.g, bannerColor.b, 0.8f * a));
@@ -496,6 +501,9 @@ public class FloorDirector : MonoBehaviour
     {
         // con el cuadro de diálogo a la vista la barra se atenúa (casi desaparece) para no encimarse con él
         float k = 1f - CuadroNarracion.DialogoVisible * 0.92f;
+        // tampoco junto al letrero del centro; y pasado un rato en el piso queda a media luz (ya se saben las teclas)
+        if (BannerVisible) k *= 1f - Mathf.Clamp01(Mathf.Min(bannerTime / 0.3f, (bannerLength - bannerTime) / 0.6f));
+        k *= Mathf.Lerp(1f, 0.5f, Mathf.Clamp01((Time.time - runStart - 20f) / 3f));
         if (k < 0.04f) return;
         void Box(Rect r, Color c) { c.a *= k; GUI.color = c; GUI.DrawTexture(r, Texture2D.whiteTexture); }   // el de OnGUI es local a OnGUI
         float alto = u * 7.4f;

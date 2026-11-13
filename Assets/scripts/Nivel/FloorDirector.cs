@@ -112,6 +112,8 @@ public class FloorDirector : MonoBehaviour
                 if (cc != null) cc.enabled = true;
             }
             floorSubtitle = "Reintenta contra el jefe";
+            // sin la toma de apertura: está pensada para la entrada del mapa y, junto al jefe, la cámara miraba al vacío
+            foreach (var s in FindObjectsByType<CameraShot>()) if (s.introSeconds > 0f) s.Terminada = true;
         }
         foreach (var r in rooms)
         {

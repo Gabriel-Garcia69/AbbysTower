@@ -626,12 +626,21 @@ public class MouseOrbitCamera : MonoBehaviour
     float panoramaDesde;
     const float PanoramaDelay = 9f;
 
-    /// <summary>Bajo techo la cámara abierta se saldría de la cueva.</summary>
-    static bool PanoramaPermitido()
+    /// <summary>
+    /// Bajo techo la cámara abierta se saldría de la cueva. Y junto a un jefe pendiente tampoco: su arena está en el borde
+    /// (la isla de la Cima) y el panorama solo enmarcaba cielo, con Abby hasta abajo (también al reintentar el jefe).
+    /// </summary>
+    bool PanoramaPermitido()
     {
         string n = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-        return n != "Expedicion" && n != "Cueva" && n != "Final";
+        if (n == "Expedicion" || n == "Cueva" || n == "Final") return false;
+        if (jefes == null) jefes = System.Array.FindAll(FindObjectsByType<RoomEncounter>(), r => r.isBoss);
+        foreach (var j in jefes)
+            if (j != null && !j.IsCleared && player != null && Vector3.Distance(j.transform.position, player.position) < 40f) return false;
+        return true;
     }
+
+    RoomEncounter[] jefes;
 
     /// <summary>La toma del paisaje: sale del yaw actual; va desactivada para que no entre en la lista de tomas del mapa.</summary>
     CameraShot Panorama()

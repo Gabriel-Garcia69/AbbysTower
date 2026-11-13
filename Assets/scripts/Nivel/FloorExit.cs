@@ -33,9 +33,15 @@ public class FloorExit : MonoBehaviour
         {
             if (unlockedBy != null && !unlockedBy.IsCleared) return false;
             if (requiere != null) foreach (var r in requiere) if (r != null && !r.IsCleared) return false;
+            // y nunca con un jefe del piso todavía vivo (en la Cima la salida se abría con las hordas y, al pisarla a
+            // media pelea, el piso se reiniciaba porque el jefe seguía en pie)
+            if (jefes == null) jefes = System.Array.FindAll(FindObjectsByType<RoomEncounter>(FindObjectsInactive.Include), r => r.isBoss);
+            foreach (var j in jefes) if (j != null && !j.IsCleared) return false;
             return true;
         }
     }
+
+    RoomEncounter[] jefes;
 
     void Start()
     {

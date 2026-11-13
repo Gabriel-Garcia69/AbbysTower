@@ -247,9 +247,15 @@ public class IntroImagenes : MonoBehaviour
         }
         if (mostrarTitulo)
         {
-            sTit.font = FuentePixel.FuenteLogo; sTit.fontSize = Mathf.RoundToInt(H / 8f); sTarjChica.fontSize = Mathf.RoundToInt(H / 22f);
+            // en una sola línea y a lo ancho que quepa: la fuente pixel es muy ancha y con ajuste de línea se partía en dos
+            // renglones que no cabían en el cuadro (se cortaba arriba); sin negrita falsa, que la ensuciaba
+            sTit.font = FuentePixel.FuenteLogo; sTit.fontStyle = FontStyle.Normal; sTit.wordWrap = false; sTit.clipping = TextClipping.Overflow;
+            sTit.fontSize = Mathf.RoundToInt(H / 9f);
+            float ancho = sTit.CalcSize(new GUIContent(Historia.Titulo)).x;
+            if (ancho > W * 0.86f) sTit.fontSize = Mathf.Max(8, Mathf.FloorToInt(sTit.fontSize * W * 0.86f / ancho));
+            sTarjChica.fontSize = Mathf.RoundToInt(H / 22f);
             GUI.color = new Color(1, 1, 1, 1f - negro);
-            GUI.Label(new Rect(0, H * 0.32f, W, H * 0.2f), Historia.Titulo, sTit);
+            GUI.Label(new Rect(0, H * 0.3f, W, H * 0.22f), Historia.Titulo, sTit);
             GUI.Label(new Rect(0, H * 0.52f, W, H * 0.1f), Historia.Subtitulo, sTarjChica);
         }
 

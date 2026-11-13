@@ -70,7 +70,13 @@ public partial class DioramaBuilder
             hordas[i].displayName = $"Horda {i + 1} de {hordas.Count}";
             hordas[i].roster = Roster;
         }
-        if (salida != null) { salida.unlockedBy = null; salida.requiere = hordas.ToArray(); }
+        if (salida != null)
+        {
+            // las hordas y, si hay, el jefe del piso (antes la salida se abría con el jefe todavía vivo)
+            var req = new List<RoomEncounter>(hordas);
+            if (jefeFinal != null) req.Add(jefeFinal);
+            salida.unlockedBy = null; salida.requiere = req.ToArray();
+        }
         if (jefeFinal != null) jefeFinal.esperaA = hordas.ToArray();
         Debug.Log($"[Diorama] {layout}: {hordas.Count} hordas" + (jefeFinal != null ? " + Dante." : "."));
     }

@@ -123,7 +123,7 @@ public class MerchantShop : MonoBehaviour
             GUI.color = new Color(0f, 0f, 0f, 0.55f);
             GUI.DrawTexture(new Rect(sw / 2f - u * 14f, sh * 0.72f, u * 28f, u * 5f), tex);
             GUI.color = Color.white;
-            st.normal.textColor = new Color(1f, 0.9f, 0.6f);
+            st.normal.textColor = st.hover.textColor = new Color(1f, 0.9f, 0.6f);
             GUI.Label(new Rect(sw / 2f - u * 14f, sh * 0.72f, u * 28f, u * 5f), "E: comerciar", st);
         }
 
@@ -138,10 +138,10 @@ public class MerchantShop : MonoBehaviour
             GUI.color = Color.white;
 
             var title = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.2f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            title.normal.textColor = new Color(1f, 0.85f, 0.5f);
+            title.normal.textColor = title.hover.textColor = new Color(1f, 0.85f, 0.5f);
             GUI.Label(new Rect(panel.x, panel.y + u * 2f, panel.width, u * 6f), "EL MERCADER", title);
             var sub = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.2f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
-            sub.normal.textColor = new Color(1f, 1f, 1f, 0.75f);
+            sub.normal.textColor = sub.hover.textColor = new Color(1f, 1f, 1f, 0.75f);
             GUI.Label(new Rect(panel.x, panel.y + u * 7.5f, panel.width, u * 4f), $"\"Los minerales del abismo valen oro allá afuera...\"     Tienes: {RunState.Fragments} ◆", sub);
 
             string[] names = { "Poción de vida", "Filo de Runa", "Corazón de Torre" };
@@ -161,8 +161,8 @@ public class MerchantShop : MonoBehaviour
                 var row = new Rect(panel.x + u * 4f, panel.y + u * (14f + i * 9.5f), panel.width - u * 8f, u * 8f);
                 GUI.color = new Color(1f, 1f, 1f, 0.06f); GUI.DrawTexture(row, tex); GUI.color = Color.white;
                 bool afford = RunState.Fragments >= costs[i] && !maxed[i];
-                nameSt.normal.textColor = afford ? Color.white : new Color(1f, 1f, 1f, 0.5f);
-                descSt.normal.textColor = new Color(0.8f, 0.85f, 0.9f, afford ? 0.9f : 0.5f);
+                nameSt.normal.textColor = nameSt.hover.textColor = afford ? Color.white : new Color(1f, 1f, 1f, 0.5f);
+                descSt.normal.textColor = descSt.hover.textColor = new Color(0.8f, 0.85f, 0.9f, afford ? 0.9f : 0.5f);
                 GUI.Label(new Rect(row.x + u * 2f, row.y + u * 0.6f, row.width * 0.6f, u * 4f), $"{i + 1}. {names[i]}", nameSt);
                 GUI.Label(new Rect(row.x + u * 2f, row.y + u * 4.2f, row.width * 0.6f, u * 3.5f), desc[i], descSt);
                 GUI.enabled = afford;
@@ -173,7 +173,7 @@ public class MerchantShop : MonoBehaviour
             if (feedbackTimer > 0f)
             {
                 var fb = new GUIStyle(sub) { fontStyle = FontStyle.Bold };
-                fb.normal.textColor = new Color(1f, 0.9f, 0.6f, Mathf.Clamp01(feedbackTimer));
+                fb.normal.textColor = fb.hover.textColor = new Color(1f, 0.9f, 0.6f, Mathf.Clamp01(feedbackTimer));
                 GUI.Label(new Rect(panel.x, panel.yMax - u * 13f, panel.width, u * 4f), feedback, fb);
             }
         }

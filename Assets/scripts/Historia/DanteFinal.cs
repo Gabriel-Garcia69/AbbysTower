@@ -164,10 +164,10 @@ public class DanteFinal : MonoBehaviour
         // el logo
         var logo = FuentePixel.Logo(new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft, wordWrap = false }, u * 7.4f);
         float a0 = Al(y);
-        logo.normal.textColor = new Color(0f, 0f, 0f, a0 * 0.8f); GUI.Label(new Rect(x + 3f, y + 3f, sw, u * 10f), Historia.Titulo, logo);
-        logo.normal.textColor = new Color(1f, 0.92f, 0.75f, a0); GUI.Label(new Rect(x, y, sw, u * 10f), Historia.Titulo, logo);
+        logo.normal.textColor = logo.hover.textColor = new Color(0f, 0f, 0f, a0 * 0.8f); GUI.Label(new Rect(x + 3f, y + 3f, sw, u * 10f), Historia.Titulo, logo);
+        logo.normal.textColor = logo.hover.textColor = new Color(1f, 0.92f, 0.75f, a0); GUI.Label(new Rect(x, y, sw, u * 10f), Historia.Titulo, logo);
         var lema = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Italic };
-        lema.normal.textColor = new Color(0.85f, 0.78f, 1f, a0);
+        lema.normal.textColor = lema.hover.textColor = new Color(0.85f, 0.78f, 1f, a0);
         GUI.Label(new Rect(x, y + u * 10f, w, u * 4.5f), Historia.Subtitulo, lema);
         Linea(new Rect(x, y + u * 16f, w, Mathf.Max(1f, u * 0.2f)), Oro(a0 * 0.8f));
         y += u * 34f;
@@ -178,18 +178,18 @@ public class DanteFinal : MonoBehaviour
         {
             float a = Al(y);
             Linea(new Rect(x, y + u * 1.2f, u * 2.6f, Mathf.Max(1f, u * 0.25f)), Oro(a));
-            cargo.normal.textColor = Oro(a);
+            cargo.normal.textColor = cargo.hover.textColor = Oro(a);
             GUI.Label(new Rect(x + u * 3.6f, y - u * 0.8f, w, u * 4f), c[0].ToUpperInvariant(), cargo);
-            nombre.normal.textColor = new Color(0f, 0f, 0f, a * 0.7f); GUI.Label(new Rect(x + 2f, y + u * 3.2f + 2f, w, u * 7f), c[1], nombre);
-            nombre.normal.textColor = new Color(1f, 0.97f, 0.92f, a); GUI.Label(new Rect(x, y + u * 3.2f, w, u * 7f), c[1], nombre);
+            nombre.normal.textColor = nombre.hover.textColor = new Color(0f, 0f, 0f, a * 0.7f); GUI.Label(new Rect(x + 2f, y + u * 3.2f + 2f, w, u * 7f), c[1], nombre);
+            nombre.normal.textColor = nombre.hover.textColor = new Color(1f, 0.97f, 0.92f, a); GUI.Label(new Rect(x, y + u * 3.2f, w, u * 7f), c[1], nombre);
             y += u * 17f;
         }
         y += u * 12f;
         var ded = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.4f), fontStyle = FontStyle.Italic, wordWrap = true };
         float a1 = Al(y);
-        ded.normal.textColor = new Color(0.92f, 0.86f, 1f, a1);
+        ded.normal.textColor = ded.hover.textColor = new Color(0.92f, 0.86f, 1f, a1);
         GUI.Label(new Rect(x, y, w, u * 12f), "Para los que todavía dejan una luz prendida.", ded);
-        ded.fontStyle = FontStyle.Bold; ded.normal.textColor = Oro(Al(y + u * 12f));
+        ded.fontStyle = FontStyle.Bold; ded.normal.textColor = ded.hover.textColor = Oro(Al(y + u * 12f));
         GUI.Label(new Rect(x, y + u * 12f, w, u * 6f), "Gracias por jugar", ded);
         GUI.color = Color.white;
     }

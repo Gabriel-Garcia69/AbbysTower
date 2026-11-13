@@ -384,9 +384,9 @@ public class ExteriorIntro : MonoBehaviour
     static void Shadowed(Rect r, string text, GUIStyle st, float alpha)
     {
         if (alpha <= 0f) return;
-        st.normal.textColor = new Color(0f, 0f, 0f, alpha * 0.7f);
+        st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, alpha * 0.7f);
         GUI.Label(new Rect(r.x + 3, r.y + 3, r.width, r.height), text, st);
-        st.normal.textColor = new Color(1f, 0.95f, 0.88f, alpha);
+        st.normal.textColor = st.hover.textColor = new Color(1f, 0.95f, 0.88f, alpha);
         GUI.Label(r, text, st);
     }
 }

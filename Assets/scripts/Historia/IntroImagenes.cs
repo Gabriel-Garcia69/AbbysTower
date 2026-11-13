@@ -195,13 +195,13 @@ public class IntroImagenes : MonoBehaviour
     {
         if (sNarr != null) return;
         sNarr = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true, richText = true };
-        sNarr.normal.textColor = new Color(0.95f, 0.93f, 0.88f);
+        sNarr.normal.textColor = sNarr.hover.textColor = new Color(0.95f, 0.93f, 0.88f);
         sQuien = new GUIStyle(sNarr) { fontStyle = FontStyle.Bold };
-        sQuien.normal.textColor = new Color(1f, 0.82f, 0.45f);
+        sQuien.normal.textColor = sQuien.hover.textColor = new Color(1f, 0.82f, 0.45f);
         sTarj = new GUIStyle(sNarr) { fontStyle = FontStyle.Bold };
-        sTarj.normal.textColor = new Color(0.9f, 0.85f, 1f);
+        sTarj.normal.textColor = sTarj.hover.textColor = new Color(0.9f, 0.85f, 1f);
         sTarjChica = new GUIStyle(sNarr);
-        sTarjChica.normal.textColor = new Color(0.7f, 0.65f, 0.8f);
+        sTarjChica.normal.textColor = sTarjChica.hover.textColor = new Color(0.7f, 0.65f, 0.8f);
         sTit = new GUIStyle(sTarj);
     }
 

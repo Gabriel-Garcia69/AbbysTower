@@ -3,8 +3,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Menú principal (GDD): Jugar · Configuración (volumen general y de música, pantalla completa) · Salir (pide
-/// confirmación). De fondo van pasando paisajes de algunos pisos (FondoMenu: puerto, cascadas, acantilado y cima) con
+/// Menú principal (GDD): Jugar/Continuar · Nueva partida · Configuración · Créditos · Salir (pide confirmación). Diseño de
+/// la maqueta: título en dos líneas a la izquierda, menú sin panel, la torre grande y nítida a la derecha y las teclas abajo. De fondo van pasando paisajes de algunos pisos (FondoMenu: puerto, cascadas, acantilado y cima) con
 /// la cámara paneando despacio. Va en la escena "Menu" (vacía: solo este objeto). Jugar abre la cinemática inicial.
 /// </summary>
 public class MenuPrincipal : MonoBehaviour
@@ -177,76 +177,254 @@ public class MenuPrincipal : MonoBehaviour
             GUI.color = Color.white;
             return;
         }
-        // título
-        // abajo el fondo se oscurece, para que el panel y el título respiren
-        GUI.color = new Color(0.01f, 0.005f, 0.03f, 0.72f);
-        GUI.DrawTexture(new Rect(0f, sh * 0.4f, sw, sh * 0.6f), Degradado.Vertical);
-        GUI.color = Color.white;
-        var titulo = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 11f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-        // el logo de la torre como emblema en la esquina (en medio tapaba el paisaje y apretaba el título)
-        EmblemaTorre.Dibujar(u * 3f, u * 3f, u * 22f, Mathf.Clamp01(t / 0.8f), t);
-        float yTitulo = sh * 0.09f, altoTitulo = u * 15f, letra = u * 12.5f;
-        Sombra(new Rect(0, yTitulo, sw, altoTitulo), "ABBY'S TOWER", FuentePixel.Logo(titulo, letra), new Color(1f, 0.92f, 0.75f));
-        var sub = new GUIStyle(titulo) { font = null, fontSize = FuentePixel.Tam(u * 3.1f), fontStyle = FontStyle.Italic };
-        float ySub = yTitulo + altoTitulo;
-        Sombra(new Rect(0, ySub, sw, u * 5f), "La torre del abismo", sub, new Color(0.88f, 0.82f, 1f));
-        float tiraW = u * 26f, tiraH = Mathf.Max(1f, u * 0.2f);
-        GUI.color = new Color(0.92f, 0.78f, 0.45f, 0.8f);
-        GUI.DrawTexture(new Rect(sw / 2f - u * 20f - tiraW, ySub + u * 2.4f, tiraW, tiraH), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(sw / 2f + u * 20f, ySub + u * 2.4f, tiraW, tiraH), Texture2D.whiteTexture);
-        GUI.color = Color.white;
+        // ── diseño de la maqueta (base 1280×720; todo escala con la altura y se ancla a su lado) ──
+        float S = sh / 720f, a = Mathf.Clamp01(entrada / 0.25f), aT = Mathf.Clamp01(t / 0.8f);
+        Preparar();
 
+        // fondo: la escena 3D se queda; encima un velo y una viñeta para que se lean el texto y la torre
+        Pintar(new Rect(0, 0, sw, sh), Texture2D.whiteTexture, new Color(0.043f, 0.024f, 0.094f, 0.30f));
+        Pintar(new Rect(0, 0, Mathf.Max(sw * 0.62f, 720f * S), sh), Degradado.Horizontal, new Color(0.043f, 0.024f, 0.094f, 0.78f));   // #0B0618 a la izquierda
+        Pintar(new Rect(0, 0, sw, sh), vineta, new Color(0.02f, 0.01f, 0.05f, 0.75f));
+        Pintar(new Rect(0, sh - 70f * S, sw, 70f * S), Arriba, new Color(0.03f, 0.015f, 0.06f, 0.85f));
+
+        // derecha: la torre, nítida (sin suavizado), con un resplandor morado detrás y su sombra morada
+        var torre = EmblemaTorre.Logo;
+        if (torre != null)
+        {
+            // más chica que antes (tapaba medio paisaje) y nunca más de un tercio del ancho
+            float prop = (float)torre.width / torre.height;
+            float th = Mathf.Min(540f * S, sw * 0.32f / prop), tw = th * prop;
+            float tx = sw - 64f * S - tw, ty = (sh - th) / 2f - 6f * S + Mathf.Sin(t * 1.1f) * 3f * S;
+            float cx = tx + tw / 2f, cy = ty + th * 0.5f;
+            float pulso = 0.85f + 0.15f * Mathf.Sin(t * 1.6f);
+            // un nicho oscuro: el paisaje se apaga alrededor de la torre en vez de chocar con ella
+            float ancho = Mathf.Max(sw * 0.5f, tw * 2.2f);
+            Pintar(new Rect(sw - ancho, 0, ancho, sh), Degradado.Horizontal, new Color(0.043f, 0.024f, 0.094f, 0.75f * aT), espejo: true);
+            float nr = th * 1.75f;
+            Pintar(new Rect(cx - nr / 2f, cy - nr / 2f, nr, nr), Halo, new Color(0.043f, 0.024f, 0.094f, 0.95f * aT));
+            // el resplandor morado y la sombra en el piso, para que la torre quede asentada
+            float gr = th * 1.2f;
+            Pintar(new Rect(cx - gr / 2f, cy - gr / 2f, gr, gr), Halo, new Color(190f / 255f, 90f / 255f, 1f, 0.45f * pulso * aT));
+            Pintar(new Rect(cx - tw * 0.75f, ty + th * 0.9f, tw * 1.5f, th * 0.16f), Halo, new Color(0.02f, 0f, 0.05f, 0.8f * aT));
+            float sombra = 8f * S;
+            Pintar(new Rect(tx - sombra, ty - sombra * 0.4f, tw + sombra * 2f, th + sombra * 1.4f), torre, new Color(0.55f, 0.2f, 0.95f, 0.3f * aT), true);
+            Pintar(new Rect(tx, ty, tw, th), torre, new Color(1f, 1f, 1f, aT), true);
+        }
+
+        // izquierda: el título en dos líneas, con sombra escalonada de pixel y un brillo oscuro detrás
+        float x0 = 84f * S;
+        Pintar(new Rect(x0 - 70f * S, 30f * S, 520f * S, 260f * S), Halo, new Color(0.02f, 0.0f, 0.05f, 0.55f));
+        tituloSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(56f * S));
+        foreach (var (linea, yl) in new[] { ("ABBY'S", 86f), ("TOWER", 168f) })
+        {
+            var r = new Rect(x0, yl * S, 700f * S, 72f * S);
+            Texto(new Rect(r.x + 6f * S, r.y + 6f * S, r.width, r.height), linea, tituloSt, new Color(0.29f, 0.11f, 0.227f, aT));   // #4A1C3A
+            Texto(new Rect(r.x + 3f * S, r.y + 3f * S, r.width, r.height), linea, tituloSt, new Color(0.706f, 0.337f, 0.11f, aT));   // #B4561C
+            Texto(r, linea, tituloSt, new Color(1f, 0.89f, 0.627f, aT));   // #FFE3A0
+        }
+        subSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(22f * S));
+        Espaciado(x0, 272f * S, "La torre del abismo", subSt, 2.2f * S, new Color(0.788f, 0.706f, 1f, aT), true);   // #C9B4FF
+
+        // el menú: texto a la izquierda, sin panel; el elegido en dorado con barra y degradado
         var ops = Opciones();
-        float w = Mathf.Min(sw * 0.8f, u * 92f), h = ops.Length > 5 ? u * 6f : u * 7f;   // panel ancho: nada se aprieta
-        var caja = new Rect((sw - w) / 2f, ops.Length > 5 ? sh * 0.4f : sh * 0.45f, w, h * ops.Length + u * 4f);
-        float a = Mathf.Clamp01(entrada / 0.25f);
-        CuadroNarracion.Marco(caja, 0.92f * a);
+        bool config = pagina == Pagina.Configuracion;
+        float fila = config ? 40f : 52f, letra = config ? 22f : 30f, letraSel = config ? 25f : 34f;
+        float y0 = (config ? 348f : 362f) * S;
         if (pagina == Pagina.Salir)
         {
-            var q = new GUIStyle(sub) { fontStyle = FontStyle.Bold, fontSize = FuentePixel.Tam(u * 2.8f) };
-            Sombra(new Rect(caja.x, caja.y - u * 6f, caja.width, u * 5f), "¿Salir del juego?", q, Color.white);
+            itemSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(22f * S));
+            Texto(new Rect(x0, y0 - 6f * S, 600f * S, 30f * S), "¿Salir del juego?", itemSt, new Color(0.788f, 0.706f, 1f, a));
+            y0 += 36f * S;
         }
-        var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 3.6f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         var ev = Event.current;
+        float y = y0;
         for (int i = 0; i < ops.Length; i++)
         {
-            var r = new Rect(caja.x + u * 2f, caja.y + u * 2f + i * h, caja.width - u * 4f, h);
-            if (ev.type == EventType.MouseMove && r.Contains(ev.mousePosition)) sel = i;
+            bool on = i == sel;
+            string texto = ops[i], segunda = null;
+            if (pagina == Pagina.Principal && Progreso.Hay && i == 0) { texto = "Continuar"; segunda = Progreso.Nombre.ToUpperInvariant(); }
+            float alto = (fila + (segunda != null ? 16f : 0f)) * S;
+            var r = new Rect(x0 - 2f * S, y, 560f * S, alto);
+            if (ev.type == EventType.MouseMove && r.Contains(ev.mousePosition) && sel != i) { sel = i; Sonido.Tocar(Sonido.Efecto.Clic, 0.4f); }
             if (ev.type == EventType.MouseDown && ev.button == 0 && r.Contains(ev.mousePosition))
             {
                 sel = i;
-                if (pagina == Pagina.Configuracion && MenuConfiguracion.Ajustable(i)) MenuConfiguracion.Ajustar(i, ev.mousePosition.x > r.center.x ? 1 : -1);
+                if (config && MenuConfiguracion.Ajustable(i)) MenuConfiguracion.Ajustar(i, ev.mousePosition.x > r.center.x ? 1 : -1);
                 else Elegir(i);
                 ev.Use();
+                return;
             }
-            bool on = i == sel;
             if (on)
             {
-                // la opción elegida: una franja que se desvanece a los lados, con filete dorado
-                float fy = r.y + u * 0.7f, fh = r.height - u * 1.4f, filete = Mathf.Max(1f, u * 0.14f);
-                GUI.color = new Color(0.62f, 0.42f, 0.95f, 0.5f * a);
-                GUI.DrawTexture(new Rect(r.x, fy, r.width, fh), Degradado.Centro);
-                GUI.color = new Color(0.95f, 0.78f, 0.45f, 0.9f * a);
-                GUI.DrawTexture(new Rect(r.x, fy, r.width, filete), Degradado.Centro);
-                GUI.DrawTexture(new Rect(r.x, fy + fh, r.width, filete), Degradado.Centro);
+                // barra vertical #FFC24A y degradado dorado → transparente
+                Pintar(new Rect(r.x, r.y + 4f * S, 520f * S, alto - 8f * S), Degradado.Horizontal, new Color(1f, 0.76f, 0.29f, 0.22f * a));
+                Pintar(new Rect(r.x, r.y + 4f * S, Mathf.Max(2f, 4f * S), alto - 8f * S), Texture2D.whiteTexture, new Color(1f, 0.76f, 0.29f, a));
             }
-            Sombra(r, (on ? "◆   " : "") + ops[i] + (on ? "   ◆" : ""), st, on ? new Color(1f, 0.87f, 0.55f, a) : new Color(1f, 1f, 1f, 0.82f * a));
+            float tx = x0 + 38f * S + (on ? 2f * S * Mathf.Clamp01(entrada / 0.15f) : 0f);
+            itemSt.font = on ? fuenteSel : fuenteItem;
+            itemSt.fontSize = Mathf.Max(8, Mathf.RoundToInt((on ? letraSel : letra) * S));
+            bool apagado = (pagina == Pagina.Principal && i == ops.Length - 1) || (config && i == MenuConfiguracion.Volver && !on);
+            Color c = on ? new Color(1f, 0.89f, 0.627f) : apagado ? new Color(0.616f, 0.565f, 0.784f) : new Color(0.914f, 0.894f, 1f);   // #FFE3A0 / #9D90C8 / #E9E4FF
+            if (config && i == MenuConfiguracion.Dificultad && !on) c = Color.Lerp(c, MenuConfiguracion.ColorDificultad, 0.45f);
+            c.a *= a;
+            float alturaTexto = fila * S;
+            Texto(new Rect(tx, y + 1f * S, 900f * S, alturaTexto), texto, itemSt, c, sombra: true);
+            if (segunda != null)
+            {
+                pisoSt.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * S));
+                Espaciado(tx + 2f * S, y + alturaTexto - 12f * S, segunda, pisoSt, 1.6f * S, new Color(1f, 0.76f, 0.29f, (on ? 1f : 0.7f) * a), false);   // #FFC24A
+            }
+            y += alto;
         }
-        var ayuda = new GUIStyle(sub) { fontSize = FuentePixel.Tam(u * 1.8f), fontStyle = FontStyle.Normal };
-        string nota = pagina == Pagina.Configuracion ? MenuConfiguracion.Ayuda(sel) : null;
+
+        // ayuda de la opción (configuración) bajo la lista
+        string nota = config ? MenuConfiguracion.Ayuda(sel) : null;
         if (nota != null)
-            Sombra(new Rect(caja.x, caja.yMax + u * 1.2f, caja.width, u * 4f), nota, new GUIStyle(ayuda) { fontSize = FuentePixel.Tam(u * 2.2f) },
-                   sel == MenuConfiguracion.Dificultad ? MenuConfiguracion.ColorDificultad : new Color(1f, 1f, 1f, 0.8f));
-        Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), "↑ ↓  elegir     Enter  aceptar     ← →  ajustar volumen     Esc  regresar", ayuda, new Color(1f, 1f, 1f, 0.7f));
+        {
+            notaSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(15f * S));
+            Texto(new Rect(x0 + 38f * S, y + 6f * S, 620f * S, 24f * S), nota, notaSt,
+                  sel == MenuConfiguracion.Dificultad ? MenuConfiguracion.ColorDificultad * new Color(1f, 1f, 1f, a) : new Color(0.79f, 0.76f, 0.91f, a));
+        }
+
+        // barra de ayuda: teclas como "keycaps"
+        float hx = x0 - 2f * S, hy = sh - 40f * S;
+        foreach (var (tecla, accion) in new[] { ("↑↓", "elegir"), ("Enter", "aceptar"), ("←→", config ? "ajustar" : "volumen"), ("Esc", "regresar") })
+            hx = Keycap(hx, hy, tecla, accion, S);
         GUI.color = Color.white;
+    }
+
+    // ───────────────────────────── utilidades de dibujo del menú ─────────────────────────────
+
+    static GUIStyle tituloSt, subSt, itemSt, pisoSt, notaSt, capSt, capTextoSt, capBordeSt;
+    static Font fuenteItem, fuenteSel;
+    static Texture2D vineta, halo, arriba, borde;
+    static Texture2D Halo => halo;
+    static Texture2D Arriba => arriba;
+
+    static void Preparar()
+    {
+        if (tituloSt != null) return;
+        fuenteItem = Resources.Load<Font>("Fuentes/PixelifySans-Medium");
+        fuenteSel = Resources.Load<Font>("Fuentes/PixelifySans-SemiBold") ?? fuenteItem;
+        var inter = Resources.Load<Font>("Fuentes/Inter-SemiBold");
+        tituloSt = new GUIStyle(GUI.skin.label) { font = FuentePixel.FuenteLogo, alignment = TextAnchor.UpperLeft, wordWrap = false, clipping = TextClipping.Overflow, richText = false };
+        subSt = new GUIStyle(tituloSt) { font = fuenteItem, fontStyle = FontStyle.Italic };
+        itemSt = new GUIStyle(tituloSt) { font = fuenteItem, alignment = TextAnchor.MiddleLeft };
+        pisoSt = new GUIStyle(tituloSt) { font = fuenteSel };
+        notaSt = new GUIStyle(itemSt) { fontStyle = FontStyle.Italic };
+        capSt = new GUIStyle(tituloSt) { font = inter, alignment = TextAnchor.MiddleCenter };   // Pixelify no trae flechas: las teclas van en Inter
+        capTextoSt = new GUIStyle(tituloSt) { font = fuenteItem, alignment = TextAnchor.MiddleLeft };
+        vineta = Radial(128, d => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1.35f, d)));
+        halo = Radial(128, d => Mathf.Pow(Mathf.Clamp01(1f - d), 2f));
+        arriba = Lineal(k => k);   // transparente arriba, oscuro abajo
+        borde = Redondeado(16, 4f, 1f);
+        capBordeSt = new GUIStyle { normal = { background = borde }, border = new RectOffset(6, 6, 6, 6) };
+    }
+
+    static void Pintar(Rect r, Texture tex, Color c, bool nitido = false, bool espejo = false)
+    {
+        if (Event.current.type != EventType.Repaint || tex == null) return;
+        if (nitido && tex is Texture2D t2 && t2.filterMode != FilterMode.Point) t2.filterMode = FilterMode.Point;   // pixel art sin suavizado
+        GUI.color = c;
+        if (espejo) GUI.DrawTextureWithTexCoords(r, tex, new Rect(1f, 0f, -1f, 1f), true);   // el degradado al revés (oscuro a la derecha)
+        else GUI.DrawTexture(r, tex, nitido ? ScaleMode.ScaleToFit : ScaleMode.StretchToFill, true);
+        GUI.color = Color.white;
+    }
+
+    static void Texto(Rect r, string s, GUIStyle st, Color c, bool sombra = false)
+    {
+        GUI.color = Color.white;
+        if (sombra)
+        {
+            st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, c.a * 0.6f);
+            GUI.Label(new Rect(r.x + 2f, r.y + 2f, r.width, r.height), s, st);
+        }
+        st.normal.textColor = st.hover.textColor = c;
+        GUI.Label(r, s, st);
+    }
+
+    /// <summary>Texto con espacio entre letras (OnGUI no tiene letter-spacing): letra por letra.</summary>
+    static void Espaciado(float x, float y, string s, GUIStyle st, float espacio, Color c, bool sombra)
+    {
+        foreach (char ch in s)
+        {
+            var cont = new GUIContent(ch.ToString());
+            var tam = st.CalcSize(cont);
+            if (ch != ' ')
+            {
+                if (sombra) { st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, c.a * 0.6f); GUI.Label(new Rect(x + 2f, y + 2f, tam.x, tam.y), cont, st); }
+                st.normal.textColor = st.hover.textColor = c;
+                GUI.Label(new Rect(x, y, tam.x, tam.y), cont, st);
+            }
+            x += (ch == ' ' ? tam.x * 0.9f + st.fontSize * 0.25f : tam.x) + espacio;
+        }
+    }
+
+    /// <summary>Una tecla con borde redondeado (#8A7CB8) y su acción al lado. Devuelve dónde sigue la siguiente.</summary>
+    static float Keycap(float x, float y, string tecla, string accion, float S)
+    {
+        capSt.fontSize = Mathf.Max(7, Mathf.RoundToInt(12f * S));
+        capTextoSt.fontSize = Mathf.Max(7, Mathf.RoundToInt(13f * S));
+        float w = Mathf.Max(26f * S, capSt.CalcSize(new GUIContent(tecla)).x + 14f * S), h = 20f * S;
+        var r = new Rect(x, y, w, h);
+        if (Event.current.type == EventType.Repaint)
+        {
+            GUI.color = new Color(0.04f, 0.02f, 0.09f, 0.55f); GUI.DrawTexture(r, Texture2D.whiteTexture);
+            GUI.color = new Color(0.541f, 0.486f, 0.722f, 1f); capBordeSt.Draw(r, false, false, false, false);
+            GUI.color = Color.white;
+        }
+        Texto(r, tecla, capSt, new Color(0.93f, 0.91f, 1f));
+        float aw = capTextoSt.CalcSize(new GUIContent(accion)).x;
+        Texto(new Rect(x + w + 7f * S, y, aw + 4f, h), accion, capTextoSt, new Color(0.79f, 0.76f, 0.91f));
+        return x + w + 7f * S + aw + 22f * S;
+    }
+
+    static Texture2D Radial(int n, System.Func<float, float> alfa)
+    {
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
+        var px = new Color[n * n];
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float dx = (x + 0.5f) / n * 2f - 1f, dy = (y + 0.5f) / n * 2f - 1f;
+                px[y * n + x] = new Color(1f, 1f, 1f, alfa(Mathf.Sqrt(dx * dx + dy * dy)));
+            }
+        tex.SetPixels(px); tex.Apply();
+        return tex;
+    }
+
+    static Texture2D Lineal(System.Func<float, float> alfa)
+    {
+        var tex = new Texture2D(2, 256, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
+        for (int y = 0; y < 256; y++) { float k = 1f - y / 255f; var c = new Color(1f, 1f, 1f, alfa(k)); tex.SetPixel(0, y, c); tex.SetPixel(1, y, c); }
+        tex.Apply();
+        return tex;
+    }
+
+    /// <summary>Solo el borde de un rectángulo redondeado (blanco, para teñir).</summary>
+    static Texture2D Redondeado(int n, float radio, float linea)
+    {
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave };
+        float half = n / 2f;
+        var px = new Color[n * n];
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float qx = Mathf.Abs(x + 0.5f - half) - (half - radio), qy = Mathf.Abs(y + 0.5f - half) - (half - radio);
+                float d = new Vector2(Mathf.Max(qx, 0f), Mathf.Max(qy, 0f)).magnitude + Mathf.Min(Mathf.Max(qx, qy), 0f) - radio;
+                float aa = Mathf.Clamp01(0.5f - d) * Mathf.Clamp01(0.5f + d + linea);
+                px[y * n + x] = new Color(1f, 1f, 1f, aa);
+            }
+        tex.SetPixels(px); tex.Apply();
+        return tex;
     }
 
     static void Sombra(Rect r, string s, GUIStyle st, Color c)
     {
         GUI.color = Color.white;
-        st.normal.textColor = new Color(0f, 0f, 0f, c.a * 0.8f);
+        st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, c.a * 0.8f);
         GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), s, st);
-        st.normal.textColor = c;
+        st.normal.textColor = st.hover.textColor = c;
         GUI.Label(r, s, st);
     }
 }

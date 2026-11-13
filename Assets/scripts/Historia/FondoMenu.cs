@@ -86,7 +86,16 @@ public class FondoMenu : MonoBehaviour
         }
     }
 
-    void OnDestroy() { Musica.Cruce = 2.5f; }
+    void OnDestroy() { Musica.Cruce = 2.5f; SceneManager.sceneLoaded -= AlCargarPaisaje; }
+
+    void OnEnable() { SceneManager.sceneLoaded -= AlCargarPaisaje; SceneManager.sceneLoaded += AlCargarPaisaje; }
+    void OnDisable() { SceneManager.sceneLoaded -= AlCargarPaisaje; }
+
+    /// <summary>
+    /// En cuanto aparece el paisaje (antes de su primer cuadro) se apagan su cámara y su oído: si se esperaba a que
+    /// terminara la carga, corría un cuadro con dos AudioListener y Unity avisaba en cada cambio de paisaje.
+    /// </summary>
+    static void AlCargarPaisaje(Scene sc, LoadSceneMode modo) { if (modo == LoadSceneMode.Additive) Limpiar(sc); }
 
     void LateUpdate()
     {

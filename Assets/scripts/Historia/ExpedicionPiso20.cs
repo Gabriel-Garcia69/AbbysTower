@@ -397,7 +397,7 @@ public class ExpedicionPiso20 : MonoBehaviour
             var r = new Rect((sw - w) / 2f, u * 16f, w, u * 6f);   // debajo del marco del HUD (que llega a ~14u)
             CuadroNarracion.Marco(r, pistaAlpha * 0.95f);
             GUI.color = Color.white;
-            st.normal.textColor = new Color(1f, 0.93f, 0.75f, pistaAlpha);
+            st.normal.textColor = st.hover.textColor = new Color(1f, 0.93f, 0.75f, pistaAlpha);
             GUI.Label(r, pista, st);
         }
         CuadroNarracion.Negro(negro);

@@ -534,10 +534,10 @@ public class FloorDirector : MonoBehaviour
         // GUI.color tiñe las etiquetas: si quedó negro de un rectángulo anterior, el texto salía oscuro
         GUI.color = Color.white;
         float o = Mathf.Max(1.5f, st.fontSize * 0.06f);
-        st.normal.textColor = new Color(0f, 0f, 0f, c.a * 0.85f);
+        st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, c.a * 0.85f);
         foreach (var d in new[] { new Vector2(o, o), new Vector2(-o, o), new Vector2(o, -o), new Vector2(-o, -o), new Vector2(o * 1.6f, o * 1.6f) })
             GUI.Label(new Rect(r.x + d.x, r.y + d.y, r.width, r.height), text, st);
-        st.normal.textColor = c;
+        st.normal.textColor = st.hover.textColor = c;
         GUI.Label(r, text, st);
     }
 }

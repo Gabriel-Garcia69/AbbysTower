@@ -85,9 +85,9 @@ public class LoreNote : MonoBehaviour
             var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.2f), alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
             string verb = kind == Kind.Inscripcion ? "Examinar" : "Leer";
             var r = new Rect(sp.x - u * 12f, sh - sp.y - u * 2.5f, u * 24f, u * 4f);
-            st.normal.textColor = new Color(0f, 0f, 0f, 0.7f);
+            st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, 0.7f);
             GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), "E · " + verb, st);
-            st.normal.textColor = new Color(1f, 0.92f, 0.7f);
+            st.normal.textColor = st.hover.textColor = new Color(1f, 0.92f, 0.7f);
             GUI.Label(r, "E · " + verb, st);
             return;
         }
@@ -120,13 +120,13 @@ public class LoreNote : MonoBehaviour
         GUI.color = Color.white;
 
         var titleSt = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 4.6f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        titleSt.normal.textColor = ink;
+        titleSt.normal.textColor = titleSt.hover.textColor = ink;
         GUI.Label(new Rect(page.x + 4f * u, page.y + 2.5f * u, page.width - 8f * u, 7f * u), title, titleSt);
         var kindSt = new GUIStyle(titleSt) { fontSize = FuentePixel.Tam(u * 2.3f), fontStyle = FontStyle.Italic };
-        kindSt.normal.textColor = new Color(ink.r, ink.g, ink.b, 0.75f);
+        kindSt.normal.textColor = kindSt.hover.textColor = new Color(ink.r, ink.g, ink.b, 0.75f);
         GUI.Label(new Rect(page.x, page.y + 9.5f * u, page.width, 3.5f * u), kind == Kind.Libro ? "— libro —" : kind == Kind.Diario ? "— página de diario —" : kind == Kind.Inscripcion ? "— inscripción en la piedra —" : "— nota —", kindSt);
 
-        body.normal.textColor = ink;
+        body.normal.textColor = body.hover.textColor = ink;
         var area = new Rect(page.x + 8f * u, page.y + 15f * u, page.width - 14f * u, page.height - 25f * u);
         scroll = GUI.BeginScrollView(area, scroll, new Rect(0, 0, area.width - 2f * u, textH), false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
         for (int i = 0; i < lineas.Count; i++) GUI.Label(new Rect(0, i * paso, anchoTexto + 4f * u, paso), lineas[i], body);

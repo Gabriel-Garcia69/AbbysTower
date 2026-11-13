@@ -259,9 +259,9 @@ public class PauseMenu : MonoBehaviour
     static void Sombra(Rect r, string s, GUIStyle st, Color c)
     {
         GUI.color = Color.white;
-        st.normal.textColor = new Color(0f, 0f, 0f, c.a * 0.8f);
+        st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, c.a * 0.8f);
         GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), s, st);
-        st.normal.textColor = c;
+        st.normal.textColor = st.hover.textColor = c;
         GUI.Label(r, s, st);
     }
 }

@@ -47,7 +47,7 @@ public static class Sonido
             s.playOnAwake = false; s.spatialBlend = 0f; s.priority = 64;
             voces[i] = s;
         }
-        if (Object.FindAnyObjectByType<AudioListener>() == null) go.AddComponent<AudioListener>();
+        go.AddComponent<OyenteRespaldo>();   // oído solo cuando no hay otro (antes quedaban dos y Unity avisaba sin parar)
     }
 
     static AudioClip Clip(Efecto e)

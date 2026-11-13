@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.DualShock;
+using UnityEngine.InputSystem.LowLevel;
 
 /// <summary>
 /// Control (gamepad) y teclado juntos: sabe qué se usó por última vez (para mostrar los botones del control o las
@@ -11,9 +12,9 @@ using UnityEngine.InputSystem.DualShock;
 public static class Mando
 {
     static bool usando, ps;
-    static int frame = -1, v, h;
+    static int v, h; static uint pasoCalculado; static bool calculado;
     static int dirAntes; static float repetirEn;
-    static Gamepad padCal; static bool lsOk, rsOk, ltAntes, bloqueoPulsado;
+    static Gamepad padCal; static bool lsOk, rsOk, ltAntes, bloqueoPulsado; static readonly bool[] dpadOk = new bool[4];
     static float gatI, gatD, gatDAntes, stIAntes, stDAntes, baseI, baseD; static Vector2 stI, stD;
 
     /// <summary>Gatillo izquierdo (LT) sostenido para bloquear, ya calibrado y con histéresis.</summary>
@@ -88,15 +89,18 @@ public static class Mando
 
     static void Actualizar()
     {
-        if (frame == Time.frameCount) return;
-        frame = Time.frameCount;
+        // se recalcula una vez por cada actualización del sistema de entrada (no por cuadro): en el .exe el OnGUI del
+        // menú preguntaba antes de que se leyera el teclado del cuadro, se quedaba con "nada" y se perdían las teclas
+        uint paso = InputState.updateCount;
+        if (paso == pasoCalculado && calculado) return;
+        pasoCalculado = paso; calculado = true;
         var kb = Keyboard.current; var ms = Mouse.current; var gp = Gamepad.current;
 
         // gatillos y sticks "calibrados": solo cuentan después de verlos sueltos. Hay controles (o drivers) cuyo gatillo
         // en reposo no marca 0: Abby se quedaba con el escudo puesto y el juego creía que siempre se usaba el control
         if (gp != padCal)
         {
-            padCal = gp; lsOk = rsOk = false; ltAntes = false;
+            padCal = gp; lsOk = rsOk = false; ltAntes = false; for (int i = 0; i < 4; i++) dpadOk[i] = false;
             baseI = gp != null ? gp.leftTrigger.ReadValue() : 0f; baseD = gp != null ? gp.rightTrigger.ReadValue() : 0f;
         }
         if (gp != null)
@@ -150,26 +154,27 @@ public static class Mando
         int dir = 0;   // 1 arriba, 2 abajo, 3 izquierda, 4 derecha (cruceta o stick)
         if (gp != null)
         {
+            // cada dirección de la cruceta cuenta solo después de verla suelta: hay "controles" (drivers virtuales,
+            // controles genéricos) que reportan una dirección apretada todo el tiempo y el menú se movía solo
+            var dp = new[] { gp.dpad.up, gp.dpad.down, gp.dpad.left, gp.dpad.right };
+            for (int i = 0; i < 4; i++) if (!dp[i].isPressed) dpadOk[i] = true;
             Vector2 st = stI;
-            if (gp.dpad.up.isPressed) dir = 1;
-            else if (gp.dpad.down.isPressed) dir = 2;
-            else if (gp.dpad.left.isPressed) dir = 3;
-            else if (gp.dpad.right.isPressed) dir = 4;
-            else if (st.magnitude > 0.55f) dir = Mathf.Abs(st.y) >= Mathf.Abs(st.x) ? (st.y > 0f ? 1 : 2) : (st.x < 0f ? 3 : 4);
+            for (int i = 0; i < 4 && dir == 0; i++) if (dpadOk[i] && dp[i].isPressed) dir = i + 1;
+            if (dir == 0 && st.magnitude > 0.55f) dir = Mathf.Abs(st.y) >= Mathf.Abs(st.x) ? (st.y > 0f ? 1 : 2) : (st.x < 0f ? 3 : 4);
         }
         float ahora = Time.unscaledTime;
         bool dispara = false;
         if (dir != 0 && dir != dirAntes) { dispara = true; repetirEn = ahora + 0.4f; }
         else if (dir != 0 && ahora >= repetirEn) { dispara = true; repetirEn = ahora + 0.13f; }
         dirAntes = dir;
-        if (dispara)
+        if (dispara && v == 0 && h == 0)   // el teclado siempre gana
         {
             if (dir == 1) v = -1; else if (dir == 2) v = 1; else if (dir == 3) h = -1; else if (dir == 4) h = 1;
         }
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void Reiniciar() { usando = false; frame = -1; dirAntes = 0; padCal = null; ltAntes = false; }
+    static void Reiniciar() { usando = false; calculado = false; dirAntes = 0; padCal = null; ltAntes = false; for (int i = 0; i < 4; i++) dpadOk[i] = false; }
 
     // se actualiza cada cuadro aunque nadie pregunte, para no perder la última tecla o botón
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

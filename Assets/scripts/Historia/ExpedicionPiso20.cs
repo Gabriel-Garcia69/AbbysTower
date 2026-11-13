@@ -181,8 +181,11 @@ public class ExpedicionPiso20 : MonoBehaviour
         CameraShake.Shake(1.2f, 0.6f);
         CombatFx.Burst(edge + Vector3.up, new Color(0.6f, 0.5f, 0.45f), 60, 8f, 0.3f, 1.2f);
         for (int k = 0; k < 8; k++) CombatFx.Burst(yo + new Vector3((k - 3.5f) * 5f, 18f, 8f + k * 4f), new Color(0.5f, 0.46f, 0.44f), 14, 1.5f, 0.28f, 1.8f, 1.1f);
-        yield return Toma(cam, yo + new Vector3(0f, 3.5f, -24f), yo + new Vector3(0f, 3.2f, -21f), () => edge + Vector3.up * 5f, 1.8f,
-            t => Subir(a, arriba, t * 0.3f));
+        // la cámara va sobre el centro del sendero (si Dante llegaba por un lado, quedaba metida en un brasero de la orilla)
+        Vector3 c0 = new Vector3(DioramaBuilder.SenderoX(yo.z - 24f), yo.y + 3.5f, yo.z - 24f), c1 = new Vector3(DioramaBuilder.SenderoX(yo.z - 21f), yo.y + 3.2f, yo.z - 21f);
+        var tapados = OcultarJunto(c0, c1, 2.5f);
+        yield return Toma(cam, c0, c1, () => edge + Vector3.up * 5f, 1.8f, t => Subir(a, arriba, t * 0.3f));
+        foreach (var r in tapados) if (r != null) r.enabled = true;
 
         // a partir de aquí solo se ve a la criatura: el jugador no debe saber qué le pasó a Dante ni a la expedición
         foreach (var r in player.GetComponentsInChildren<Renderer>(true)) r.forceRenderingOff = true;
@@ -236,6 +239,24 @@ public class ExpedicionPiso20 : MonoBehaviour
     }
 
     int tomaId;
+
+    /// <summary>Oculta lo que quede pegado al recorrido de la cámara (de p0 a p1); devuelve lo ocultado para volverlo a mostrar.</summary>
+    System.Collections.Generic.List<Renderer> OcultarJunto(Vector3 p0, Vector3 p1, float radio)
+    {
+        var lista = new System.Collections.Generic.List<Renderer>();
+        foreach (var r in FindObjectsByType<Renderer>())
+        {
+            if (!r.enabled || r is ParticleSystemRenderer || r.transform.IsChildOf(player)) continue;
+            var bb = r.bounds;
+            if (bb.size.x > 15f || bb.size.z > 15f) continue;   // las paredes y el techo no
+            string n = r.name;
+            if (n.StartsWith("Terreno") || n.StartsWith("Piso") || n.StartsWith("Camino") || n.StartsWith("Fondo")) continue;   // el suelo tampoco
+            Vector3 cerca = bb.ClosestPoint(p0), cerca1 = bb.ClosestPoint(p1), mitad = bb.ClosestPoint((p0 + p1) / 2f);
+            if (Vector3.Distance(cerca, p0) < radio || Vector3.Distance(cerca1, p1) < radio || Vector3.Distance(mitad, (p0 + p1) / 2f) < radio)
+            { r.enabled = false; lista.Add(r); }
+        }
+        return lista;
+    }
 
     static Sprite[] CuadrosColoso(string anim)
     {

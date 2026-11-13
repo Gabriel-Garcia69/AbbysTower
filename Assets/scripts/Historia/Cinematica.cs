@@ -465,6 +465,6 @@ public class Cinematica : MonoBehaviour
         }
         CuadroNarracion.Negro(negro);
         if (modo == Modo.Tarjeta) CuadroNarracion.Tarjeta(texto, tarjetaChica, alphaTexto);
-        CuadroNarracion.Ayuda(escHeld > 0f ? "Saltando…" : "Espacio / Enter: continuar   ·   Mantén Esc: saltar", 1f);
+        CuadroNarracion.Ayuda(escHeld > 0f ? "Saltando…" : Mando.T("Espacio / Enter: continuar   ·   Mantén Esc: saltar", Mando.A + ": continuar   ·   Mantén " + Mando.Start + ": saltar"), 1f);
     }
 }

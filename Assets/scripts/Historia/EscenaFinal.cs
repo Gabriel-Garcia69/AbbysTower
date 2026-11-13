@@ -166,8 +166,9 @@ public class EscenaFinal : MonoBehaviour
                 cam.transform.position = Vector3.Lerp(c0c, c1c, e);
                 cam.transform.rotation = Quaternion.LookRotation(cas + new Vector3(0f, 4f, 34f) - cam.transform.position);
             }
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (creditosT > 3f && kb != null && (kb.enterKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) break;
+            var kb = UnityEngine.InputSystem.Keyboard.current; var gp = UnityEngine.InputSystem.Gamepad.current;
+            if (creditosT > 3f && ((kb != null && (kb.enterKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame))
+                || (gp != null && (gp.buttonSouth.wasPressedThisFrame || gp.buttonEast.wasPressedThisFrame || gp.startButton.wasPressedThisFrame)))) break;
             yield return null;
         }
         creditos = false;

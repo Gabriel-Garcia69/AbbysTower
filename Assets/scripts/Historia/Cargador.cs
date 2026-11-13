@@ -228,7 +228,7 @@ public class Cargador : MonoBehaviour
             var pide = new GUIStyle(grande) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Normal };
             float parpadeo = 0.3f + 0.7f * Mathf.Abs(Mathf.Sin(t * 2.2f));
             if (tarjetaPulsada && !tarjetaLista) Texto(new Rect(0, sh * 0.82f, sw, u * 5f), "Cargando" + new string('.', 1 + (int)(t * 2.5f) % 3), pide, new Color(1f, 1f, 1f, 0.7f * alfa * alfaTexto));
-            else Texto(new Rect(0, sh * 0.82f, sw, u * 5f), "Presiona clic", pide, new Color(1f, 1f, 1f, parpadeo * alfa * alfaTexto));
+            else Texto(new Rect(0, sh * 0.82f, sw, u * 5f), Mando.T("Presiona clic", "Presiona " + Mando.A), pide, new Color(1f, 1f, 1f, parpadeo * alfa * alfaTexto));
             GUI.color = Color.white;
             return;
         }
@@ -264,7 +264,7 @@ public class Cargador : MonoBehaviour
         Texto(new Rect(0, by + bh + u * 1.2f, sw, u * 3f), "Cargando" + new string('.', 1 + (int)(t * 2.5f) % 3), cargando, new Color(1f, 1f, 1f, 0.85f * alfa));
 
         var tip = new GUIStyle(cargando) { fontSize = FuentePixel.Tam(u * 1.9f), wordWrap = true };
-        Texto(new Rect(sw * 0.2f, sh - u * 14f, sw * 0.6f, u * 8f), consejo, tip, new Color(0.9f, 0.85f, 1f, 0.8f * alfa));
+        Texto(new Rect(sw * 0.2f, sh - u * 14f, sw * 0.6f, u * 8f), Mando.Texto(consejo), tip, new Color(0.9f, 0.85f, 1f, 0.8f * alfa));
         GUI.color = Color.white;
     }
 }

@@ -369,7 +369,7 @@ public class ExteriorIntro : MonoBehaviour
         if (!done && skippable)
         {
             var hint = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(sh / 48f), alignment = TextAnchor.LowerRight };
-            Shadowed(new Rect(0, sh - sh * 0.1f, sw - sw * 0.03f, sh * 0.08f), "Enter / Espacio: saltar", hint, 0.6f * Mathf.Clamp01(totalT - 1f));
+            Shadowed(new Rect(0, sh - sh * 0.1f, sw - sw * 0.03f, sh * 0.08f), Mando.T("Enter / Espacio: saltar", Mando.A + ": saltar"), hint, 0.6f * Mathf.Clamp01(totalT - 1f));
         }
 
         float black = done ? fadeOutAfter : fade;

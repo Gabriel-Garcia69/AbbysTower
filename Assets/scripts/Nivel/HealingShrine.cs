@@ -46,7 +46,9 @@ public class HealingShrine : MonoBehaviour
         Cerca = this;
 
         var kb = UnityEngine.InputSystem.Keyboard.current;
-        if (kb == null || !kb.eKey.wasPressedThisFrame || PauseMenu.IsPaused || LoreNote.Open != null) return;
+        var gp = UnityEngine.InputSystem.Gamepad.current;
+        bool usar = (kb != null && kb.eKey.wasPressedThisFrame) || (gp != null && gp.buttonNorth.wasPressedThisFrame);   // E o Y
+        if (!usar || PauseMenu.IsPaused || LoreNote.Open != null) return;
         if (health.Health >= health.maxHealth)
         {
             if (hintCooldown <= 0f) { FloorDirector.Popup(transform.position + Vector3.up * 2.2f, "Vida al máximo", new Color(0.6f, 1f, 0.8f)); hintCooldown = 1f; }

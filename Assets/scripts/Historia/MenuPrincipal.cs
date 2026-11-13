@@ -96,18 +96,13 @@ public class MenuPrincipal : MonoBehaviour
             cam.transform.position = centro + new Vector3(Mathf.Sin(a) * radio, altura, -Mathf.Cos(a) * radio);
             cam.transform.rotation = Quaternion.LookRotation(centro + Vector3.up * alturaMira - cam.transform.position);
         }
-        var kb = Keyboard.current;
-        if (kb == null) return;
+        // teclado o control (cruceta / stick izquierdo, A aceptar, B regresar)
         int n = Opciones().Length;
-        if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) { sel = (sel + 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
-        if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) { sel = (sel + n - 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
-        if (pagina == Pagina.Configuracion && MenuConfiguracion.Ajustable(sel))
-        {
-            int paso = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame ? 1 : kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame ? -1 : 0;
-            if (paso != 0) MenuConfiguracion.Ajustar(sel, paso);
-        }
-        if (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) Elegir(sel);
-        if (kb.escapeKey.wasPressedThisFrame) { if (pagina != Pagina.Principal) Volver(); else Ir(Pagina.Salir); }
+        if (Mando.Vertical > 0) { sel = (sel + 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
+        if (Mando.Vertical < 0) { sel = (sel + n - 1) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
+        if (pagina == Pagina.Configuracion && MenuConfiguracion.Ajustable(sel) && Mando.Horizontal != 0) MenuConfiguracion.Ajustar(sel, Mando.Horizontal);
+        if (Mando.Aceptar) Elegir(sel);
+        else if (Mando.Atras) { if (pagina != Pagina.Principal) Volver(); else Ir(Pagina.Salir); }
     }
 
     /// <summary>Las opciones de la página principal (Elegir piso aparece en cuanto se llega a algún piso).</summary>
@@ -237,7 +232,7 @@ public class MenuPrincipal : MonoBehaviour
             GUI.color = new Color(0.02f, 0.01f, 0.05f, 0.82f); GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
             DanteFinal.DibujarCreditos(entrada, false);
             var ayudaC = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 1.8f), alignment = TextAnchor.MiddleCenter };
-            Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), "Esc  regresar", ayudaC, new Color(1f, 1f, 1f, 0.7f));
+            Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), Mando.T("Esc", Mando.B) + "  regresar", ayudaC, new Color(1f, 1f, 1f, 0.7f));
             if (Event.current.type == EventType.MouseDown && Event.current.button == 0) { Volver(); Event.current.Use(); }
             GUI.color = Color.white;
             return;
@@ -331,8 +326,11 @@ public class MenuPrincipal : MonoBehaviour
 
         // barra de ayuda: teclas como "keycaps"
         float hx = x0 - 2f * S, hy = sh - 40f * S;
-        var teclas = pisos ? new[] { ("↑↓", "elegir"), ("Enter", "jugar"), ("Esc", "regresar") }
-                           : new[] { ("↑↓", "elegir"), ("Enter", "aceptar"), ("←→", config ? "ajustar" : "volumen"), ("Esc", "regresar") };
+        var teclas = Mando.Usando
+            ? (pisos ? new[] { ("↑↓", "elegir"), (Mando.A, "jugar"), (Mando.B, "regresar") }
+                     : new[] { ("↑↓", "elegir"), (Mando.A, "aceptar"), ("←→", config ? "ajustar" : "volumen"), (Mando.B, "regresar") })
+            : (pisos ? new[] { ("↑↓", "elegir"), ("Enter", "jugar"), ("Esc", "regresar") }
+                     : new[] { ("↑↓", "elegir"), ("Enter", "aceptar"), ("←→", config ? "ajustar" : "volumen"), ("Esc", "regresar") });
         foreach (var (tecla, accion) in teclas) hx = Keycap(hx, hy, tecla, accion, S);
         GUI.color = Color.white;
     }

@@ -263,7 +263,7 @@ public class IntroImagenes : MonoBehaviour
 
         GUI.color = new Color(1, 1, 1, 0.5f);
         sTarjChica.fontSize = Mathf.RoundToInt(H / 40f);
-        GUI.Label(new Rect(0, H - H * 0.04f, W, H * 0.04f), "Mantén Esc: saltar", sTarjChica);
+        GUI.Label(new Rect(0, H - H * 0.04f, W, H * 0.04f), Mando.T("Mantén Esc: saltar", "Mantén " + Mando.Start + ": saltar"), sTarjChica);
         GUI.color = Color.white;
     }
 }

@@ -18,6 +18,7 @@ public class MerchantShop : MonoBehaviour
     Transform player;
     PlayerHealth health;
     bool open, near;
+    int selTienda;   // fila elegida con la cruceta del control
     string feedback; float feedbackTimer;
     Behaviour[] paused;
 
@@ -54,6 +55,9 @@ public class MerchantShop : MonoBehaviour
             if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame) Buy(1);
             if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame) Buy(2);
         }
+        // con control: la cruceta elige y A compra
+        if (Mando.Vertical != 0) selTienda = (selTienda + Mando.Vertical + 3) % 3;
+        if (gp != null && gp.buttonSouth.wasPressedThisFrame) Buy(selTienda);
     }
 
     void OnDisable() { if (open) SetOpen(false); PauseMenu.Blocked = false; }
@@ -124,7 +128,7 @@ public class MerchantShop : MonoBehaviour
             GUI.DrawTexture(new Rect(sw / 2f - u * 14f, sh * 0.72f, u * 28f, u * 5f), tex);
             GUI.color = Color.white;
             st.normal.textColor = st.hover.textColor = new Color(1f, 0.9f, 0.6f);
-            GUI.Label(new Rect(sw / 2f - u * 14f, sh * 0.72f, u * 28f, u * 5f), "E: comerciar", st);
+            GUI.Label(new Rect(sw / 2f - u * 14f, sh * 0.72f, u * 28f, u * 5f), Mando.T("E", Mando.Y) + ": comerciar", st);
         }
 
         if (open)
@@ -159,7 +163,7 @@ public class MerchantShop : MonoBehaviour
             for (int i = 0; i < 3; i++)
             {
                 var row = new Rect(panel.x + u * 4f, panel.y + u * (14f + i * 9.5f), panel.width - u * 8f, u * 8f);
-                GUI.color = new Color(1f, 1f, 1f, 0.06f); GUI.DrawTexture(row, tex); GUI.color = Color.white;
+                GUI.color = new Color(1f, 1f, 1f, Mando.Usando && i == selTienda ? 0.18f : 0.06f); GUI.DrawTexture(row, tex); GUI.color = Color.white;
                 bool afford = RunState.Fragments >= costs[i] && !maxed[i];
                 nameSt.normal.textColor = nameSt.hover.textColor = afford ? Color.white : new Color(1f, 1f, 1f, 0.5f);
                 descSt.normal.textColor = descSt.hover.textColor = new Color(0.8f, 0.85f, 0.9f, afford ? 0.9f : 0.5f);
@@ -169,7 +173,7 @@ public class MerchantShop : MonoBehaviour
                 if (GUI.Button(new Rect(row.xMax - u * 18f, row.y + u * 1.5f, u * 16f, u * 5f), maxed[i] ? "—" : $"{costs[i]} ◆", btn)) Buy(i);
                 GUI.enabled = true;
             }
-            if (GUI.Button(new Rect(panel.center.x - u * 8f, panel.yMax - u * 8f, u * 16f, u * 5f), "Salir (E)", btn)) SetOpen(false);
+            if (GUI.Button(new Rect(panel.center.x - u * 8f, panel.yMax - u * 8f, u * 16f, u * 5f), Mando.T("Salir (E)", "Salir (" + Mando.B + ")"), btn)) SetOpen(false);
             if (feedbackTimer > 0f)
             {
                 var fb = new GUIStyle(sub) { fontStyle = FontStyle.Bold };

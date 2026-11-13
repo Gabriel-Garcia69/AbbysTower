@@ -307,6 +307,13 @@ public class MouseOrbitCamera : MonoBehaviour
             else if (kb.f5Key.wasPressedThisFrame) Inclinar(false);
             else if (kb.f6Key.wasPressedThisFrame) Inclinar(true);
         }
+        // control: al presionar el stick derecho (R3) entra a la cámara libre (se mueve con ese mismo stick) y al volver a
+        // presionarlo regresa a la cámara del juego
+        if (pad != null && pad.rightStickButton.wasPressedThisFrame && !PauseMenu.IsPaused && Time.timeScale > 0f)
+        {
+            if (!libre) { yawJuego = yaw; libre = true; sceneStyleActive = false; ApplyStyle(CameraStyle.TerceraPersona, false); }
+            else VolverCamaraJuego();
+        }
         if (!libre && !sceneStyleActive && appliedStyle != Style) ApplyStyle(Style, false);   // otra escena/objeto lo cambió
 
         if (lockCursor)
@@ -749,7 +756,9 @@ public class MouseOrbitCamera : MonoBehaviour
             labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = FuentePixel.Tam(20), fontStyle = FontStyle.Bold };
         float a = Mathf.Clamp01(left / 0.5f);
 
-        string text = libre ? "Cámara libre · mueve el mouse para mirar alrededor\nF4: volver a la cámara del juego" : "Cámara del juego\nF3: cámara libre";
+        string text = Mando.Usando
+            ? (libre ? "Cámara libre · mueve el stick derecho para mirar alrededor\nR3: volver a la cámara del juego" : "Cámara del juego\nR3: cámara libre")
+            : (libre ? "Cámara libre · mueve el mouse para mirar alrededor\nF4: volver a la cámara del juego" : "Cámara del juego\nF3: cámara libre");
         var r = new Rect(0f, Screen.height * 0.08f, Screen.width, 60f);
         GUI.color = new Color(0f, 0f, 0f, 0.7f * a);
         GUI.Label(new Rect(r.x + 2f, r.y + 2f, r.width, r.height), text, labelStyle);

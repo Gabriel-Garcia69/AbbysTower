@@ -86,9 +86,9 @@ public class LoreNote : MonoBehaviour
             string verb = kind == Kind.Inscripcion ? "Examinar" : "Leer";
             var r = new Rect(sp.x - u * 12f, sh - sp.y - u * 2.5f, u * 24f, u * 4f);
             st.normal.textColor = st.hover.textColor = new Color(0f, 0f, 0f, 0.7f);
-            GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), "E · " + verb, st);
+            GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), Mando.T("E", Mando.Y) + " · " + verb, st);
             st.normal.textColor = st.hover.textColor = new Color(1f, 0.92f, 0.7f);
-            GUI.Label(r, "E · " + verb, st);
+            GUI.Label(r, Mando.T("E", Mando.Y) + " · " + verb, st);
             return;
         }
         if (Open != this) return;
@@ -138,7 +138,7 @@ public class LoreNote : MonoBehaviour
             GUI.Label(new Rect(page.x + 8f * u, page.yMax - 10f * u, page.width - 16f * u, 5f * u), signature, sig);
         }
         var hint = new GUIStyle(kindSt) { fontStyle = FontStyle.Normal };
-        GUI.Label(new Rect(page.x, page.yMax - 4.5f * u, page.width, 3.5f * u), "Espacio / Enter / E / Esc  cerrar", hint);
+        GUI.Label(new Rect(page.x, page.yMax - 4.5f * u, page.width, 3.5f * u), Mando.T("Espacio / Enter / E / Esc  cerrar", Mando.A + " / " + Mando.B + "  cerrar"), hint);
         GUI.color = prev;
     }
 }

@@ -22,7 +22,7 @@ public class PauseMenu : MonoBehaviour
     enum Pagina { Principal, Configuracion, Salir }
     Pagina pagina;
     int sel;
-    float abierto, entrada, repetir;
+    float abierto, entrada;
     MouseOrbitCamera[] orbit;
     float savedScale = 1f;
     CursorLockMode cursorAntes;
@@ -51,32 +51,8 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
-        int n = Opciones().Length, dv = 0, dh = 0;
-        if (kb != null)
-        {
-            if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) dv = -1;
-            if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) dv = 1;
-            if (kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame) dh = -1;
-            if (kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame) dh = 1;
-        }
-        if (gp != null)
-        {
-            if (gp.dpad.up.wasPressedThisFrame) dv = -1;
-            if (gp.dpad.down.wasPressedThisFrame) dv = 1;
-            if (gp.dpad.left.wasPressedThisFrame) dh = -1;
-            if (gp.dpad.right.wasPressedThisFrame) dh = 1;
-            Vector2 st = gp.leftStick.ReadValue();
-            if (st.magnitude > 0.6f)
-            {
-                repetir -= Time.unscaledDeltaTime;
-                if (repetir <= 0f)
-                {
-                    if (Mathf.Abs(st.y) > Mathf.Abs(st.x)) dv = st.y > 0f ? -1 : 1; else dh = st.x > 0f ? 1 : -1;
-                    repetir = 0.22f;
-                }
-            }
-            else repetir = 0f;
-        }
+        // teclado, cruceta o stick (al mantener se repite), igual que el menú principal
+        int n = Opciones().Length, dv = Mando.Vertical, dh = Mando.Horizontal;
         if (dv != 0) { sel = (sel + dv + n) % n; Sonido.Tocar(Sonido.Efecto.Clic, 0.6f); }
         if (dh != 0 && pagina == Pagina.Configuracion && MenuConfiguracion.Ajustable(sel)) MenuConfiguracion.Ajustar(sel, dh);
 
@@ -241,9 +217,10 @@ public class PauseMenu : MonoBehaviour
             Sombra(new Rect(caja.x, caja.yMax + u * 1.2f, caja.width, u * 4f), nota, chica, cn);
         }
         var ayuda = new GUIStyle(chica) { fontSize = FuentePixel.Tam(u * 1.8f) };
+        string ok = Mando.T("Enter", Mando.A), atras = Mando.T("Esc", Mando.B);
         string teclas = pagina == Pagina.Configuracion
-            ? "↑ ↓  elegir     ← →  ajustar     Enter / A  aceptar     Esc / B  volver"
-            : "↑ ↓  elegir     Enter / A  aceptar     Esc / B  " + (pagina == Pagina.Principal ? "continuar" : "volver");
+            ? $"↑ ↓  elegir     ← →  ajustar     {ok}  aceptar     {atras}  volver"
+            : $"↑ ↓  elegir     {ok}  aceptar     {atras}  " + (pagina == Pagina.Principal ? "continuar" : "volver");
         Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), teclas, ayuda, new Color(1f, 1f, 1f, 0.7f * a));
         GUI.color = Color.white;
     }

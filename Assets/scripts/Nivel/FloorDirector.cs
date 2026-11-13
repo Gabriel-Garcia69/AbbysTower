@@ -305,7 +305,7 @@ public class FloorDirector : MonoBehaviour
             fade = dead ? Mathf.Clamp01((endTimer - 1.5f) / 1.2f) : Mathf.Min(0.75f, endTimer / 1.5f);
             // GDD: pantalla de derrota → Reintentar reinicia el piso actual (o el jefe)
             if (dead && endTimer > 1.6f && Continue()) Cargador.Ir(SceneManager.GetActiveScene().name);
-            if (dead && endTimer > 1.6f && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame && Application.CanStreamedLevelBeLoaded(MenuScene))
+            if (dead && endTimer > 1.6f && ((Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) || (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame)) && Application.CanStreamedLevelBeLoaded(MenuScene))
                 Cargador.Ir(MenuScene);
             if (completed && endTimer > 1.5f && Continue())
             {
@@ -443,7 +443,7 @@ public class FloorDirector : MonoBehaviour
             var big = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 6.5f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             var small = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Italic, alignment = TextAnchor.MiddleCenter };
             Text(new Rect(slide, sh * 0.2f, sw, u * 8f), bannerTop, big, new Color(bannerColor.r, bannerColor.g, bannerColor.b, a));
-            if (!string.IsNullOrEmpty(bannerBottom)) Text(new Rect(-slide, sh * 0.2f + u * 7.5f, sw, u * 4f), bannerBottom, small, new Color(1f, 1f, 1f, a * 0.85f));
+            if (!string.IsNullOrEmpty(bannerBottom)) Text(new Rect(-slide, sh * 0.2f + u * 7.5f, sw, u * 4f), Mando.Texto(bannerBottom), small, new Color(1f, 1f, 1f, a * 0.85f));
         }
 
         // GDD: controles siempre visibles en la parte inferior (y la tecla de la fuente cuando Abby está junto a una)
@@ -455,7 +455,7 @@ public class FloorDirector : MonoBehaviour
             {
                 var big = new GUIStyle(st) { fontSize = FuentePixel.Tam(u * 2.8f), fontStyle = FontStyle.Bold };
                 float blink = 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f);
-                Text(new Rect(0, sh - u * 26f, sw, u * 5f), "E  ·  Usar la fuente de curación", big, new Color(0.6f, 1f, 0.75f, blink));
+                Text(new Rect(0, sh - u * 26f, sw, u * 5f), Mando.T("E", Mando.Y) + "  ·  Usar la fuente de curación", big, new Color(0.6f, 1f, 0.75f, blink));
             }
         }
 
@@ -472,7 +472,7 @@ public class FloorDirector : MonoBehaviour
             {
                 var s3 = new GUIStyle(s2) { fontSize = FuentePixel.Tam(u * 2.6f), fontStyle = FontStyle.Bold };
                 float blink = 0.6f + 0.4f * Mathf.Sin(Time.unscaledTime * 4f);
-                Text(new Rect(0, sh * 0.36f + u * 18f, sw, u * 4f), "Enter  ·  Reintentar el piso          Esc  ·  Menú principal", s3, new Color(1f, 1f, 1f, blink));
+                Text(new Rect(0, sh * 0.36f + u * 18f, sw, u * 4f), Mando.T("Enter", Mando.A) + "  ·  Reintentar el piso          " + Mando.T("Esc", Mando.B) + "  ·  Menú principal", s3, new Color(1f, 1f, 1f, blink));
             }
         }
 
@@ -488,7 +488,7 @@ public class FloorDirector : MonoBehaviour
             {
                 var s3 = new GUIStyle(s2) { fontSize = FuentePixel.Tam(u * 2.4f), fontStyle = FontStyle.Italic };
                 float blink = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 4f);
-                Text(new Rect(0, sh * 0.28f + u * 21f, sw, u * 4f), "Enter / Espacio para continuar", s3, new Color(1f, 1f, 1f, blink));
+                Text(new Rect(0, sh * 0.28f + u * 21f, sw, u * 4f), Mando.T("Enter / Espacio", Mando.A) + " para continuar", s3, new Color(1f, 1f, 1f, blink));
             }
         }
         GUI.color = prev;
@@ -509,6 +509,13 @@ public class FloorDirector : MonoBehaviour
         new[] { ("E", "Interactuar"), ("F3", "Cámara libre"), ("Esc", "Pausa") },
     };
 
+    /// <summary>La misma barra con los botones del control (se muestra en cuanto se toca el control).</summary>
+    static (string tecla, string accion)[][] FilasControl() => new[]
+    {
+        new[] { (Mando.StickIzq, "Mover"), (Mando.A, "Saltar"), (Mando.B, "Impulso"), (Mando.X, "Atacar (combo de 3)"), (Mando.LT, "Bloquear (mantener)") },
+        new[] { (Mando.Y, "Interactuar"), (Mando.R3, "Cámara libre (stick der.)"), (Mando.Start, "Pausa") },
+    };
+
     void BarraControles(float sw, float sh, float u)
     {
         // con el cuadro de diálogo a la vista la barra se atenúa (casi desaparece) para no encimarse con él
@@ -524,9 +531,10 @@ public class FloorDirector : MonoBehaviour
         var tecla = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 1.9f), fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         var accion = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2f), alignment = TextAnchor.MiddleLeft };
         float hFila = u * 3.2f, hueco = u * 3f;
-        for (int f = 0; f < FilasControles.Length; f++)
+        var filas = Mando.Usando ? FilasControl() : FilasControles;
+        for (int f = 0; f < filas.Length; f++)
         {
-            var fila = FilasControles[f];
+            var fila = filas[f];
             var anchoT = new float[fila.Length]; var anchoA = new float[fila.Length];
             float total = 0f;
             for (int i = 0; i < fila.Length; i++)

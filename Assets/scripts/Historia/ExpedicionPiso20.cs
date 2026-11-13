@@ -428,13 +428,14 @@ public class ExpedicionPiso20 : MonoBehaviour
         if (!string.IsNullOrEmpty(pista) && pistaAlpha > 0f)
         {
             var st = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 2.3f), alignment = TextAnchor.MiddleCenter, wordWrap = true };
-            float w = Mathf.Min(sw * 0.6f, st.CalcSize(new GUIContent(pista)).x + u * 8f);
+            string pistaV = Mando.Texto(pista);   // con control, sus botones en vez de las teclas
+            float w = Mathf.Min(sw * 0.6f, st.CalcSize(new GUIContent(pistaV)).x + u * 8f);
             // abajo, justo sobre la barra de controles: arriba tapaba la guía de la horda (que suele quedar al frente)
             var r = new Rect((sw - w) / 2f, Screen.height - u * 15f, w, u * 6f);
             CuadroNarracion.Marco(r, pistaAlpha * 0.95f);
             GUI.color = Color.white;
             st.normal.textColor = st.hover.textColor = new Color(1f, 0.93f, 0.75f, pistaAlpha);
-            GUI.Label(r, pista, st);
+            GUI.Label(r, pistaV, st);
         }
         CuadroNarracion.Negro(negro);
         if (!string.IsNullOrEmpty(texto)) CuadroNarracion.Dialogo(quien, texto, CuadroNarracion.Letras(texto, tTexto), dialogoAlpha);

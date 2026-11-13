@@ -69,9 +69,10 @@ public class RelatoPiso : MonoBehaviour
             return;
         }
         t += Time.unscaledDeltaTime;
-        var kb = Keyboard.current;
-        // da tiempo de leer sin detener la pelea; Enter pasa a la siguiente
-        if (t > 1.8f + texto.Length * 0.055f || (t > 0.4f && kb != null && kb.enterKey.wasPressedThisFrame)) texto = null;
+        var kb = Keyboard.current; var gp = Gamepad.current;
+        // da tiempo de leer sin detener la pelea; Enter (o Select en el control: A es saltar) pasa a la siguiente
+        bool pasar = (kb != null && kb.enterKey.wasPressedThisFrame) || (gp != null && gp.selectButton.wasPressedThisFrame);
+        if (t > 1.8f + texto.Length * 0.055f || (t > 0.4f && pasar)) texto = null;
     }
 
     void OnGUI()

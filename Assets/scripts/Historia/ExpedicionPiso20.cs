@@ -62,7 +62,13 @@ public class ExpedicionPiso20 : MonoBehaviour
             if (r.name.Contains("oleada")) oleada = r;
         }
         var c = GameObject.Find("Coloso");
-        if (c != null) coloso = c.transform;
+        if (c != null)
+        {
+            coloso = c.transform;
+            // el jefe de bloques de antes (escondido bajo el mapa): ya solo se usa su sprite
+            var viejo = coloso.Find("Jefe(Clone)");
+            if (viejo != null) Destroy(viejo.gameObject);
+        }
         StartCoroutine(Guion());
     }
 
@@ -156,7 +162,15 @@ public class ExpedicionPiso20 : MonoBehaviour
         Vector3 a = coloso != null ? coloso.position : edge, arriba = new Vector3(a.x, -6f, a.z);
 
         var cuerpo = coloso != null ? coloso.GetComponent<PersonaSprite>() : null;
-        if (coloso != null) foreach (var l in coloso.GetComponentsInChildren<Light>(true)) l.enabled = true;   // sus luces, solo ahora
+        // sus luces no se prenden de golpe (alumbraban toda la cueva): suben mientras sale del abismo, más suaves y cortas
+        var luces = coloso != null ? coloso.GetComponentsInChildren<Light>(true) : new Light[0];
+        var fuerza = new float[luces.Length];
+        for (int i = 0; i < luces.Length; i++) { fuerza[i] = luces[i].intensity * 0.35f; luces[i].range *= 0.6f; luces[i].intensity = 0f; luces[i].enabled = true; }
+        void Luces(float k) { for (int i = 0; i < luces.Length; i++) luces[i].intensity = fuerza[i] * Mathf.SmoothStep(0f, 1f, k); }
+        // el techo y las estalactitas estorbaban arriba en las tomas bajas: durante la cinemática arriba queda la oscuridad
+        foreach (var n in new[] { "TechoGruta", "Estalactitas" })
+            foreach (var t in FindObjectsByType<Transform>())
+                if (t.name == n) foreach (var r in t.GetComponentsInChildren<Renderer>()) r.enabled = false;
         var rugido = CuadrosColoso("Rugido"); var zarpazo = CuadrosColoso("Zarpazo"); var golpe = CuadrosColoso("Golpe");
         // lente abierto y cámara casi a ras del suelo: la criatura se ve entera y enorme (la cámara de juego usa 24°, que la corta en los hombros)
         Vector3 centro = new Vector3(a.x, 13f, a.z);
@@ -178,7 +192,7 @@ public class ExpedicionPiso20 : MonoBehaviour
         // 2) contrapicado desde el suelo: la cámara se queda quieta y la criatura se alza del abismo hasta llenar el cuadro
         Sonido.Tocar(Sonido.Efecto.Temblor, 1f, 0.8f);
         yield return Toma(cam, edge + new Vector3(-7f, 0.9f, -8f), edge + new Vector3(-5f, 0.8f, -6f), () => centro, 3.6f,
-            t => { Subir(a, arriba, 0.3f + t * 0.7f); if (Mathf.Repeat(t * 3.2f, 1.1f) < Time.deltaTime) { CameraShake.Shake(0.6f, 0.5f); Sonido.Tocar(Sonido.Efecto.Alerta, 0.9f, 0.8f); } });
+            t => { Subir(a, arriba, 0.3f + t * 0.7f); Luces(t); if (Mathf.Repeat(t * 3.2f, 1.1f) < Time.deltaTime) { CameraShake.Shake(0.6f, 0.5f); Sonido.Tocar(Sonido.Efecto.Alerta, 0.9f, 0.8f); } });
         // 3) el rugido: de frente y desde abajo, abre los brazos; la cámara retrocede por el golpe de aire
         StartCoroutine(Cuadros(cuerpo, rugido, 0, rugido.Length, 2.8f));
         Sonido.Tocar(Sonido.Efecto.Rugido, 1f);

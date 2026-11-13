@@ -46,6 +46,7 @@ public class FloorDirector : MonoBehaviour
     float fade = 1f, shownHealth = 1f, hurtVignette;
     float runStart; int kills;
     string bannerTop, bannerBottom; Color bannerColor; float bannerTime, bannerLength;
+    float ultimoDialogo = -10f;
     bool dead, completed; float endTimer; string completeTime;
     float hintTimer = 9f;
 
@@ -129,6 +130,10 @@ public class FloorDirector : MonoBehaviour
         runStart = Time.time;
         guia = gameObject.AddComponent<GuiaHordas>();   // baliza y flecha hacia la siguiente pelea
         RanurasEscaleras.Revisar();                     // sin zanjas junto a las escaleras donde Abby se atoraba
+        // los caminos iban a 2 cm del suelo y entre punto y punto el terreno los atravesaba (manchas "encimadas" que
+        // parpadean): se suben un poco más, sin regenerar los mapas
+        var caminos = GameObject.Find("CaminosUnidos");
+        if (caminos != null) caminos.transform.position += Vector3.up * 0.07f;
         Banner(floorTitle, floorSubtitle, new Color(0.75f, 0.85f, 1f), 4f);
     }
 
@@ -273,8 +278,14 @@ public class FloorDirector : MonoBehaviour
         float dt = Time.unscaledDeltaTime;
         if (player != null) Shader.SetGlobalVector("_AbbyJugador", player.position);   // los límites del piso se encienden cerca de Abby
         bannerTime += dt;
-        // mientras alguien habla el letrero espera (se apaga y no avanza): sale completo cuando termina el diálogo
-        if (CuadroNarracion.DialogoVisible > 0.05f && bannerTime < bannerLength) bannerTime = Mathf.Max(0f, bannerTime - dt);
+        // el letrero sale una sola vez: si alguien empieza a hablar y ya se vio, se termina; si casi no se alcanzó a ver,
+        // espera a que nadie hable en 2 s (no entre línea y línea, que si no reaparecía con cada Enter)
+        if (CuadroNarracion.DialogoVisible > 0.05f) ultimoDialogo = Time.unscaledTime;
+        if (bannerTime < bannerLength && Time.unscaledTime - ultimoDialogo < 2f)
+        {
+            if (bannerTime > 1f) bannerTime = bannerLength;
+            else bannerTime = Mathf.Max(0f, bannerTime - dt);
+        }
         if (hintTimer > 0f) hintTimer -= dt;
         hurtVignette = Mathf.MoveTowards(hurtVignette, 0f, dt * 2.5f);
         fragPulse = Mathf.MoveTowards(fragPulse, 0f, dt * 3f);
@@ -423,7 +434,8 @@ public class FloorDirector : MonoBehaviour
         // cartel central
         if (!string.IsNullOrEmpty(bannerTop) && bannerTime < bannerLength)
         {
-            float a = Mathf.Clamp01(Mathf.Min(bannerTime / 0.3f, (bannerLength - bannerTime) / 0.6f)) * (1f - CuadroNarracion.DialogoVisible);
+            float a = Mathf.Clamp01(Mathf.Min(bannerTime / 0.3f, (bannerLength - bannerTime) / 0.6f)) * (1f - CuadroNarracion.DialogoVisible)
+                    * (Time.unscaledTime - ultimoDialogo > 2f ? 1f : 0f);   // en espera no se ve (y al volver entra con su fundido)
             float slide = (1f - Mathf.Clamp01(bannerTime / 0.35f)) * u * 3f;
             Box(new Rect(0, sh * 0.2f - u * 1.5f, sw, u * 14f), new Color(0f, 0f, 0f, 0.5f * a));
             Box(new Rect(sw * 0.2f, sh * 0.2f - u * 1.5f, sw * 0.6f, u * 0.25f), new Color(bannerColor.r, bannerColor.g, bannerColor.b, 0.8f * a));

@@ -186,14 +186,10 @@ public partial class DioramaBuilder
         Fundir(cristales);   // una malla por material (los racimos con luz conservan su luz)
         Flat(g, "Fondo", new Vector3(0f, -39f, ExpEdgeZ + 60f), 200f, 120f, Plain("Dio_Negro", Color.black, 0f), 0.1f);
         // la criatura que espera abajo (la cinemática la sube)
-        var colosoPf = Resources.Load<GameObject>("Enemigos/Jefe");
         var coloso = Group("Coloso", lvl);
         coloso.localPosition = new Vector3(0f, -48f, ExpEdgeZ + 28f);   // mide ~31 m: al subir, los ojos quedan sobre el borde
-        if (colosoPf != null)
+        // (antes iba aquí el jefe de bloques escalado: ya solo se usa su sprite, que PersonaSprite le pone a "Coloso")
         {
-            var v = (GameObject)Instantiate(colosoPf, coloso);
-            v.transform.localScale = Vector3.one * 7f;
-            v.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             var prop = coloso.gameObject.AddComponent<CriaturaProp>();
             prop.cuerpo = new Color(0.1f, 0.08f, 0.13f); prop.ojos = new Color(1f, 0.15f, 0.1f); prop.bob = 0.6f;
         }

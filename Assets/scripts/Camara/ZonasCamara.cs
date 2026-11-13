@@ -51,6 +51,8 @@ public static class ZonasCamara
 
     static void AlCargar(Scene s, LoadSceneMode m)
     {
+        // los paisajes del menú se cargan encima (aditivos): sin zonas, que si no se quedaban acumuladas en el menú
+        if (m != LoadSceneMode.Single) return;
         if (Aperturas.TryGetValue(s.name, out var ap))
             foreach (var c in Object.FindObjectsByType<CameraShot>())
                 if (c.introSeconds > 0f)

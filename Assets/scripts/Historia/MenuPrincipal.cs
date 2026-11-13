@@ -30,7 +30,8 @@ public class MenuPrincipal : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Reiniciar() { yaIniciado = false; }   // con "Enter Play Mode" sin recargar el dominio, cada ejecución cuenta como nueva
 
-    enum Pagina { Principal, Configuracion, Creditos, Salir }
+    enum Pagina { Principal, Configuracion, Creditos, Salir, Pisos }
+    enum Op { Continuar, Jugar, Nueva, Pisos, Configuracion, Creditos, Salir }
     Pagina pagina;
     int sel;
     float t, entrada;
@@ -106,7 +107,31 @@ public class MenuPrincipal : MonoBehaviour
             if (paso != 0) MenuConfiguracion.Ajustar(sel, paso);
         }
         if (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) Elegir(sel);
-        if (kb.escapeKey.wasPressedThisFrame) { if (pagina != Pagina.Principal) Ir(Pagina.Principal); else Ir(Pagina.Salir); }
+        if (kb.escapeKey.wasPressedThisFrame) { if (pagina != Pagina.Principal) Volver(); else Ir(Pagina.Salir); }
+    }
+
+    /// <summary>Las opciones de la página principal (Elegir piso aparece en cuanto se llega a algún piso).</summary>
+    static System.Collections.Generic.List<Op> Principales()
+    {
+        var l = new System.Collections.Generic.List<Op>();
+        if (Progreso.Hay) { l.Add(Op.Continuar); l.Add(Op.Nueva); } else l.Add(Op.Jugar);
+        if (Progreso.HayDesbloqueados) l.Add(Op.Pisos);
+        l.Add(Op.Configuracion); l.Add(Op.Creditos); l.Add(Op.Salir);
+        return l;
+    }
+
+    static string Texto(Op o)
+    {
+        switch (o)
+        {
+            case Op.Continuar: return "Continuar  ·  " + Progreso.Nombre;
+            case Op.Jugar: return "Jugar";
+            case Op.Nueva: return "Nueva partida";
+            case Op.Pisos: return "Elegir piso";
+            case Op.Configuracion: return "Configuración";
+            case Op.Creditos: return "Créditos";
+            default: return "Salir";
+        }
     }
 
     string[] Opciones()
@@ -116,13 +141,39 @@ public class MenuPrincipal : MonoBehaviour
             case Pagina.Configuracion: return MenuConfiguracion.Opciones();   // la misma que en la pausa
             case Pagina.Salir: return new[] { "No, quedarme", "Sí, salir del juego" };
             case Pagina.Creditos: return new[] { "Volver" };
-            default: return Progreso.Hay
-                ? new[] { "Continuar  ·  " + Progreso.Nombre, "Nueva partida", "Configuración", "Créditos", "Salir" }
-                : new[] { "Jugar", "Configuración", "Créditos", "Salir" };
+            case Pagina.Pisos:
+            {
+                var pisos = Progreso.Pisos;
+                var l = new string[pisos.Length + 1];
+                for (int i = 0; i < pisos.Length; i++)
+                {
+                    string e = pisos[i], lugar = Progreso.Lugar(e);
+                    l[i] = !Progreso.Desbloqueado(e) ? "? ? ?" : lugar.Length > 0 ? Progreso.NombreDe(e) + "   ·   " + lugar : Progreso.NombreDe(e);
+                }
+                l[pisos.Length] = "Volver";
+                return l;
+            }
+            default: return Principales().ConvertAll(Texto).ToArray();
         }
     }
 
-    void Ir(Pagina p) { pagina = p; sel = 0; entrada = 0f; }
+    void Ir(Pagina p, int seleccion = 0) { pagina = p; sel = seleccion; entrada = 0f; }
+
+    /// <summary>De una página a la principal, con el cursor en la opción de donde se vino.</summary>
+    void Volver()
+    {
+        var ops = Principales();
+        Op de = pagina == Pagina.Pisos ? Op.Pisos : pagina == Pagina.Configuracion ? Op.Configuracion : pagina == Pagina.Creditos ? Op.Creditos : Op.Salir;
+        Ir(Pagina.Principal, Mathf.Max(0, ops.IndexOf(de)));
+    }
+
+    /// <summary>"Elegir piso": empieza ese lugar desde su inicio, con la vida completa.</summary>
+    void JugarPiso(string escena)
+    {
+        RunState.ClearHealth();
+        ReintentoJefe.Escena = null;
+        Cargador.Ir(escena);
+    }
 
     void Elegir(int i)
     {
@@ -130,25 +181,39 @@ public class MenuPrincipal : MonoBehaviour
         switch (pagina)
         {
             case Pagina.Principal:
-                if (Progreso.Hay)
+            {
+                var ops = Principales();
+                if (i < 0 || i >= ops.Count) break;
+                switch (ops[i])
                 {
-                    // con partida guardada: Continuar (al último lugar) · Nueva partida · y el resto corrido un lugar
-                    if (i == 0) { RunState.ClearHealth(); Cargador.Ir(Progreso.Escena); break; }
-                    i--;
+                    case Op.Continuar: RunState.ClearHealth(); Cargador.Ir(Progreso.Escena); break;
+                    case Op.Jugar:
+                    case Op.Nueva: Progreso.Borrar(); RunState.ClearHealth(); Cargador.IrConTarjeta(escenaJugar, "DESPERTAR"); break;
+                    case Op.Pisos:
+                        // el cursor empieza en el último lugar desbloqueado
+                        int ultimo = 0;
+                        for (int k = 0; k < Progreso.Pisos.Length; k++) if (Progreso.Desbloqueado(Progreso.Pisos[k])) ultimo = k;
+                        Ir(Pagina.Pisos, ultimo);
+                        break;
+                    case Op.Configuracion: Ir(Pagina.Configuracion); break;
+                    case Op.Creditos: Ir(Pagina.Creditos); break;
+                    default: Ir(Pagina.Salir); break;
                 }
-                if (i == 0) { Progreso.Borrar(); RunState.ClearHealth(); Cargador.IrConTarjeta(escenaJugar, "DESPERTAR"); }
-                else if (i == 1) Ir(Pagina.Configuracion);
-                else if (i == 2) Ir(Pagina.Creditos);
-                else Ir(Pagina.Salir);
+                break;
+            }
+            case Pagina.Pisos:
+                if (i >= Progreso.Pisos.Length) Volver();
+                else if (Progreso.Desbloqueado(Progreso.Pisos[i])) JugarPiso(Progreso.Pisos[i]);
+                else Sonido.Tocar(Sonido.Efecto.Clic, 0.5f, 0.6f);   // bloqueado: hay que llegar jugando
                 break;
             case Pagina.Creditos:
-                Ir(Pagina.Principal);
+                Volver();
                 break;
             case Pagina.Configuracion:
-                if (MenuConfiguracion.Elegir(i)) Ir(Pagina.Principal);
+                if (MenuConfiguracion.Elegir(i)) Volver();
                 break;
             case Pagina.Salir:
-                if (i == 0) Ir(Pagina.Principal);
+                if (i == 0) Volver();
                 else
                 {
 #if UNITY_EDITOR
@@ -173,7 +238,7 @@ public class MenuPrincipal : MonoBehaviour
             DanteFinal.DibujarCreditos(entrada, false);
             var ayudaC = new GUIStyle(GUI.skin.label) { fontSize = FuentePixel.Tam(u * 1.8f), alignment = TextAnchor.MiddleCenter };
             Sombra(new Rect(0, sh - u * 6f, sw, u * 4f), "Esc  regresar", ayudaC, new Color(1f, 1f, 1f, 0.7f));
-            if (Event.current.type == EventType.MouseDown && Event.current.button == 0) { Ir(Pagina.Principal); Event.current.Use(); }
+            if (Event.current.type == EventType.MouseDown && Event.current.button == 0) { Volver(); Event.current.Use(); }
             GUI.color = Color.white;
             return;
         }
@@ -203,9 +268,9 @@ public class MenuPrincipal : MonoBehaviour
 
         // el menú: texto a la izquierda, sin panel; el elegido en dorado con barra y degradado
         var ops = Opciones();
-        bool config = pagina == Pagina.Configuracion;
-        float fila = config ? 40f : 52f, letra = config ? 22f : 30f, letraSel = config ? 25f : 34f;
-        float y0 = (config ? 348f : 362f) * S;
+        bool config = pagina == Pagina.Configuracion, pisos = pagina == Pagina.Pisos;
+        float fila = pisos ? 30f : config ? 40f : 52f, letra = pisos ? 20f : config ? 22f : 30f, letraSel = pisos ? 23f : config ? 25f : 34f;
+        float y0 = (pisos ? 318f : config ? 348f : 362f) * S;
         if (pagina == Pagina.Salir)
         {
             itemSt.fontSize = Mathf.Max(8, Mathf.RoundToInt(22f * S));
@@ -239,7 +304,9 @@ public class MenuPrincipal : MonoBehaviour
             float tx = x0 + 38f * S + (on ? 2f * S * Mathf.Clamp01(entrada / 0.15f) : 0f);
             itemSt.font = on ? fuenteSel : fuenteItem;
             itemSt.fontSize = Mathf.Max(8, Mathf.RoundToInt((on ? letraSel : letra) * S));
-            bool apagado = (pagina == Pagina.Principal && i == ops.Length - 1) || (config && i == MenuConfiguracion.Volver && !on);
+            bool bloqueado = pisos && i < Progreso.Pisos.Length && !Progreso.Desbloqueado(Progreso.Pisos[i]);
+            bool apagado = (pagina == Pagina.Principal && i == ops.Length - 1) || (config && i == MenuConfiguracion.Volver && !on)
+                        || (pisos && i == ops.Length - 1 && !on) || bloqueado;
             Color c = on ? new Color(1f, 0.89f, 0.627f) : apagado ? new Color(0.616f, 0.565f, 0.784f) : new Color(0.914f, 0.894f, 1f);   // #FFE3A0 / #9D90C8 / #E9E4FF
             if (config && i == MenuConfiguracion.Dificultad && !on) c = Color.Lerp(c, MenuConfiguracion.ColorDificultad, 0.45f);
             c.a *= a;
@@ -264,8 +331,9 @@ public class MenuPrincipal : MonoBehaviour
 
         // barra de ayuda: teclas como "keycaps"
         float hx = x0 - 2f * S, hy = sh - 40f * S;
-        foreach (var (tecla, accion) in new[] { ("↑↓", "elegir"), ("Enter", "aceptar"), ("←→", config ? "ajustar" : "volumen"), ("Esc", "regresar") })
-            hx = Keycap(hx, hy, tecla, accion, S);
+        var teclas = pisos ? new[] { ("↑↓", "elegir"), ("Enter", "jugar"), ("Esc", "regresar") }
+                           : new[] { ("↑↓", "elegir"), ("Enter", "aceptar"), ("←→", config ? "ajustar" : "volumen"), ("Esc", "regresar") };
+        foreach (var (tecla, accion) in teclas) hx = Keycap(hx, hy, tecla, accion, S);
         GUI.color = Color.white;
     }
 
